@@ -1,7 +1,6 @@
-
 # api-platform-outbound-soap
 
-This is a placeholder README.md for a new repository
+This service allows other HMRC services to send messages to external SOAP web services.
 
 ### License
 
