@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<S:Envelope xmlns:S="http://www.w3.org/2003/05/soap-envelope" xmlns:env="http://www.w3.org/2003/05/soap-envelope">
+    <S:Header>
+        <To xmlns="http://www.w3.org/2005/08/addressing">partner:CCN2.Partner.EU.Customs.TAXUD/ICS_CR</To>
+        <Action xmlns="http://www.w3.org/2005/08/addressing" S:mustUnderstand="true">CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit</Action>
+        <From xmlns="http://www.w3.org/2005/08/addressing">
+            <Address>partner:CCN2.Partner.DE.Customs.TAXUD/ICS_NES</Address>
+        </From>
+        <ReplyTo xmlns="http://www.w3.org/2005/08/addressing">
+            <Address>partner:CCN2.Partner.DE.Customs.TAXUD/ICS_NES</Address>
+        </ReplyTo>
+        <FaultTo xmlns="http://www.w3.org/2005/08/addressing">
+            <Address>partner:CCN2.Partner.DE.Customs.TAXUD/ICS_NES</Address>
+        </FaultTo>
+        <MessageID xmlns="http://www.w3.org/2005/08/addressing">154517743d31-4251-b820-276809a6762b</MessageID>
+        <ccnm:MessageHeader xmlns:ccnm="http://ccn2.ec.eu/CCN2.Service.Platform.Common.Schema">
+            <ccnm:Version>1.0</ccnm:Version>
+            <ccnm:SendingDateAndTime>2020-04-30T12:15:58.000Z</ccnm:SendingDateAndTime>
+            <ccnm:MessageType>CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit</ccnm:MessageType>
+            <ccnm:RequestCoD>true</ccnm:RequestCoD>
+        </ccnm:MessageHeader>
+        <wsse:Security xmlns:soapEnvelope="http://www.w3.org/2003/05/soap-envelope" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" soapEnvelope:mustUnderstand="1" soapEnvelope:role="CCN2.Platform">
+            <ns1:UsernameToken xmlns:ns1="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:ns4="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" ns4:Id="UsernameToken-e8af7581-5231-4909-a382-c227e8bdc8d4">
+                <ns1:Username>username</ns1:Username>
+                <ns1:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">password</ns1:Password>
+            </ns1:UsernameToken>
+        </wsse:Security>
+    </S:Header>
+    <S:Body>
+        <ns0:IE4N03notifyERiskAnalysisHitReqMsg xmlns="urn:wco:datamodel:WCO:CIS:1" xmlns:ns0="http://xmlns.ec.eu/BusinessActivityService/ICS/IRiskAnalysisOrchestrationBAS/V1">
+            <IE4N03>example</IE4N03>
+        </ns0:IE4N03notifyERiskAnalysisHitReqMsg>
+    </S:Body>
+</S:Envelope>

@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.apiplatformoutboundsoap.config
+package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import play.api.libs.json.Json.JsValueWrapper
+import play.api.libs.json.{JsObject, Json}
 
-@Singleton
-class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
+object ErrorResponse {
+  def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
+    Json.obj(
+      "code" -> errorCode.toString,
+      "message" -> message
+    )
+}
 
-  val authBaseUrl: String = servicesConfig.baseUrl("auth")
-
-  val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
-  val graphiteHost: String = config.get[String]("microservice.metrics.graphite.host")
-  val ccn2Url: String = config.get[String]("ccn2Url")
+object ErrorCode extends Enumeration {
+  type ErrorCode = Value
+  val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
 }
