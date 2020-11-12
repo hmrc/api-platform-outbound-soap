@@ -31,6 +31,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
+import scala.io.Source.fromInputStream
 
 class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
@@ -54,7 +55,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
     }
 
     "send the expected IE4N03 message within a SOAP envelope" in new Setup {
-      val expectedIe4n03Message: String = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/ie4n03.xml")).mkString
+      val expectedIe4n03Message: String = fromInputStream(getClass.getResourceAsStream("/ie4n03.xml")).mkString
       val messageCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
       when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(OK))
 
@@ -69,8 +70,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       val result: Future[Result] = underTest.sendMessage()(fakeRequest.withBody(Json.obj("invalid" -> "<IE4N03>example</IE4N03>")))
 
       status(result) shouldBe BAD_REQUEST
-      (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
-      (contentAsJson(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
+      contentAsString(result) shouldBe "Invalid OutboundMessageRequest payload: List((/message,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
     }
   }
 }
