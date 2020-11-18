@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://xmlns.ec.eu/BusinessActivityService/ICS/IRiskAnalysisOrchestrationBAS/V1" xmlns:servicestype="urn:wco:datamodel:WCO:CIS:1" targetNamespace="http://xmlns.ec.eu/BusinessActivityService/ICS/IRiskAnalysisOrchestrationBAS/V1">
+  <xs:import namespace="urn:wco:datamodel:WCO:CIS:1" schemaLocation="RiskAnalysisOrchestrationBASServiceType.xsd" />
+  <xs:element name="IE4N03notifyERiskAnalysisHitReqMsg" type="servicestype:IE4N03RequestType">
+    <xs:annotation>
+      <xs:documentation>Request message for the IE4N03notifyERiskAnalysisHit operation of the RiskAnalysisOrchestrationBAS</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="IE4S01submitEScreeningAssessmentReqMsg" type="servicestype:IE4S01RequestType">
+    <xs:annotation>
+      <xs:documentation>Request message for the IE4S01submitEScreeningAssessment operation of the RiskAnalysisOrchestrationBAS</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="IE4S02submitRiskAnalysisResultReqMsg" type="servicestype:IE4S02RequestType">
+    <xs:annotation>
+      <xs:documentation>Request message for the IE4S02submitRiskAnalysisResult operation of the RiskAnalysisOrchestrationBAS</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="IE4S02updateERiskAnalysisResultReqMsg" type="servicestype:IE4S02RequestType">
+    <xs:annotation>
+      <xs:documentation>Request message for the IE4S02updateERiskAnalysisResult operation of the RiskAnalysisOrchestrationBAS</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="IE4S01updateEScreeningResultReqMsg" type="servicestype:IE4S01RequestType">
+    <xs:annotation>
+      <xs:documentation>Request message for the IE4S01updateEScreeningResult operation of the RiskAnalysisOrchestrationBAS</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+</xs:schema>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="urn:wco:datamodel:WCO:CIS:1" targetNamespace="urn:wco:datamodel:WCO:CIS:1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xs:annotation>
+    <xs:documentation>Generated from input release</xs:documentation>
+  </xs:annotation>
+  <xs:include schemaLocation="ctypes.xsd" />
+  <xs:element name="IE4S01" type="IE4S01Type" />
+  <xs:complexType name="IE4S01Type">
+    <xs:sequence>
+      <xs:element name="MessageHeader" type="MessageHeaderType" />
+      <xs:element name="messageFunction" type="MessageFunctionContentType">
+        <xs:annotation>
+          <xs:documentation>
+            <ICS2CLMS>CL727</ICS2CLMS>
+            <ICS2CLTrade>CL727</ICS2CLTrade>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="functionalReference" type="FunctionalReferenceContentType" />
+      <xs:element name="documentIssueDate" type="DocumentIssueDateType" />
+      <xs:element name="involvedMemberState" type="InvolvedMemberStateType" />
+      <xs:element name="riskAnalyst" type="RiskAnalystType" />
+      <xs:element name="riskAnalysis" type="RiskAnalysisType07" />
+      <xs:element name="controlRecommendations" minOccurs="0" maxOccurs="999" type="ControlRecommendationsType03" />
+      <xs:element name="doNotLoadDetails" minOccurs="0" type="DoNotLoadDetailsType03" />
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="urn:wco:datamodel:WCO:CIS:1" targetNamespace="urn:wco:datamodel:WCO:CIS:1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <!--=======================================================-->
+  <!--============= Message Header Definition  ==============-->
+  <!--=======================================================-->
+  <xs:complexType name="MessageHeaderType">
+    <xs:annotation>
+      <xs:documentation>Used by all messages</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="messageId" type="MessageIdContentType" />
+      <xs:element name="correlationId" minOccurs="0" type="MessageIdContentType" />
+      <xs:element name="replyToMessageId" minOccurs="0" type="MessageIdContentType" />
+      <xs:element name="messageTimestamp" type="MessageTimestampContentType" />
+      <xs:element name="messageSender" type="PartnerNameContentType" />
+      <xs:element name="messageRecipient" type="PartnerNameContentType" />
+      <xs:element name="conformanceCampaign" minOccurs="0" type="ConformanceCampaignContentType" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="MessageIdContentType">
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="291" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="MessageTimestampContentType">
+    <xs:annotation>
+      <xs:documentation />
+    </xs:annotation>
+    <xs:restriction base="xs:dateTime">
+      <xs:pattern value="(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+\-]\d\d:\d\d)|(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PartnerNameContentType">
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="14" />
+      <xs:pattern value="[a-zA-Z0-9.-]{1,14}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ConformanceCampaignContentType">
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="20" />
+      <xs:pattern value="[A-Z]{2} .{1,18}" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>
