@@ -1,0 +1,1454 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="urn:wco:datamodel:WCO:CIS:1" targetNamespace="urn:wco:datamodel:WCO:CIS:1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xs:annotation>
+    <xs:documentation>Generated from input release</xs:documentation>
+  </xs:annotation>
+  <!--=======================================================-->
+  <!--========================  LRN  ========================-->
+  <!--=======================================================-->
+  <xs:simpleType name="LRNContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 3/54 messages: IE3F32, IE3F43, IE3F44</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="22" />
+      <xs:pattern value=".{1,22}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="LRNContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE3N01, IE3R01</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  DateTime  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="DateTimeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 53/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3N01, IE3N03, IE3N04, IE3N05, IE3N09, IE3N10, IE3N99, IE3Q01, 
+IE3Q02, IE3Q03, IE3Q04, IE3R01, IE3R02, IE3R03, IE3R07, IE4N01, IE4N03, IE4N04, 
+IE4N05, IE4N06, IE4N10, IE4N11, IE4N12, IE4N13, IE4N99, IE4Q01, IE4Q02, IE4Q03, 
+IE4Q04, IE4Q05, IE4Q06, IE4Q07, IE4Q08, IE4R01, IE4R02, IE4R03, IE4R04, IE4R05, 
+IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:dateTime">
+      <xs:pattern value="\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===========  SpecificCircumstanceIndicator  ===========-->
+  <!--=======================================================-->
+  <xs:simpleType name="SpecificCircumstanceIndicatorContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 16/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--======================  country  ======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="CountryContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 41/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3N03, IE3N04, IE3N05, IE3N10, IE3Q01, IE3Q02, IE3Q03, IE3Q04, 
+IE3R01, IE3R02, IE3R03, IE3R07, IE4N03, IE4N04, IE4N05, IE4N12, IE4Q01, IE4Q02, 
+IE4Q03, IE4Q04, IE4Q05, IE4Q06, IE4Q07, IE4R02, IE4R03, IE4R04, IE4R05, IE4S01, 
+IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="2" />
+      <xs:pattern value="[a-zA-Z]{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CountryContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="2" />
+      <xs:pattern value="[A-Z]{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CountryContentType3">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="2" />
+      <xs:maxLength value="2" />
+      <xs:pattern value="[a-zA-Z]{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  name  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="NameContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 21/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05, IE4S01, 
+IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="70" />
+      <xs:pattern value=".{1,70}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===============  identificationNumber  ===============-->
+  <!--=======================================================-->
+  <xs:simpleType name="IdentificationNumberContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 46/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3N01, IE3N03, IE3N04, IE3N05, IE3N09, IE3N10, IE3N99, IE3Q01, 
+IE3Q02, IE3Q03, IE3Q04, IE3R01, IE3R02, IE3R03, IE3R07, IE4N01, IE4N04, IE4N05, 
+IE4N10, IE4N11, IE4N12, IE4N99, IE4Q01, IE4Q02, IE4Q03, IE4Q04, IE4Q05, IE4Q06, 
+IE4Q07, IE4R01, IE4R02, IE4R03, IE4R04, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="IdentificationNumberContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 10/54 messages: IE3N09, IE4N05, IE4N11, IE4Q01, IE4Q02, IE4Q07, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--======================  status  ======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="StatusContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 16/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="1" />
+      <xs:maxLength value="1" />
+      <xs:pattern value="[0-9]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  city  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="CityContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  subDivision  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="SubDivisionContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  streetNameLine1  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="StreetNameLine1ContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="70" />
+      <xs:pattern value=".{1,70}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  postCode  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="PostCodeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  streetNameLine2  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="StreetNameLine2ContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="70" />
+      <xs:pattern value=".{1,70}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--======================  number  ======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="NumberContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  poBox  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="PoBoxContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="70" />
+      <xs:pattern value=".{1,70}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  identifier  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="IdentifierContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="50" />
+      <xs:pattern value=".{1,50}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="IdentifierContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="20" />
+      <xs:pattern value=".{1,20}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  type  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="TypeContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 27/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3N04, IE3Q02, IE3R02, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q04, 
+IE4Q07, IE4R02, IE4R03, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TypeContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 49/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3N01, IE3N03, IE3N04, IE3N05, IE3N09, IE3N10, IE3N99, IE3Q01, 
+IE3Q02, IE3Q03, IE3Q04, IE3R01, IE3R02, IE3R03, IE3R07, IE4N01, IE4N04, IE4N05, 
+IE4N10, IE4N11, IE4N12, IE4N99, IE4Q01, IE4Q02, IE4Q03, IE4Q04, IE4Q05, IE4Q06, 
+IE4Q08, IE4Q10, IE4R02, IE4R03, IE4R04, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="4" />
+      <xs:pattern value=".{1,4}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TypeContentType3">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE3Q01, IE4Q03, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="4" />
+      <xs:pattern value=".{4}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TypeContentType4">
+    <xs:annotation>
+      <xs:documentation>Used by 3/54 messages: IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="2" />
+      <xs:pattern value="[a-zA-Z]{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TypeContentType5">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TypeContentType6">
+    <xs:annotation>
+      <xs:documentation>Used by 1/54 messages: IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value="[a-zA-Z]{3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  totalGrossMass  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="TotalGrossMassContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:totalDigits value="16" />
+      <xs:fractionDigits value="6" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==============  VATIdentificationNumber  ==============-->
+  <!--=======================================================-->
+  <xs:simpleType name="VATIdentificationNumberContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  role  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="RoleContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="3" />
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="RoleContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value="[a-zA-Z]{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="RoleContentType3">
+    <xs:annotation>
+      <xs:documentation>Used by 1/54 messages: IE4Q07</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  referenceNumber  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ReferenceNumberContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 15/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3N04, IE3Q02, 
+IE4N05, IE4Q01, IE4Q02, IE4Q04, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="70" />
+      <xs:pattern value=".{1,70}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ReferenceNumberContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3N01, IE3N09, IE3N10, IE3N99, IE3Q04, IE3R01, IE3R07, IE4N01, IE4N05, IE4N10, 
+IE4N11, IE4N12, IE4N99, IE4Q01, IE4Q02, IE4Q06, IE4R04, IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:length value="8" />
+      <xs:pattern value=".{8}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ReferenceNumberContentType3">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE3N09, IE4N11</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  code  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="CodeContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 26/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3N04, IE3Q02, IE3R02, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q04, 
+IE4R02, IE4R03, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CodeContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  text  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="TextContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 26/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3N04, IE3Q02, IE3R02, IE3R03, IE4N05, IE4Q01, IE4Q02, IE4Q04, 
+IE4R02, IE4R03, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="512" />
+      <xs:pattern value=".{1,512}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===================  typeOfPerson  ===================-->
+  <!--=======================================================-->
+  <xs:simpleType name="TypeOfPersonContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 15/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3R03, IE4N05, 
+IE4Q01, IE4Q02, IE4Q07, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="1" />
+      <xs:pattern value="[0-9]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  goodsItemNumber  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="GoodsItemNumberContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 17/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3N09, IE4N05, 
+IE4N11, IE4Q01, IE4Q02, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:pattern value="[0-9]{1,5}" />
+      <xs:minInclusive value="0" />
+      <xs:totalDigits value="5" />
+      <xs:fractionDigits value="0" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  typeOfGoods  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="TypeOfGoodsContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--================  descriptionOfGoods  ================-->
+  <!--=======================================================-->
+  <xs:simpleType name="DescriptionOfGoodsContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="512" />
+      <xs:pattern value=".{1,512}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==========  harmonizedSystemSubHeadingCode  ==========-->
+  <!--=======================================================-->
+  <xs:simpleType name="HarmonizedSystemSubHeadingCodeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="6" />
+      <xs:pattern value=".{6}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=============  combinedNomenclatureCode  =============-->
+  <!--=======================================================-->
+  <xs:simpleType name="CombinedNomenclatureCodeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="2" />
+      <xs:pattern value=".{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  grossMass  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="GrossMassContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 8/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:totalDigits value="16" />
+      <xs:fractionDigits value="6" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=================  numberOfPackages  =================-->
+  <!--=======================================================-->
+  <xs:simpleType name="NumberOfPackagesContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:pattern value="[0-9]{1,8}" />
+      <xs:minInclusive value="0" />
+      <xs:totalDigits value="8" />
+      <xs:fractionDigits value="0" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  documentNumber  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="DocumentNumberContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 49/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE3F44, IE3A44, 
+IE4F44, IE4A44, IE3N01, IE3N03, IE3N04, IE3N05, IE3N09, IE3N10, IE3N99, IE3Q01, 
+IE3Q02, IE3Q03, IE3Q04, IE3R01, IE3R02, IE3R03, IE3R07, IE4N01, IE4N04, IE4N05, 
+IE4N10, IE4N11, IE4N12, IE4N99, IE4Q01, IE4Q02, IE4Q03, IE4Q04, IE4Q05, IE4Q06, 
+IE4Q08, IE4Q10, IE4R02, IE4R03, IE4R04, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="70" />
+      <xs:pattern value=".{1,70}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--================  referenceNumberUCR  ================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ReferenceNumberUCRContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--======================  result  ======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ResultContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 9/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3R03, IE4N05, IE4Q02, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--======================  method  ======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="MethodContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 9/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3R03, IE4N05, IE4Q02, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  identification  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="IdentificationContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE3F32, IE3A32, IE3R02, IE3R03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="256" />
+      <xs:pattern value=".{1,256}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="IdentificationContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 1/54 messages: IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="70" />
+      <xs:pattern value=".{1,70}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  filename  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="FilenameContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 10/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3R02, IE3R03, IE4R02, IE4R03, IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="256" />
+      <xs:pattern value=".{1,256}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  MIME  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="MIMEContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 10/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3R02, IE3R03, IE4R02, IE4R03, IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="70" />
+      <xs:pattern value=".{1,70}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  description  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="DescriptionContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 10/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3R02, IE3R03, IE4R02, IE4R03, IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="256" />
+      <xs:pattern value=".{1,256}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="DescriptionContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 6/54 messages: IE3N01, IE3N99, IE4N01, IE4N99, IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="512" />
+      <xs:pattern value=".{1,512}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  value  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ValueContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:totalDigits value="16" />
+      <xs:fractionDigits value="2" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  currency  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="CurrencyContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3F32, IE3A32, IE4F32, IE4A32, IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, 
+IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:minLength value="3" />
+      <xs:maxLength value="3" />
+      <xs:pattern value="[A-Z]{3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=============  referralRequestReference  =============-->
+  <!--=======================================================-->
+  <xs:simpleType name="ReferralRequestReferenceContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 9/54 messages: IE3A32, IE4A32, IE3A43, IE4A43, IE3A44, IE4A44, IE3R02, IE4N06, IE4R02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ReferralRequestReferenceContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 3/54 messages: IE3R03, IE4R03, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--========================  MRN  ========================-->
+  <!--=======================================================-->
+  <xs:simpleType name="MRNContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 45/54 messages: IE3A32, IE4F32, IE4A32, IE3A43, IE4F43, IE4A43, IE3A44, IE4F44, IE4A44, IE3N01, 
+IE3N03, IE3N04, IE3N05, IE3N09, IE3N10, IE3Q01, IE3Q02, IE3Q03, IE3Q04, IE3R01, 
+IE3R02, IE3R03, IE3R07, IE4N01, IE4N04, IE4N05, IE4N06, IE4N10, IE4N11, IE4N12, 
+IE4N13, IE4Q01, IE4Q02, IE4Q03, IE4Q04, IE4Q05, IE4Q06, IE4Q08, IE4Q10, IE4R01, 
+IE4R02, IE4R03, IE4R04, IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="18" />
+      <xs:pattern value=".{18}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--======================  cusCode  ======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="CusCodeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 8/54 messages: IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="9" />
+      <xs:pattern value=".{1,9}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--======================  netMass  ======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="NetMassContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 8/54 messages: IE3F43, IE3A43, IE4F43, IE4A43, IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0" />
+      <xs:totalDigits value="16" />
+      <xs:fractionDigits value="6" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==========  receptacleIdentificationNumber  ==========-->
+  <!--=======================================================-->
+  <xs:simpleType name="ReceptacleIdentificationNumberContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 19/54 messages: IE3F44, IE3A44, IE4F44, IE4A44, IE3N03, IE3N09, IE3Q01, IE4N04, IE4N05, IE4N10, 
+IE4N11, IE4Q01, IE4Q02, IE4Q03, IE4Q08, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  validationCode  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ValidationCodeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE3N01, IE3N99, IE4N01, IE4N99</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="8" />
+      <xs:pattern value=".{1,8}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--================  messageElementPath  ================-->
+  <!--=======================================================-->
+  <xs:simpleType name="MessageElementPathContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 12/54 messages: IE3N01, IE3N04, IE3N99, IE3Q02, IE4N01, IE4N05, IE4N99, IE4Q02, IE4Q04, IE4R05, 
+IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="512" />
+      <xs:pattern value=".{1,512}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===================  shippingMarks  ===================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ShippingMarksContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 14/54 messages: IE3N03, IE3N09, IE3Q01, IE4N04, IE4N05, IE4N11, IE4Q01, IE4Q02, IE4Q03, IE4Q07, 
+IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="512" />
+      <xs:pattern value=".{1,512}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  typeOfPackages  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="TypeOfPackagesContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 13/54 messages: IE3N03, IE3N09, IE3Q01, IE4N04, IE4N05, IE4N11, IE4Q01, IE4Q02, IE4Q03, IE4R05, 
+IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="2" />
+      <xs:pattern value=".{1,2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===========  containerIdentificationNumber  ===========-->
+  <!--=======================================================-->
+  <xs:simpleType name="ContainerIdentificationNumberContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 16/54 messages: IE3N03, IE3N09, IE3Q01, IE4N04, IE4N05, IE4N10, IE4N11, IE4Q01, IE4Q02, IE4Q03, 
+IE4Q07, IE4Q08, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=============  referenceRequestReference  =============-->
+  <!--=======================================================-->
+  <xs:simpleType name="ReferenceRequestReferenceContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 7/54 messages: IE3N04, IE3N05, IE3Q02, IE3Q03, IE4Q04, IE4Q05, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  requestType  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="RequestTypeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 7/54 messages: IE3N04, IE3N05, IE3Q02, IE3Q03, IE4Q04, IE4Q05, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==========  recommendedHRCMScreeningMethod  ==========-->
+  <!--=======================================================-->
+  <xs:simpleType name="RecommendedHRCMScreeningMethodContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE3N05, IE3Q03, IE4Q05, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--================  placeOfExamination  ================-->
+  <!--=======================================================-->
+  <xs:simpleType name="PlaceOfExaminationContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE3N09, IE4N11</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="256" />
+      <xs:pattern value=".{1,256}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===============  typeOfIdentification  ===============-->
+  <!--=======================================================-->
+  <xs:simpleType name="TypeOfIdentificationContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 10/54 messages: IE3N09, IE4N05, IE4N11, IE4Q01, IE4Q02, IE4Q07, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="2" />
+      <xs:maxLength value="2" />
+      <xs:pattern value="[0-9]{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  nationality  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="NationalityContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 10/54 messages: IE3N09, IE4N05, IE4N11, IE4Q01, IE4Q02, IE4Q07, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="2" />
+      <xs:maxLength value="2" />
+      <xs:pattern value="[a-zA-Z]{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--================  functionalReference  ================-->
+  <!--=======================================================-->
+  <xs:simpleType name="FunctionalReferenceContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 14/54 messages: IE3N99, IE4N03, IE4N05, IE4N10, IE4N99, IE4Q01, IE4Q02, IE4Q07, IE4Q08, IE4Q10, 
+IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===============  technicalErrorMessage  ===============-->
+  <!--=======================================================-->
+  <xs:simpleType name="TechnicalErrorMessageContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE3N99, IE4N99</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="1024" />
+      <xs:pattern value=".{1,1024}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===========  riskAnalysisRequestReference  ===========-->
+  <!--=======================================================-->
+  <xs:simpleType name="RiskAnalysisRequestReferenceContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 9/54 messages: IE4N03, IE4N05, IE4Q01, IE4Q02, IE4Q04, IE4Q05, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  messageFunction  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="MessageFunctionContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 7/54 messages: IE4N05, IE4N10, IE4Q01, IE4Q02, IE4Q07, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="2" />
+      <xs:pattern value="[0-9]{1,2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=================  requestReference  =================-->
+  <!--=======================================================-->
+  <xs:simpleType name="RequestReferenceContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  AEOStatus  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="AEOStatusContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="1" />
+      <xs:pattern value="[0-9]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  category  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="CategoryContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 6/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="1" />
+      <xs:pattern value="[a-zA-Z]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CategoryContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="4" />
+      <xs:pattern value=".{1,4}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=================  riskAnalysisType  =================-->
+  <!--=======================================================-->
+  <xs:simpleType name="RiskAnalysisTypeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q02, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="1" />
+      <xs:pattern value="[a-zA-Z]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===================  riskAreaCode  ===================-->
+  <!--=======================================================-->
+  <xs:simpleType name="RiskAreaCodeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q02, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  riskLevel  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="RiskLevelContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q02, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==============  riskCriteriaIdentifier  ==============-->
+  <!--=======================================================-->
+  <xs:simpleType name="RiskCriteriaIdentifierContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q02, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  resultCode  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ResultCodeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q02, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="1" />
+      <xs:pattern value="[0-9]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  resultText  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ResultTextContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q02, IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="512" />
+      <xs:pattern value=".{1,512}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  sequenceNumber  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="SequenceNumberContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 9/54 messages: IE4N05, IE4N10, IE4Q01, IE4Q02, IE4Q08, IE4R05, IE4S01, IE4S02, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:pattern value="[0-9]{1,5}" />
+      <xs:totalDigits value="5" />
+      <xs:fractionDigits value="0" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SequenceNumberContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:pattern value="[0-9]{1,2}" />
+      <xs:totalDigits value="2" />
+      <xs:fractionDigits value="0" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=================  reEntryIndicator  =================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ReEntryIndicatorContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="1" />
+      <xs:pattern value="[0-1]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=============  splitConsignmentIndicator  =============-->
+  <!--=======================================================-->
+  <xs:simpleType name="SplitConsignmentIndicatorContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="1" />
+      <xs:pattern value="[0-1]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  previousMRN  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="PreviousMRNContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="18" />
+      <xs:pattern value=".{18}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==============  typeOfMeansOfTransport  ==============-->
+  <!--=======================================================-->
+  <xs:simpleType name="TypeOfMeansOfTransportContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="4" />
+      <xs:pattern value=".{1,4}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  ModeOfTransport  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ModeOfTransportContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="1" />
+      <xs:maxLength value="1" />
+      <xs:pattern value="[0-9]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=============  conveyanceReferenceNumber  =============-->
+  <!--=======================================================-->
+  <xs:simpleType name="ConveyanceReferenceNumberContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 5/54 messages: IE4N05, IE4Q01, IE4Q02, IE4Q07, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--================  containerIndicator  ================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ContainerIndicatorContentType1">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="1" />
+      <xs:maxLength value="1" />
+      <xs:pattern value="[0,1]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ContainerIndicatorContentType2">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value="[0-9]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  location  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="LocationContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  UNLOCODE  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="UNLOCODEContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  UNNumber  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="UNNumberContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="4" />
+      <xs:pattern value=".{4}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===============  containerSizeAndType  ===============-->
+  <!--=======================================================-->
+  <xs:simpleType name="ContainerSizeAndTypeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="10" />
+      <xs:pattern value=".{1,10}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===============  containerPackedStatus  ===============-->
+  <!--=======================================================-->
+  <xs:simpleType name="ContainerPackedStatusContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===============  containerSupplierType  ===============-->
+  <!--=======================================================-->
+  <xs:simpleType name="ContainerSupplierTypeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--===================  numberOfSeals  ===================-->
+  <!--=======================================================-->
+  <xs:simpleType name="NumberOfSealsContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:pattern value="[0-9]{1,4}" />
+      <xs:minInclusive value="0" />
+      <xs:totalDigits value="4" />
+      <xs:fractionDigits value="0" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  methodOfPayment  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="MethodOfPaymentContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="1" />
+      <xs:maxLength value="1" />
+      <xs:pattern value="[a-zA-Z]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==============  supplementaryFilingType  ==============-->
+  <!--=======================================================-->
+  <xs:simpleType name="SupplementaryFilingTypeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=============  estimatedActualIndicator  =============-->
+  <!--=======================================================-->
+  <xs:simpleType name="EstimatedActualIndicatorContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 4/54 messages: IE4N05, IE4Q01, IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="1" />
+      <xs:pattern value="[0-1]{1}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=================  riskAssementType  =================-->
+  <!--=======================================================-->
+  <xs:simpleType name="RiskAssementTypeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 1/54 messages: IE4Q02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="2" />
+      <xs:pattern value="[a-zA-Z]{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--================  referenceIdentifier  ================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ReferenceIdentifierContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE4Q02, IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="70" />
+      <xs:pattern value=".{1,70}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=====================  parameter  =====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ParameterContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 1/54 messages: IE4Q10</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="4" />
+      <xs:pattern value=".{4}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  placeOfControl  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="PlaceOfControlContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 3/54 messages: IE4R05, IE4S01, IE4S02</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  Identifier  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="IdentifierContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 1/54 messages: IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="35" />
+      <xs:pattern value=".{1,35}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--================  riskAssessmentType  ================-->
+  <!--=======================================================-->
+  <xs:simpleType name="RiskAssessmentTypeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 1/54 messages: IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="2" />
+      <xs:pattern value="[a-zA-Z]{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--=======================  state  =======================-->
+  <!--=======================================================-->
+  <xs:simpleType name="StateContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 1/54 messages: IE4R05</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="2" />
+      <xs:pattern value="[0-9]{2}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  reasonText  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ReasonTextContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="512" />
+      <xs:pattern value=".{1,512}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--====================  reasonCode  ====================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ReasonCodeContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="17" />
+      <xs:pattern value=".{1,17}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  controlDecision  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ControlDecisionContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--=======================================================-->
+  <!--==================  controlTrigger  ==================-->
+  <!--=======================================================-->
+  <xs:simpleType name="ControlTriggerContentType">
+    <xs:annotation>
+      <xs:documentation>Used by 2/54 messages: IE4R05, IE4S03</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:maxLength value="3" />
+      <xs:pattern value=".{1,3}" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

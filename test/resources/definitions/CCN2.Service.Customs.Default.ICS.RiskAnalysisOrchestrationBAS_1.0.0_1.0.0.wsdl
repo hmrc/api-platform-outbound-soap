@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns="http://xmlns.ec.eu/BusinessActivityService/ICS/RiskAnalysisOrchestrationBAS/V1" xmlns:itf="http://xmlns.ec.eu/BusinessActivityService/ICS/IRiskAnalysisOrchestrationBAS/V1" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:tmn="http://xmlns.ec.eu/BusinessMessages/TATAFng/Monitoring/V1" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlns.ec.eu/BusinessActivityService/ICS/RiskAnalysisOrchestrationBAS/V1" name="RiskAnalysisOrchestrationBAS">
+  <wsdl:import namespace="http://ccn2.ec.eu/CCN2.Service.Platform.SecurityPolicies" location="CCN2.Service.Platform.SecurityPolicies.wsdl" />
+  <wsdl:types>
+    <xs:schema>
+      <xs:import namespace="http://xmlns.ec.eu/BusinessActivityService/ICS/IRiskAnalysisOrchestrationBAS/V1" schemaLocation="ICCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS.xsd" />
+      <xs:import namespace="http://xmlns.ec.eu/BusinessMessages/TATAFng/Monitoring/V1" schemaLocation="Monitoring.xsd" />
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="IE4N03notifyERiskAnalysisHitReqMsg">
+    <wsdl:part name="param" element="itf:IE4N03notifyERiskAnalysisHitReqMsg" />
+  </wsdl:message>
+  <wsdl:message name="IE4S01submitEScreeningAssessmentReqMsg">
+    <wsdl:part name="param" element="itf:IE4S01submitEScreeningAssessmentReqMsg" />
+  </wsdl:message>
+  <wsdl:message name="IE4S02submitRiskAnalysisResultReqMsg">
+    <wsdl:part name="param" element="itf:IE4S02submitRiskAnalysisResultReqMsg" />
+  </wsdl:message>
+  <wsdl:message name="IE4S02updateERiskAnalysisResultReqMsg">
+    <wsdl:part name="param" element="itf:IE4S02updateERiskAnalysisResultReqMsg" />
+  </wsdl:message>
+  <wsdl:message name="IE4S01updateEScreeningResultReqMsg">
+    <wsdl:part name="param" element="itf:IE4S01updateEScreeningResultReqMsg" />
+  </wsdl:message>
+  <wsdl:message name="IsAlive">
+    <wsdl:part name="param" element="tmn:isAliveReqMsg" />
+  </wsdl:message>
+  <wsdl:portType name="RiskAnalysisOrchestrationBAS">
+    <wsdl:documentation>RiskAnalysisOrchestrationBAS functionalities description</wsdl:documentation>
+    <wsdl:operation name="IE4N03notifyERiskAnalysisHit">
+      <wsdl:input name="IE4N03notifyERiskAnalysisHitReqMsg" message="IE4N03notifyERiskAnalysisHitReqMsg" wsaw:action="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit" />
+    </wsdl:operation>
+    <wsdl:operation name="IE4S01submitEScreeningAssessment">
+      <wsdl:input name="IE4S01submitEScreeningAssessmentReqMsg" message="IE4S01submitEScreeningAssessmentReqMsg" wsaw:action="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4S01submitEScreeningAssessment" />
+    </wsdl:operation>
+    <wsdl:operation name="IE4S02submitRiskAnalysisResult">
+      <wsdl:input name="IE4S02submitRiskAnalysisResultReqMsg" message="IE4S02submitRiskAnalysisResultReqMsg" wsaw:action="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4S02submitRiskAnalysisResult" />
+    </wsdl:operation>
+    <wsdl:operation name="IE4S02updateERiskAnalysisResult">
+      <wsdl:input name="IE4S02updateERiskAnalysisResultReqMsg" message="IE4S02updateERiskAnalysisResultReqMsg" wsaw:action="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4S02updateERiskAnalysisResult" />
+    </wsdl:operation>
+    <wsdl:operation name="IE4S01updateEScreeningResult">
+      <wsdl:input name="IE4S01updateEScreeningResultReqMsg" message="IE4S01updateEScreeningResultReqMsg" wsaw:action="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4S01updateEScreeningResult" />
+    </wsdl:operation>
+    <wsdl:operation name="IsAlive">
+      <wsdl:input name="IsAlive" message="IsAlive" wsaw:action="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IsAlive" />
+    </wsdl:operation>
+  </wsdl:portType>
+</wsdl:definitions>

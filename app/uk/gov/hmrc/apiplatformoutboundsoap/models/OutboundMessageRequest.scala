@@ -17,3 +17,5 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 case class OutboundMessageRequest(message: String)
+
+case class MessageRequest(wsdlUrl: String, wsdlOperation: String, messageBody: String)

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns="http://xmlns.ec.eu/BusinessActivityService/ICS/RiskAnalysisOrchestrationBAS/V1" xmlns:ccn2="http://ccn2.ec.eu/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:wsa="http://www.w3.org/2005/08/addressing" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlns.ec.eu/BusinessActivityService/ICS/RiskAnalysisOrchestrationBAS/V1" name="RiskAnalysisOrchestrationBAS">
+  <wsdl:import namespace="http://xmlns.ec.eu/BusinessActivityService/ICS/RiskAnalysisOrchestrationBAS/V1" location="CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_1.0.0.wsdl" />
+  <wsdl:binding name="RiskAnalysisOrchestrationBASSoapBinding" type="RiskAnalysisOrchestrationBAS">
+    <soap12:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsp:PolicyReference URI="#username_supporting_token_plaintext_password" />
+    <wsdl:operation name="IE4N03notifyERiskAnalysisHit">
+      <soap12:operation soapAction="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+    </wsdl:operation>
+    <wsdl:operation name="IE4S01submitEScreeningAssessment">
+      <soap12:operation soapAction="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4S01submitEScreeningAssessment" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+    </wsdl:operation>
+    <wsdl:operation name="IE4S02submitRiskAnalysisResult">
+      <soap12:operation soapAction="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4S02submitRiskAnalysisResult" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+    </wsdl:operation>
+    <wsdl:operation name="IE4S02updateERiskAnalysisResult">
+      <soap12:operation soapAction="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4S02updateERiskAnalysisResult" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+    </wsdl:operation>
+    <wsdl:operation name="IE4S01updateEScreeningResult">
+      <soap12:operation soapAction="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4S01updateEScreeningResult" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+    </wsdl:operation>
+    <wsdl:operation name="IsAlive">
+      <soap12:operation soapAction="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IsAlive" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS">
+    <wsdl:port name="RiskAnalysisOrchestrationBAS" binding="RiskAnalysisOrchestrationBASSoapBinding">
+      <soap12:address location="http://{ccn2Host}:{ccn2Port}/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS" />
+      <wsa:EndpointReference>
+        <wsa:Address>http://{ccn2Host}:{ccn2Port}/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS</wsa:Address>
+        <wsa:Metadata>
+          <ccn2:ServiceID>CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS</ccn2:ServiceID>
+          <ccn2:ServiceName>CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS</ccn2:ServiceName>
+          <ccn2:ServiceDescription>CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS</ccn2:ServiceDescription>
+          <ccn2:ServiceVersion>http://ccn2.ec.eu/Version/1.0.0</ccn2:ServiceVersion>
+        </wsa:Metadata>
+      </wsa:EndpointReference>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="urn:wco:datamodel:WCO:CIS:1" targetNamespace="urn:wco:datamodel:WCO:CIS:1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xs:annotation>
+    <xs:documentation>Generated from input release</xs:documentation>
+  </xs:annotation>
+  <xs:include schemaLocation="ctypes.xsd" />
+  <xs:element name="IE4N03" type="IE4N03Type" />
+  <xs:complexType name="IE4N03Type">
+    <xs:sequence>
+      <xs:element name="MessageHeader" type="MessageHeaderType" />
+      <xs:element name="functionalReference" type="FunctionalReferenceContentType" />
+      <xs:element name="documentIssueDate" type="DocumentIssueDateType" />
+      <xs:element name="riskAnalysis" minOccurs="0" type="RiskAnalysisType" />
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
