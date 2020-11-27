@@ -24,6 +24,7 @@ lazy val microservice = Project(appName, file("."))
     scalaVersion                     := "2.12.11",
     PlayKeys.playDefaultPort         := 6703,
     libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test,
+    dependencyOverrides              ++= AppDependencies.jettyOverrides,
     scoverageSettings,
     // ***************
     // Use the silencer plugin to suppress warnings
@@ -37,5 +38,8 @@ lazy val microservice = Project(appName, file("."))
   .settings(publishingSettings: _*)
   .configs(IntegrationTest)
   .settings(integrationTestSettings(): _*)
+  .settings(
+    unmanagedResourceDirectories in IntegrationTest += baseDirectory.value / "test" / "resources"
+  )
   .settings(resolvers += Resolver.jcenterRepo)
   .settings(scalacOptions ++= Seq("-Ypartial-unification"))

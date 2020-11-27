@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns:tns="http://ccn2.ec.eu/CCN2.Service.Platform.SecurityPolicies"
+	xmlns="http://schemas.xmlsoap.org/wsdl/" name="SecurityPolicies"
+	targetNamespace="http://ccn2.ec.eu/CCN2.Service.Platform.SecurityPolicies">
+	<wsp:Policy
+		xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+		xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" wsu:Id="wss10_mutual_authn_with_x509_certificates_sign_encrypt">
+		<wsp:ExactlyOne>
+			<wsp:All>
+				<wssp:AsymmetricBinding
+					xmlns:wssp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wsp:Policy>
+						<wsp:ExactlyOne>
+							<wsp:All>
+								<wssp:AlgorithmSuite>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:Basic256Sha256 />
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:AlgorithmSuite>
+								<wssp:IncludeTimestamp />
+								<wssp:InitiatorToken>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:X509Token
+													wssp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/AlwaysToRecipient">
+													<wsp:Policy>
+														<wsp:ExactlyOne>
+															<wsp:All>
+																<wssp:WssX509V3Token10 />
+															</wsp:All>
+														</wsp:ExactlyOne>
+													</wsp:Policy>
+												</wssp:X509Token>
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:InitiatorToken>
+								<wssp:Layout>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:Strict />
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:Layout>
+								<wssp:OnlySignEntireHeadersAndBody />
+								<wssp:ProtectTokens />
+								<wssp:RecipientToken>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:X509Token
+													wssp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/Never">
+													<wsp:Policy>
+														<wsp:ExactlyOne>
+															<wsp:All>
+																<wssp:WssX509V3Token10 />
+															</wsp:All>
+														</wsp:ExactlyOne>
+													</wsp:Policy>
+												</wssp:X509Token>
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:RecipientToken>
+							</wsp:All>
+						</wsp:ExactlyOne>
+					</wsp:Policy>
+				</wssp:AsymmetricBinding>
+				<ns4:Wss10
+					xmlns:ns4="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wsp:Policy>
+						<wsp:ExactlyOne>
+							<wsp:All>
+								<ns4:MustSupportRefKeyIdentifier />
+							</wsp:All>
+						</wsp:ExactlyOne>
+					</wsp:Policy>
+				</ns4:Wss10>
+			</wsp:All>
+		</wsp:ExactlyOne>
+	</wsp:Policy>
+	<wsp:Policy
+		xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+		xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" wsu:Id="wss10_username_token_mutual_authn_sign_encrypt">
+		<wsp:ExactlyOne>
+			<wsp:All>
+				<wssp:AsymmetricBinding
+					xmlns:wssp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wsp:Policy>
+						<wsp:ExactlyOne>
+							<wsp:All>
+								<wssp:AlgorithmSuite>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:Basic256Sha256 />
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:AlgorithmSuite>
+								<wssp:IncludeTimestamp />
+								<wssp:InitiatorToken>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:X509Token
+													wssp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/AlwaysToRecipient">
+													<wsp:Policy>
+														<wsp:ExactlyOne>
+															<wsp:All>
+																<wssp:WssX509V3Token10 />
+															</wsp:All>
+														</wsp:ExactlyOne>
+													</wsp:Policy>
+												</wssp:X509Token>
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:InitiatorToken>
+								<wssp:Layout>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:Strict />
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:Layout>
+								<wssp:OnlySignEntireHeadersAndBody />
+								<wssp:RecipientToken>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:X509Token
+													wssp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/Never">
+													<wsp:Policy>
+														<wsp:ExactlyOne>
+															<wsp:All>
+																<wssp:WssX509V3Token10 />
+															</wsp:All>
+														</wsp:ExactlyOne>
+													</wsp:Policy>
+												</wssp:X509Token>
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:RecipientToken>
+							</wsp:All>
+						</wsp:ExactlyOne>
+					</wsp:Policy>
+				</wssp:AsymmetricBinding>
+				<ns3:SignedEncryptedSupportingTokens
+					xmlns:ns3="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wsp:Policy>
+						<wsp:ExactlyOne>
+							<wsp:All>
+								<ns3:UsernameToken
+									ns3:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/AlwaysToRecipient">
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<sp13:Nonce
+													xmlns:sp13="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702" />
+												<ns3:WssUsernameToken10 />
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</ns3:UsernameToken>
+							</wsp:All>
+						</wsp:ExactlyOne>
+					</wsp:Policy>
+				</ns3:SignedEncryptedSupportingTokens>
+				<ns4:Wss10
+					xmlns:ns4="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wsp:Policy>
+						<wsp:ExactlyOne>
+							<wsp:All>
+								<ns4:MustSupportRefKeyIdentifier />
+							</wsp:All>
+						</wsp:ExactlyOne>
+					</wsp:Policy>
+				</ns4:Wss10>
+			</wsp:All>
+		</wsp:ExactlyOne>
+	</wsp:Policy>
+	<wsp:Policy
+		xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+		xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" wsu:Id="wss11_saml20_sendervouches_token_mutual_authn_sign_encrypt">
+		<wsp:ExactlyOne>
+			<wsp:All>
+				<wssp:AsymmetricBinding
+					xmlns:wssp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wsp:Policy>
+						<wsp:ExactlyOne>
+							<wsp:All>
+								<wssp:AlgorithmSuite>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:Basic256Sha256 />
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:AlgorithmSuite>
+								<wssp:IncludeTimestamp />
+								<wssp:ProtectTokens />
+								<wssp:InitiatorToken>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:X509Token
+													wssp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/AlwaysToRecipient">
+													<wsp:Policy>
+														<wsp:ExactlyOne>
+															<wsp:All>
+																<wssp:WssX509V3Token11 />
+															</wsp:All>
+														</wsp:ExactlyOne>
+													</wsp:Policy>
+												</wssp:X509Token>
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:InitiatorToken>
+								<wssp:Layout>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:Strict />
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:Layout>
+								<wssp:OnlySignEntireHeadersAndBody />
+								<wssp:RecipientToken>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<wssp:X509Token
+													wssp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/Never">
+													<wsp:Policy>
+														<wsp:ExactlyOne>
+															<wsp:All>
+																<wssp:WssX509V3Token11 />
+															</wsp:All>
+														</wsp:ExactlyOne>
+													</wsp:Policy>
+												</wssp:X509Token>
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</wssp:RecipientToken>
+							</wsp:All>
+						</wsp:ExactlyOne>
+					</wsp:Policy>
+				</wssp:AsymmetricBinding>
+				<ns3:SignedEncryptedSupportingTokens
+					xmlns:ns3="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wsp:Policy>
+						<wsp:ExactlyOne>
+							<wsp:All>
+								<ns3:SamlToken
+									ns3:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/AlwaysToRecipient">
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<ns3:WssSamlV20Token11 />
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</ns3:SamlToken>
+							</wsp:All>
+						</wsp:ExactlyOne>
+					</wsp:Policy>
+				</ns3:SignedEncryptedSupportingTokens>
+				<ns4:Wss11
+					xmlns:ns4="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wsp:Policy>
+						<wsp:ExactlyOne>
+							<wsp:All>
+								<ns4:MustSupportRefKeyIdentifier />
+							</wsp:All>
+						</wsp:ExactlyOne>
+					</wsp:Policy>
+				</ns4:Wss11>
+			</wsp:All>
+		</wsp:ExactlyOne>
+	</wsp:Policy>
+	<wsp:Policy
+		xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+		xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" wsu:Id="sign_encrypt_body_header">
+		<wsp:ExactlyOne>
+			<wsp:All>
+				<wssp:EncryptedParts
+					xmlns:wssp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wssp:Body />
+					<wssp:Header Name="MessageHeader"
+						Namespace="http://ccn2.ec.eu/CCN2.Service.Platform.CommonSchema" />
+				</wssp:EncryptedParts>
+				<ns3:SignedParts
+					xmlns:ns3="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<ns3:Body />
+					<ns3:Header Name="MessageHeader"
+						Namespace="http://ccn2.ec.eu/CCN2.Service.Platform.CommonSchema" />
+					<ns3:Header Name="To" Namespace="http://www.w3.org/2005/08/addressing" />
+					<ns3:Header Name="From" Namespace="http://www.w3.org/2005/08/addressing" />
+					<ns3:Header Name="ReplyTo" Namespace="http://www.w3.org/2005/08/addressing" />
+					<ns3:Header Name="MessageID" Namespace="http://www.w3.org/2005/08/addressing" />
+					<ns3:Header Name="Action" Namespace="http://www.w3.org/2005/08/addressing" />
+				</ns3:SignedParts>
+			</wsp:All>
+		</wsp:ExactlyOne>
+	</wsp:Policy>
+	<wsp:Policy
+		xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+		xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" wsu:Id="sign_encrypt_body">
+		<wsp:ExactlyOne>
+			<wsp:All>
+				<wssp:EncryptedParts
+					xmlns:wssp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wssp:Body />
+				</wssp:EncryptedParts>
+				<ns3:SignedParts
+					xmlns:ns3="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<ns3:Body />
+				</ns3:SignedParts>
+			</wsp:All>
+		</wsp:ExactlyOne>
+	</wsp:Policy>
+	<wsp:Policy
+		xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+		xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" wsu:Id="encrypt_body">
+		<wsp:ExactlyOne>
+			<wsp:All>
+				<wssp:EncryptedParts
+					xmlns:wssp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wssp:Body />
+				</wssp:EncryptedParts>
+			</wsp:All>
+		</wsp:ExactlyOne>
+	</wsp:Policy>
+	<wsp:Policy
+		xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+		xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" wsu:Id="sign_body">
+		<wsp:ExactlyOne>
+			<wsp:All>
+				<ns3:SignedParts
+					xmlns:ns3="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<ns3:Body />
+				</ns3:SignedParts>
+			</wsp:All>
+		</wsp:ExactlyOne>
+	</wsp:Policy>
+	<wsp:Policy
+		xmlns:ns1="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+		xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" ns1:Id="username_supporting_token_plaintext_password">
+		<wsp:ExactlyOne>
+			<wsp:All>
+				<ns2:SupportingTokens
+					xmlns:ns2="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702">
+					<wsp:Policy>
+						<wsp:ExactlyOne>
+							<wsp:All>
+								<ns2:UsernameToken>
+									<wsp:Policy>
+										<wsp:ExactlyOne>
+											<wsp:All>
+												<sp13:Nonce
+													xmlns:sp13="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702" />
+											</wsp:All>
+										</wsp:ExactlyOne>
+									</wsp:Policy>
+								</ns2:UsernameToken>
+							</wsp:All>
+						</wsp:ExactlyOne>
+					</wsp:Policy>
+				</ns2:SupportingTokens>
+			</wsp:All>
+		</wsp:ExactlyOne>
+	</wsp:Policy>
+</definitions>

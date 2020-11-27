@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema 
+  xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+  xmlns="http://xmlns.ec.eu/BusinessMessages/TATAFng/Monitoring/V1" 
+  targetNamespace="http://xmlns.ec.eu/BusinessMessages/TATAFng/Monitoring/V1" 
+  elementFormDefault="qualified" 
+  attributeFormDefault="unqualified">
+  
+  
+  <xs:element name="isAliveReqMsg" type="isAliveReqMsg"/>
+  <xs:element name="isAliveRespMsg" type="isAliveRespMsg"/>
+  
+  <xs:complexType name="isAliveReqMsg">
+    <xs:sequence/>
+  </xs:complexType>
+  <xs:complexType name="isAliveRespMsg">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="return" type="monitoringResult"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="monitoringResult">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="description" type="xs:string"/>
+      <xs:element minOccurs="0" name="result" type="xs:integer"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

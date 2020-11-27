@@ -17,6 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import akka.stream.Materializer
+import javax.wsdl.WSDLException
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -27,10 +28,12 @@ import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
+import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
+import uk.gov.hmrc.http.NotFoundException
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.Future.successful
+import scala.concurrent.Future.{failed, successful}
 import scala.io.Source.fromInputStream
 
 class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
@@ -38,8 +41,9 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
 
   trait Setup {
     val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]
+    val outboundServiceMock: OutboundService = mock[OutboundService]
 
-    val underTest = new OutboundController(Helpers.stubControllerComponents(), outboundConnectorMock)
+    val underTest = new OutboundController(Helpers.stubControllerComponents(), outboundConnectorMock, outboundServiceMock)
   }
 
   "sendMessage" should {
@@ -59,7 +63,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       val messageCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
       when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(OK))
 
-      val result: Future[Result] = underTest.sendMessage()(fakeRequest.withBody(Json.obj("message" -> "<IE4N03>example</IE4N03>")))
+      underTest.sendMessage()(fakeRequest.withBody(Json.obj("message" -> "<IE4N03>example</IE4N03>")))
 
       messageCaptor.getValue shouldBe expectedIe4n03Message
     }
@@ -71,6 +75,47 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe "Invalid OutboundMessageRequest payload: List((/message,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
+    }
+  }
+
+  "message" should {
+    val fakeRequest = FakeRequest("POST", "/message")
+    val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl", "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>")
+
+    "return the status returned by the outbound service" in new Setup {
+      val expectedStatus: Int = OK
+      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(expectedStatus))
+
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
+
+      status(result) shouldBe expectedStatus
+    }
+
+    "return bad request when the request json body is missing fields" in new Setup {
+      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(OK))
+
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>")))
+
+      status(result) shouldBe BAD_REQUEST
+      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/wsdlUrl,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
+    }
+
+    "return bad request when there is a problem parsing the WSDL" in new Setup {
+      when(outboundServiceMock.sendMessage(*)).thenReturn(failed(new WSDLException("the fault code", "the error")))
+
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
+
+      status(result) shouldBe BAD_REQUEST
+      contentAsString(result) shouldBe "WSDLException: faultCode=the fault code: the error"
+    }
+
+    "return not found when the operation is missing in the WSDL definition" in new Setup {
+      when(outboundServiceMock.sendMessage(*)).thenReturn(failed(new NotFoundException(s"Operation foobar not found")))
+
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
+
+      status(result) shouldBe NOT_FOUND
+      contentAsString(result) shouldBe "Operation foobar not found"
     }
   }
 }

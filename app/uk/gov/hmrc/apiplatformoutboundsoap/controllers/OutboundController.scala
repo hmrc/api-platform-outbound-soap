@@ -17,19 +17,23 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import javax.inject.{Inject, Singleton}
+import javax.wsdl.WSDLException
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.outboundMessageRequestFormatter
-import uk.gov.hmrc.apiplatformoutboundsoap.models.OutboundMessageRequest
+import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.{messageRequestFormatter, outboundMessageRequestFormatter}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundMessageRequest}
+import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.apiplatformoutboundsoap.templates.xml.ie4n03Template
+import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
 class OutboundController @Inject()(cc: ControllerComponents,
-                                   outboundConnector: OutboundConnector)
+                                   outboundConnector: OutboundConnector,
+                                   outboundService: OutboundService)
                                   (implicit ec: ExecutionContext)
   extends BackendController(cc) {
 
@@ -38,5 +42,16 @@ class OutboundController @Inject()(cc: ControllerComponents,
       val renderedMessage: String = ie4n03Template.render(outboundMessageRequest.message).body
       outboundConnector.postMessage(renderedMessage).map(new Status(_))
     }
+  }
+
+  def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
+    withJsonBody[MessageRequest] { messageRequest =>
+      outboundService.sendMessage(messageRequest).map(new Status(_)) recover recovery
+    }
+  }
+
+  private def recovery: PartialFunction[Throwable, Result] = {
+    case e: WSDLException => BadRequest(e.getMessage)
+    case e: NotFoundException => NotFound(e.message)
   }
 }
