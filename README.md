@@ -43,7 +43,7 @@ Send a SOAP message for the given operation
 {
     "wsdlUrl": "http://example.com/service.wsdl"
     "wsdlOperation": "IE4N03notifyERiskAnalysisHit"
-    "messageBody": "<IE4N03>...</IE4N03>"
+    "messageBody": "<IE4N03 xmlns=\"urn:wco:datamodel:WCO:CIS:1\">...</IE4N03>"
 }
 ```
 | Name | Description |
