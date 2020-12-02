@@ -20,5 +20,6 @@ import play.api.libs.json.{Json, OFormat}
 
 object JsonFormats {
  implicit val outboundMessageRequestFormatter: OFormat[OutboundMessageRequest] = Json.format[OutboundMessageRequest]
+ implicit val AddressingFormatter: OFormat[Addressing] = Json.format[Addressing]
  implicit val messageRequestFormatter: OFormat[MessageRequest] = Json.format[MessageRequest]
 }

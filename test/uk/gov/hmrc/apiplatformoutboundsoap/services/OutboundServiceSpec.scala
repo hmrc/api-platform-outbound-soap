@@ -23,7 +23,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.http.Status.OK
 import play.api.test.Helpers._
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models.MessageRequest
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest}
 import uk.gov.hmrc.http.NotFoundException
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -42,11 +42,25 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
       "IE4N03notifyERiskAnalysisHit",
       """<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>"""
     )
+    val messageRequestWithAddressing = messageRequest
+      .copy(addressing = Some(Addressing(Some("HMRC"), Some("CCN2"), Some("HMRC_reply"), Some("HMRC_fault"), Some("123"), Some("foobar"))))
     val expectedStatus: Int = OK
-    val expectedSoapEnvelope =
-      """<?xml version='1.0' encoding='utf-8'?>
+
+    val optionalAddressingHeaders =
+      """<wsa:From xmlns:wsa="http://www.w3.org/2005/08/addressing">HMRC</wsa:From>
+        |<wsa:To xmlns:wsa="http://www.w3.org/2005/08/addressing">CCN2</wsa:To>
+        |<wsa:ReplyTo xmlns:wsa="http://www.w3.org/2005/08/addressing">HMRC_reply</wsa:ReplyTo>
+        |<wsa:FaultTo xmlns:wsa="http://www.w3.org/2005/08/addressing">HMRC_fault</wsa:FaultTo>
+        |<wsa:MessageID xmlns:wsa="http://www.w3.org/2005/08/addressing">123</wsa:MessageID>
+        |<wsa:RelatesTo xmlns:wsa="http://www.w3.org/2005/08/addressing">foobar</wsa:RelatesTo>""".stripMargin.replaceAll("\n", "")
+
+    def expectedSoapEnvelope(extraHeaders: String = ""): String =
+      s"""<?xml version='1.0' encoding='utf-8'?>
         |<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope">
-          |<soapenv:Header/>
+          |<soapenv:Header>
+            |<wsa:Action xmlns:wsa="http://www.w3.org/2005/08/addressing">CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit</wsa:Action>
+            |$extraHeaders
+          |</soapenv:Header>
           |<soapenv:Body>
             |<nsGHXkF:IE4N03notifyERiskAnalysisHitReqMsg xmlns:nsGHXkF="http://xmlns.ec.eu/BusinessActivityService/ICS/IRiskAnalysisOrchestrationBAS/V1">
               |<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>
@@ -68,7 +82,16 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
 
       await(underTest.sendMessage(messageRequest))
 
-      messageCaptor.getValue shouldBe expectedSoapEnvelope
+      messageCaptor.getValue shouldBe expectedSoapEnvelope()
+    }
+
+    "send the optional addressing headers if present in the request" in new Setup {
+      val messageCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
+      when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
+
+      await(underTest.sendMessage(messageRequestWithAddressing))
+
+      messageCaptor.getValue shouldBe expectedSoapEnvelope(optionalAddressingHeaders)
     }
 
     "fail when the given operation does not exist in the WSDL definition" in new Setup {
