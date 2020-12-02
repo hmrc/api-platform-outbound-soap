@@ -41,9 +41,17 @@ Send a SOAP message for the given operation
 ### Request
 ```
 {
-    "wsdlUrl": "http://example.com/service.wsdl"
-    "wsdlOperation": "IE4N03notifyERiskAnalysisHit"
-    "messageBody": "<IE4N03 xmlns=\"urn:wco:datamodel:WCO:CIS:1\">...</IE4N03>"
+    "wsdlUrl": "http://example.com/service.wsdl",
+    "wsdlOperation": "IE4N03notifyERiskAnalysisHit",
+    "messageBody": "<IE4N03 xmlns=\"urn:wco:datamodel:WCO:CIS:1\">...</IE4N03>",
+    "addressing": {
+        "from": "ICS_NES",
+        "to": "ICS_CR",
+        "replyTo": "ICS_NES",
+        "faultTo": "ICS_NES",
+        "messageId": "154517743d31-4251-b820-276809a6762b",
+        "relatesTo": "ed74c5da-357f-4412-8b8f-1c5dc6da3013"
+    }
 }
 ```
 | Name | Description |
@@ -51,6 +59,13 @@ Send a SOAP message for the given operation
 | `wsdlUrl` | The URL of the WSDL where the operation is defined |
 | `wsdlOperation` | The operation to be used in the SOAP envelope |
 | `messageBody` | The XML message to send in the SOAP envelope |
+| `addressing` | Optional property to provide WS addressing data |
+| `addressing.from` | This optional property provides the value for the `From` element in the SOAP header |
+| `addressing.to` | This optional property provides the value for the `To` element in the SOAP header |
+| `addressing.replyTo` | This optional property provides the value for the `ReplyTo` element in the SOAP header |
+| `addressing.faultTo` | This optional property provides the value for the `FaultTo` element in the SOAP header |
+| `addressing.messageId` | This optional property provides the value for the `MessageID` element in the SOAP header |
+| `addressing.relatesTo` | This optional property provides the value for the `RelatesTo` element in the SOAP header |
 
 ### Response
 HTTP Status: the HTTP status received by the destination service (CCN2/stub)

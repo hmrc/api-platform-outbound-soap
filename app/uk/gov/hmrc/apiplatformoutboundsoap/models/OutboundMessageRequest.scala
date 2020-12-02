@@ -18,4 +18,11 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 case class OutboundMessageRequest(message: String)
 
-case class MessageRequest(wsdlUrl: String, wsdlOperation: String, messageBody: String)
+case class MessageRequest(wsdlUrl: String, wsdlOperation: String, messageBody: String, addressing: Option[Addressing] = None)
+
+case class Addressing(from: Option[String] = None,
+                      to: Option[String] = None,
+                      replyTo: Option[String] = None,
+                      faultTo: Option[String] = None,
+                      messageId: Option[String] = None,
+                      relatesTo: Option[String] = None)
