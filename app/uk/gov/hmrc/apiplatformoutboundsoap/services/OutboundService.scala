@@ -36,11 +36,14 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class OutboundService @Inject()(outboundConnector: OutboundConnector)(implicit ec: ExecutionContext) {
+class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurityService: WsSecurityService)
+                               (implicit ec: ExecutionContext) {
   val logger: LoggerLike = Logger
 
   def sendMessage(message: MessageRequest): Future[Int] = {
-    outboundConnector.postMessage(buildEnvelope(message).toString)
+    val envelope = buildEnvelope(message)
+    val envelopeWithCredentials = wsSecurityService.addUsernameToken(envelope)
+    outboundConnector.postMessage(envelopeWithCredentials)
   }
 
   private def buildEnvelope(message: MessageRequest): SOAPEnvelope = {

@@ -20,6 +20,10 @@ import javax.wsdl.WSDLException
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.xmlunit.builder.DiffBuilder
+import org.xmlunit.builder.DiffBuilder.compare
+import org.xmlunit.diff.DefaultNodeMatcher
+import org.xmlunit.diff.ElementSelectors.byName
 import play.api.http.Status.OK
 import play.api.test.Helpers._
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
@@ -33,7 +37,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
 
   trait Setup {
     val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]
-    val underTest = new OutboundService(outboundConnectorMock)
+    val wsSecurityServiceMock: WsSecurityService = mock[WsSecurityService]
+    val underTest = new OutboundService(outboundConnectorMock, wsSecurityServiceMock)
   }
 
   "sendMessage" should {
@@ -58,6 +63,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
       s"""<?xml version='1.0' encoding='utf-8'?>
         |<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope">
           |<soapenv:Header>
+            |<wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"/>
             |<wsa:Action xmlns:wsa="http://www.w3.org/2005/08/addressing">CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit</wsa:Action>
             |$extraHeaders
           |</soapenv:Header>
@@ -69,6 +75,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
         |</soapenv:Envelope>""".stripMargin.replaceAll("\n", "")
 
     "return the status returned by the outbound connector" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
 
       val result: Int = await(underTest.sendMessage(messageRequest))
@@ -77,24 +84,27 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
     }
 
     "send the expected SOAP envelope to the connector" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       val messageCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
       when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
 
       await(underTest.sendMessage(messageRequest))
 
-      messageCaptor.getValue shouldBe expectedSoapEnvelope()
+      getXmlDiff(messageCaptor.getValue, expectedSoapEnvelope()).build().hasDifferences shouldBe false
     }
 
     "send the optional addressing headers if present in the request" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(optionalAddressingHeaders))
       val messageCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
       when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
 
       await(underTest.sendMessage(messageRequestWithAddressing))
 
-      messageCaptor.getValue shouldBe expectedSoapEnvelope(optionalAddressingHeaders)
+      getXmlDiff(messageCaptor.getValue, expectedSoapEnvelope(optionalAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
     "fail when the given operation does not exist in the WSDL definition" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
 
       val exception: NotFoundException = intercept[NotFoundException]{
@@ -105,6 +115,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
     }
 
     "fail when the given WSDL does not exist" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
 
       val exception: WSDLException = intercept[WSDLException]{
@@ -113,5 +124,13 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
 
       exception.getMessage should include ("This file was not found: http://example.com/missing")
     }
+  }
+
+  private def getXmlDiff(actual: String, expected: String): DiffBuilder = {
+    compare(expected)
+      .withTest(actual)
+      .withNodeMatcher(new DefaultNodeMatcher(byName))
+      .checkForIdentical
+      .ignoreWhitespace
   }
 }
