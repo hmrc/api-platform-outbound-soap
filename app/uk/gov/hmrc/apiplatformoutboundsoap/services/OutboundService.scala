@@ -78,9 +78,9 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurity
     envelope.getHeader.addChild(messageHeader)
 
     def addToMessageHeader(elementName: String, elementContent: String) = {
-      val version = getOMFactory.createOMElement(elementName, ccnmNamespace)
-      getOMFactory.createOMText(version, elementContent)
-      messageHeader.addChild(version)
+      val element = getOMFactory.createOMElement(elementName, ccnmNamespace)
+      getOMFactory.createOMText(element, elementContent)
+      messageHeader.addChild(element)
     }
 
     addToMessageHeader("Version", "1.0")
