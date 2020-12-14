@@ -16,10 +16,6 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import javax.inject.{Inject, Singleton}
-import javax.wsdl.xml.WSDLReader
-import javax.wsdl.{Definition, Operation, Part, PortType}
-import javax.xml.namespace.QName
 import org.apache.axiom.om.OMAbstractFactory.{getOMFactory, getSOAP12Factory}
 import org.apache.axiom.om._
 import org.apache.axiom.om.util.AXIOMUtil.stringToOM
@@ -27,26 +23,31 @@ import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.addressing.AddressingConstants.Final.{WSAW_NAMESPACE, WSA_NAMESPACE}
 import org.apache.axis2.addressing.AddressingConstants._
 import org.apache.axis2.wsdl.WSDLUtil
+import org.joda.time.DateTime
+import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models.MessageRequest
 import uk.gov.hmrc.http.NotFoundException
 
+import javax.inject.{Inject, Singleton}
+import javax.wsdl.xml.WSDLReader
+import javax.wsdl.{Definition, Operation, Part, PortType}
+import javax.xml.namespace.QName
 import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 @Singleton
-class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurityService: WsSecurityService)
-                               (implicit ec: ExecutionContext) {
+class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurityService: WsSecurityService) {
   val logger: LoggerLike = Logger
+  val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
 
   def sendMessage(message: MessageRequest): Future[Int] = {
     val envelope = buildEnvelope(message)
-    val envelopeWithCredentials = wsSecurityService.addUsernameToken(envelope)
-    outboundConnector.postMessage(envelopeWithCredentials)
+    outboundConnector.postMessage(envelope)
   }
 
-  private def buildEnvelope(message: MessageRequest): SOAPEnvelope = {
+  private def buildEnvelope(message: MessageRequest): String = {
     val wsdlDefinition: Definition = parseWsdl(message.wsdlUrl)
     val portType = wsdlDefinition.getAllPortTypes.asScala.values.head.asInstanceOf[PortType]
     val operation: Operation = portType.getOperations.asScala.map(_.asInstanceOf[Operation])
@@ -55,7 +56,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurity
     val envelope: SOAPEnvelope = getSOAP12Factory.getDefaultEnvelope
     addHeaders(message, operation, envelope)
     addBody(message, operation, envelope)
-    envelope
+    wsSecurityService.addUsernameToken(envelope)
   }
 
   private def parseWsdl(wsdlUrl: String): Definition = {
@@ -67,14 +68,36 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurity
   private def addHeaders(message: MessageRequest, operation: Operation, envelope: SOAPEnvelope): Unit = {
     val wsaNs: OMNamespace = getOMFactory.createOMNamespace(WSA_NAMESPACE, "wsa")
     addSoapAction(operation, wsaNs, envelope)
+    addMessageHeader(message, operation, envelope)
     addOptionalAddressingHeaders(message, wsaNs, envelope)
   }
 
-  private def addSoapAction(operation: Operation, wsaNs: OMNamespace, envelope: SOAPEnvelope): Unit = {
-    (operation.getInput.getExtensionAttribute(new QName(WSAW_NAMESPACE, "action")) match {
+  private def addMessageHeader(message: MessageRequest, operation: Operation, envelope: SOAPEnvelope): Unit = {
+    val ccnmNamespace: OMNamespace = getOMFactory.createOMNamespace("http://ccn2.ec.eu/CCN2.Service.Platform.Common.Schema", "ccnm")
+    val messageHeader: OMElement = getOMFactory.createOMElement("MessageHeader", ccnmNamespace)
+    envelope.getHeader.addChild(messageHeader)
+
+    def addToMessageHeader(elementName: String, elementContent: String) = {
+      val element = getOMFactory.createOMElement(elementName, ccnmNamespace)
+      getOMFactory.createOMText(element, elementContent)
+      messageHeader.addChild(element)
+    }
+
+    addToMessageHeader("Version", "1.0")
+    addToMessageHeader("SendingDateAndTime", DateTime.now().toString(dateTimeFormatter))
+    findSoapAction(operation).foreach(addToMessageHeader("MessageType", _))
+    addToMessageHeader("RequestCoD", message.confirmationOfDelivery.toString)
+  }
+
+  private def findSoapAction(operation: Operation): Option[String] = {
+    operation.getInput.getExtensionAttribute(new QName(WSAW_NAMESPACE, "action")) match {
       case qName: QName => Some(qName.getLocalPart)
       case _ => None
-    }).foreach(addToSoapHeader(_, WSA_ACTION, wsaNs, envelope))
+    }
+  }
+
+  private def addSoapAction(operation: Operation, wsaNs: OMNamespace, envelope: SOAPEnvelope): Unit = {
+    findSoapAction(operation).foreach(addToSoapHeader(_, WSA_ACTION, wsaNs, envelope))
   }
 
   private def addOptionalAddressingHeaders(message: MessageRequest, wsaNs: OMNamespace, envelope: SOAPEnvelope): Unit = {
