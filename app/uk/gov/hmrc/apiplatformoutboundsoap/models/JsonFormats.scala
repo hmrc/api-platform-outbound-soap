@@ -16,10 +16,19 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, Json, OFormat, Reads}
 
 object JsonFormats {
- implicit val outboundMessageRequestFormatter: OFormat[OutboundMessageRequest] = Json.format[OutboundMessageRequest]
- implicit val AddressingFormatter: OFormat[Addressing] = Json.format[Addressing]
- implicit val messageRequestFormatter: OFormat[MessageRequest] = Json.format[MessageRequest]
+  implicit val outboundMessageRequestFormatter: OFormat[OutboundMessageRequest] = Json.format[OutboundMessageRequest]
+  implicit val AddressingFormatter: OFormat[Addressing] = Json.format[Addressing]
+
+  val messageRequestReads: Reads[MessageRequest] = (
+    (JsPath \ "wsdlUrl").read[String] and
+    (JsPath \ "wsdlOperation").read[String] and
+    (JsPath \ "messageBody").read[String] and
+    (JsPath \ "addressing").readNullable[Addressing] and
+    ((JsPath \ "confirmationOfDelivery").read[Boolean] or Reads.pure(false))
+  )(MessageRequest.apply _)
+  implicit val messageRequestFormatter: OFormat[MessageRequest] = OFormat(messageRequestReads, Json.writes[MessageRequest])
 }

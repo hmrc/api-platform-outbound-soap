@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import javax.wsdl.WSDLException
+import org.apache.axiom.soap.SOAPEnvelope
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -30,6 +30,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest}
 import uk.gov.hmrc.http.NotFoundException
 
+import javax.wsdl.WSDLException
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
@@ -45,7 +46,9 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
     val messageRequest = MessageRequest(
       "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
       "IE4N03notifyERiskAnalysisHit",
-      """<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>"""
+      """<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>""",
+      None,
+      confirmationOfDelivery = false
     )
     val messageRequestWithAddressing = messageRequest
       .copy(addressing = Some(Addressing(Some("HMRC"), Some("CCN2"), Some("HMRC_reply"), Some("HMRC_fault"), Some("123"), Some("foobar"))))
@@ -63,8 +66,13 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
       s"""<?xml version='1.0' encoding='utf-8'?>
         |<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope">
           |<soapenv:Header>
-            |<wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"/>
             |<wsa:Action xmlns:wsa="http://www.w3.org/2005/08/addressing">CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit</wsa:Action>
+            |<ccnm:MessageHeader xmlns:ccnm="http://ccn2.ec.eu/CCN2.Service.Platform.Common.Schema">
+              |<ccnm:Version>1.0</ccnm:Version>
+              |<ccnm:SendingDateAndTime>2020-04-30T12:15:58.000Z</ccnm:SendingDateAndTime>
+              |<ccnm:MessageType>CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit</ccnm:MessageType>
+              |<ccnm:RequestCoD>false</ccnm:RequestCoD>
+            |</ccnm:MessageHeader>
             |$extraHeaders
           |</soapenv:Header>
           |<soapenv:Body>
@@ -83,7 +91,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
       result shouldBe expectedStatus
     }
 
-    "send the expected SOAP envelope to the connector" in new Setup {
+    "send the SOAP envelope returned from the security service to the connector" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       val messageCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
       when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
@@ -93,14 +101,24 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
       getXmlDiff(messageCaptor.getValue, expectedSoapEnvelope()).build().hasDifferences shouldBe false
     }
 
+    "send the expected SOAP envelope to the connector" in new Setup {
+      val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
+      when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope())
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+
+      await(underTest.sendMessage(messageRequest))
+
+      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope()).build().hasDifferences shouldBe false
+    }
+
     "send the optional addressing headers if present in the request" in new Setup {
-      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(optionalAddressingHeaders))
-      val messageCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
-      when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
+      val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
+      when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(optionalAddressingHeaders))
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
 
       await(underTest.sendMessage(messageRequestWithAddressing))
 
-      getXmlDiff(messageCaptor.getValue, expectedSoapEnvelope(optionalAddressingHeaders)).build().hasDifferences shouldBe false
+      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(optionalAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
     "fail when the given operation does not exist in the WSDL definition" in new Setup {
@@ -130,6 +148,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
     compare(expected)
       .withTest(actual)
       .withNodeMatcher(new DefaultNodeMatcher(byName))
+      .withNodeFilter(node => !"ccnm:SendingDateAndTime".equalsIgnoreCase(node.getNodeName))
       .checkForIdentical
       .ignoreWhitespace
   }
