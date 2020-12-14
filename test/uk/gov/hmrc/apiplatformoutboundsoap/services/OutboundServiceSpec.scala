@@ -31,7 +31,6 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest}
 import uk.gov.hmrc.http.NotFoundException
 
 import javax.wsdl.WSDLException
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {

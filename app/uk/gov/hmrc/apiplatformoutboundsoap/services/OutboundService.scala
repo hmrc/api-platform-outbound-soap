@@ -35,11 +35,10 @@ import javax.wsdl.xml.WSDLReader
 import javax.wsdl.{Definition, Operation, Part, PortType}
 import javax.xml.namespace.QName
 import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 @Singleton
-class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurityService: WsSecurityService)
-                               (implicit ec: ExecutionContext) {
+class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurityService: WsSecurityService) {
   val logger: LoggerLike = Logger
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
 
