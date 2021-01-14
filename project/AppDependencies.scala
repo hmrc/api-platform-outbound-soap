@@ -7,7 +7,9 @@ object AppDependencies {
     "uk.gov.hmrc" %% "bootstrap-backend-play-27" % "3.0.0",
     "uk.gov.hmrc" %% "simple-reactivemongo" % "7.30.0-play-27",
     "org.apache.axis2" % "axis2-kernel" % "1.7.9",
-    "org.apache.wss4j" % "wss4j-ws-security-dom" % "2.3.0"
+    "org.apache.wss4j" % "wss4j-ws-security-dom" % "2.3.0",
+    "com.beachape" %% "enumeratum-play-json" % "1.6.0",
+    "com.typesafe.play" %% "play-json-joda" % "2.7.1"
   )
 
   val test = Seq(
@@ -18,7 +20,8 @@ object AppDependencies {
     "com.vladsch.flexmark" %  "flexmark-all" % "0.35.10" % "test, it",
     "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % "test, it",
     "com.github.tomakehurst" % "wiremock" % "2.25.1" % "it",
-    "org.xmlunit" % "xmlunit-core" % "2.8.1" % "test, it"
+    "org.xmlunit" % "xmlunit-core" % "2.8.1" % "test, it",
+    "uk.gov.hmrc" %% "reactivemongo-test" % "4.21.0-play-26" % "it"
   )
 
   val jettyVersion = "9.2.24.v20180105"

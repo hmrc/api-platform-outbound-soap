@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import javax.inject.{Inject, Singleton}
 import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.util.XMLUtils.toDOM
 import org.apache.wss4j.common.WSS4JConstants.PASSWORD_TEXT
 import org.apache.wss4j.common.util.XMLUtils.prettyDocumentToString
 import org.apache.wss4j.dom.message.{WSSecHeader, WSSecUsernameToken}
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class WsSecurityService @Inject()(appConfig: AppConfig) {

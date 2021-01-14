@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ import play.api.libs.json.{JsPath, Json, OFormat, Reads}
 
 object JsonFormats {
   implicit val outboundMessageRequestFormatter: OFormat[OutboundMessageRequest] = Json.format[OutboundMessageRequest]
-  implicit val AddressingFormatter: OFormat[Addressing] = Json.format[Addressing]
+  implicit val addressingFormatter: OFormat[Addressing] = Json.format[Addressing]
+  implicit val messageResponseFormatter: OFormat[MessageResponse] = Json.format[MessageResponse]
 
   val messageRequestReads: Reads[MessageRequest] = (
     (JsPath \ "wsdlUrl").read[String] and

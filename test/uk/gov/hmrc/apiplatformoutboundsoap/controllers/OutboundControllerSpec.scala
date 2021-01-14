@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import akka.stream.Materializer
+import org.joda.time.DateTime
+import org.joda.time.DateTimeZone.UTC
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -27,10 +29,11 @@ import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models.MessageRequest
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, SendingStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.http.NotFoundException
 
+import java.util.UUID
 import javax.wsdl.WSDLException
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -83,19 +86,22 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
     val fakeRequest = FakeRequest("POST", "/message")
     val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>")
+    val outboundSoapMessage = OutboundSoapMessage(UUID.randomUUID, Some("123"), "envelope", SendingStatus.SENT, DateTime.now(UTC))
 
-    "return the status returned by the outbound service" in new Setup {
-      val expectedStatus: Int = OK
-      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(expectedStatus))
+    "return the response returned by the outbound service" in new Setup {
+      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
-      status(result) shouldBe expectedStatus
+      status(result) shouldBe OK
+      (contentAsJson(result) \ "globalId").as[UUID] shouldBe outboundSoapMessage.globalId
+      (contentAsJson(result) \ "messageId").as[String] shouldBe outboundSoapMessage.messageId.get
+      (contentAsJson(result) \ "status").as[SendingStatus] shouldBe outboundSoapMessage.status
     }
 
     "send the message request to the outbound service" in new Setup {
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-      when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(OK))
+      when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
 
       underTest.message()(fakeRequest.withBody(message))
 
@@ -107,7 +113,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
     }
 
     "return bad request when the request json body is missing fields" in new Setup {
-      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(OK))
+      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>")))
 
@@ -118,7 +124,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
     "default confirmation of delivery to false if not present" in new Setup {
       val expectedStatus: Int = OK
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-      when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
+      when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
@@ -129,7 +135,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
     "confirmation of delivery field is true when true in the request" in new Setup {
       val expectedStatus: Int = OK
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-      when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
+      when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message + ("confirmationOfDelivery" -> JsBoolean(true))))
 
@@ -140,7 +146,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
     "confirmation of delivery field is false when false in the request" in new Setup {
         val expectedStatus: Int = OK
         val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-        when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
+        when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
 
         val result: Future[Result] = underTest.message()(fakeRequest.withBody(message + ("confirmationOfDelivery" -> JsBoolean(false))))
 

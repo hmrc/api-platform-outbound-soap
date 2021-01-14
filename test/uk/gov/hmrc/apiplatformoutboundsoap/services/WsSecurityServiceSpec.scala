@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import java.util.UUID.randomUUID
-
 import org.apache.axiom.om.OMAbstractFactory.getSOAP12Factory
 import org.apache.axiom.soap.SOAPEnvelope
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
@@ -28,6 +26,8 @@ import org.xmlunit.builder.DiffBuilder.compare
 import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
+
+import java.util.UUID.randomUUID
 
 class WsSecurityServiceSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
