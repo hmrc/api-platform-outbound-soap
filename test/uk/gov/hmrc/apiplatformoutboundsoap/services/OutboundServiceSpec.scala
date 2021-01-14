@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
 import org.apache.axiom.soap.SOAPEnvelope
+import org.joda.time.DateTime
+import org.joda.time.DateTimeZone.UTC
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -27,18 +29,30 @@ import org.xmlunit.diff.ElementSelectors.byName
 import play.api.http.Status.OK
 import play.api.test.Helpers._
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest, OutboundSoapMessage, SendingStatus}
+import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.NotFoundException
 
+import java.util.UUID
 import javax.wsdl.WSDLException
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
   trait Setup {
     val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]
+    val outboundMessageRepositoryMock: OutboundMessageRepository = mock[OutboundMessageRepository]
     val wsSecurityServiceMock: WsSecurityService = mock[WsSecurityService]
-    val underTest = new OutboundService(outboundConnectorMock, wsSecurityServiceMock)
+
+    val expectedCreateDateTime: DateTime = DateTime.now(UTC)
+    val expectedGlobalId: UUID = UUID.randomUUID
+
+    val underTest: OutboundService = new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock) {
+      override def now: DateTime = expectedCreateDateTime
+      override def randomUUID: UUID = expectedGlobalId
+    }
+
   }
 
   "sendMessage" should {
@@ -49,8 +63,9 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
       None,
       confirmationOfDelivery = false
     )
+    val messageId = Some("123")
     val messageRequestWithAddressing = messageRequest
-      .copy(addressing = Some(Addressing(Some("HMRC"), Some("CCN2"), Some("HMRC_reply"), Some("HMRC_fault"), Some("123"), Some("foobar"))))
+      .copy(addressing = Some(Addressing(Some("HMRC"), Some("CCN2"), Some("HMRC_reply"), Some("HMRC_fault"), messageId, Some("foobar"))))
     val expectedStatus: Int = OK
 
     val optionalAddressingHeaders =
@@ -81,17 +96,71 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
           |</soapenv:Body>
         |</soapenv:Envelope>""".stripMargin.replaceAll("\n", "")
 
-    "return the status returned by the outbound connector" in new Setup {
+    "return the outbound soap message for success" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
+      when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
 
-      val result: Int = await(underTest.sendMessage(messageRequest))
+      val result: OutboundSoapMessage = await(underTest.sendMessage(messageRequest))
 
-      result shouldBe expectedStatus
+      result.status shouldBe SendingStatus.SENT
+      result.soapMessage shouldBe expectedSoapEnvelope()
+      result.messageId shouldBe None
+      result.globalId shouldBe expectedGlobalId
+      result.createDateTime shouldBe expectedCreateDateTime
+    }
+
+    "return the outbound soap message for failure" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(BAD_REQUEST))
+      when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
+
+      val result: OutboundSoapMessage = await(underTest.sendMessage(messageRequest))
+
+      result.status shouldBe SendingStatus.FAILED
+      result.soapMessage shouldBe expectedSoapEnvelope()
+      result.messageId shouldBe None
+      result.globalId shouldBe expectedGlobalId
+      result.createDateTime shouldBe expectedCreateDateTime
+    }
+
+    "save the message as SENT when the connector returns 2XX" in new Setup {
+      (200 to 299).foreach { httpCode =>
+        when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
+        when(outboundConnectorMock.postMessage(*)).thenReturn(successful(httpCode))
+        val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
+        when(outboundMessageRepositoryMock.persist(messageCaptor.capture())(*)).thenReturn(successful(()))
+
+        await(underTest.sendMessage(messageRequest))
+
+        messageCaptor.getValue.status shouldBe SendingStatus.SENT
+        messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope()
+        messageCaptor.getValue.messageId shouldBe None
+        messageCaptor.getValue.globalId shouldBe expectedGlobalId
+        messageCaptor.getValue.createDateTime shouldBe expectedCreateDateTime
+      }
+    }
+
+    "save the message as FAILED when the connector returns a non 2XX" in new Setup {
+      (300 to 599).foreach { httpCode =>
+        when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
+        when(outboundConnectorMock.postMessage(*)).thenReturn(successful(httpCode))
+        val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
+        when(outboundMessageRepositoryMock.persist(messageCaptor.capture())(*)).thenReturn(successful(()))
+
+        await(underTest.sendMessage(messageRequest))
+
+        messageCaptor.getValue.status shouldBe SendingStatus.FAILED
+        messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope()
+        messageCaptor.getValue.messageId shouldBe None
+        messageCaptor.getValue.globalId shouldBe expectedGlobalId
+        messageCaptor.getValue.createDateTime shouldBe expectedCreateDateTime
+      }
     }
 
     "send the SOAP envelope returned from the security service to the connector" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
+      when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
       val messageCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
       when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
 
@@ -104,6 +173,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
 
       await(underTest.sendMessage(messageRequest))
 
@@ -114,10 +184,33 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(optionalAddressingHeaders))
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
 
       await(underTest.sendMessage(messageRequestWithAddressing))
 
       getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(optionalAddressingHeaders)).build().hasDifferences shouldBe false
+    }
+
+    "persist message ID if present in the request for success" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(optionalAddressingHeaders))
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
+      when(outboundMessageRepositoryMock.persist(messageCaptor.capture())(*)).thenReturn(successful(()))
+
+      await(underTest.sendMessage(messageRequestWithAddressing))
+
+      messageCaptor.getValue.messageId shouldBe messageId
+    }
+
+    "persist message ID if present in the request for failure" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(optionalAddressingHeaders))
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(INTERNAL_SERVER_ERROR))
+      val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
+      when(outboundMessageRepositoryMock.persist(messageCaptor.capture())(*)).thenReturn(successful(()))
+
+      await(underTest.sendMessage(messageRequestWithAddressing))
+
+      messageCaptor.getValue.messageId shouldBe messageId
     }
 
     "fail when the given operation does not exist in the WSDL definition" in new Setup {

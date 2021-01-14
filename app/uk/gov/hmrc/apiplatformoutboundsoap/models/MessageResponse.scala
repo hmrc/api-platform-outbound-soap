@@ -16,17 +16,6 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-case class OutboundMessageRequest(message: String)
+import java.util.UUID
 
-case class MessageRequest(wsdlUrl: String,
-                          wsdlOperation: String,
-                          messageBody: String,
-                          addressing: Option[Addressing] = None,
-                          confirmationOfDelivery: Boolean)
-
-case class Addressing(from: Option[String] = None,
-                      to: Option[String] = None,
-                      replyTo: Option[String] = None,
-                      faultTo: Option[String] = None,
-                      messageId: Option[String] = None,
-                      relatesTo: Option[String] = None)
+case class MessageResponse(globalId: UUID, messageId: Option[String], status: SendingStatus)

@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.apiplatformoutboundsoap.controllers
+package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import org.joda.time.DateTime
+import play.api.libs.json.{Format, Json, OFormat}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.OutboundSoapMessage
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future
-
-@Singleton()
-class MicroserviceHelloWorldController @Inject()(appConfig: AppConfig, cc: ControllerComponents)
-    extends BackendController(cc) {
-
-  def hello(): Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok("Hello world"))
-  }
+private[repositories] object MongoFormatter {
+  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+  implicit val outboundSoapMessageFormatter: OFormat[OutboundSoapMessage] = Json.format[OutboundSoapMessage]
 }

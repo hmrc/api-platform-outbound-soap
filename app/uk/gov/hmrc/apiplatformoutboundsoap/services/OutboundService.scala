@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,27 +24,44 @@ import org.apache.axis2.addressing.AddressingConstants.Final.{WSAW_NAMESPACE, WS
 import org.apache.axis2.addressing.AddressingConstants._
 import org.apache.axis2.wsdl.WSDLUtil
 import org.joda.time.DateTime
+import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
+import play.api.http.Status.MULTIPLE_CHOICES
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models.MessageRequest
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, SendingStatus}
+import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.NotFoundException
 
+import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import javax.wsdl.xml.WSDLReader
 import javax.wsdl.{Definition, Operation, Part, PortType}
 import javax.xml.namespace.QName
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurityService: WsSecurityService) {
+class OutboundService @Inject()(outboundConnector: OutboundConnector,
+                                wsSecurityService: WsSecurityService,
+                                outboundMessageRepository: OutboundMessageRepository)
+                              (implicit val ec: ExecutionContext){
   val logger: LoggerLike = Logger
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
+  def now: DateTime = DateTime.now(UTC)
+  def randomUUID: UUID = UUID.randomUUID
 
-  def sendMessage(message: MessageRequest): Future[Int] = {
+  def sendMessage(message: MessageRequest): Future[OutboundSoapMessage] = {
     val envelope = buildEnvelope(message)
-    outboundConnector.postMessage(envelope)
+    outboundConnector.postMessage(envelope) flatMap { result =>
+      val messageId = message.addressing.flatMap(_.messageId)
+      val outboundSoapMessage = if (result < MULTIPLE_CHOICES) {
+        OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.SENT, now)
+      } else {
+        OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.FAILED, now)
+      }
+      outboundMessageRepository.persist(outboundSoapMessage).map(_ => outboundSoapMessage)
+    }
   }
 
   private def buildEnvelope(message: MessageRequest): String = {
@@ -77,7 +94,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector, wsSecurity
     val messageHeader: OMElement = getOMFactory.createOMElement("MessageHeader", ccnmNamespace)
     envelope.getHeader.addChild(messageHeader)
 
-    def addToMessageHeader(elementName: String, elementContent: String) = {
+    def addToMessageHeader(elementName: String, elementContent: String): Unit = {
       val element = getOMFactory.createOMElement(elementName, ccnmNamespace)
       getOMFactory.createOMText(element, elementContent)
       messageHeader.addChild(element)

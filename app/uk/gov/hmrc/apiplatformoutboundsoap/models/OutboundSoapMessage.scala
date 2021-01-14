@@ -16,17 +16,19 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-case class OutboundMessageRequest(message: String)
+import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
+import org.joda.time.DateTime
 
-case class MessageRequest(wsdlUrl: String,
-                          wsdlOperation: String,
-                          messageBody: String,
-                          addressing: Option[Addressing] = None,
-                          confirmationOfDelivery: Boolean)
+import java.util.UUID
+import scala.collection.immutable
 
-case class Addressing(from: Option[String] = None,
-                      to: Option[String] = None,
-                      replyTo: Option[String] = None,
-                      faultTo: Option[String] = None,
-                      messageId: Option[String] = None,
-                      relatesTo: Option[String] = None)
+case class OutboundSoapMessage(globalId: UUID, messageId: Option[String], soapMessage: String, status: SendingStatus, createDateTime: DateTime)
+
+sealed trait SendingStatus extends EnumEntry
+
+object SendingStatus extends Enum[SendingStatus] with PlayJsonEnum[SendingStatus] {
+  val values: immutable.IndexedSeq[SendingStatus] = findValues
+
+  case object SENT extends SendingStatus
+  case object FAILED extends SendingStatus
+}
