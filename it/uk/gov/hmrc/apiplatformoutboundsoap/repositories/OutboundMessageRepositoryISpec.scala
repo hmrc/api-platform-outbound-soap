@@ -30,10 +30,10 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
     prepare(repo)
   }
 
-  "insertClient" should {
+  "persist" should {
     val message = OutboundSoapMessage(UUID.randomUUID(), Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", SendingStatus.SENT, DateTime.now(UTC))
 
-    "insert a client when it does not exist" in {
+    "insert a message when it does not exist" in {
       await(repo.persist(message))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))

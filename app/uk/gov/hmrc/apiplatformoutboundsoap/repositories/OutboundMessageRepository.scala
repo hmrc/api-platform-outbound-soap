@@ -32,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent)
                                          (implicit ec: ExecutionContext)
   extends ReactiveRepository[OutboundSoapMessage, BSONObjectID](
-    "client",
+    "messages",
     mongoComponent.mongoConnector.db,
     outboundSoapMessageFormatter,
     ReactiveMongoFormats.objectIdFormats) {

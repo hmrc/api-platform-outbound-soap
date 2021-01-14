@@ -26,6 +26,7 @@ import org.apache.axis2.wsdl.WSDLUtil
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
+import play.api.http.Status.MULTIPLE_CHOICES
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, SendingStatus}
@@ -54,7 +55,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     val envelope = buildEnvelope(message)
     outboundConnector.postMessage(envelope) flatMap { result =>
       val messageId = message.addressing.flatMap(_.messageId)
-      val outboundSoapMessage = if (result < 300) {
+      val outboundSoapMessage = if (result < MULTIPLE_CHOICES) {
         OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.SENT, now)
       } else {
         OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.FAILED, now)
