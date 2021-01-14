@@ -79,12 +79,11 @@ HTTP Status: 200 (OK)
 }
 ```
 
-
 | Name | Description |
 | --- | --- |
 | `globalId` | Unique identifier allocated to the request when it is received  |
 | `messageId` | This optional property, if present, is the value provided by the `addressing.messageId` property of the request|
-| `status` | Either `SENT` or `FAILED` according to the response received from the SOAP service |
+| `status` | Either `SENT` if the response from the SOAP service was 2xx or `FAILED` otherwise|
 
 ### Error scenarios
 | Scenario | HTTP Status |
