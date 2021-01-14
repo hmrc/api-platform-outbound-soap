@@ -70,7 +70,21 @@ Send a SOAP message for the given operation
 | `addressing.relatesTo` | This optional property provides the value for the `RelatesTo` element in the SOAP header |
 
 ### Response
-HTTP Status: the HTTP status received by the destination service (CCN2/stub)
+HTTP Status: 200 (OK)
+```
+{
+    "globalId":"28a76012-b417-493a-ae64-c241f17a22ca",
+    "messageId":"154517743d31-4251-b820-276809a6762b",
+    "status":"SENT"
+}
+```
+
+
+| Name | Description |
+| --- | --- |
+| `globalId` | Unique identifier allocated to the request when it is received  |
+| `messageId` | This optional property, if present, is the value provided by the `addressing.messageId` property of the request|
+| `status` | Either `SENT` or `FAILED` according to the response received from the SOAP service |
 
 ### Error scenarios
 | Scenario | HTTP Status |
