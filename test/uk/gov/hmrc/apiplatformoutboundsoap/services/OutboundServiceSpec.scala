@@ -28,6 +28,7 @@ import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
 import play.api.http.Status.OK
 import play.api.test.Helpers._
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest, OutboundSoapMessage, SendingStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
@@ -44,11 +45,12 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
     val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]
     val outboundMessageRepositoryMock: OutboundMessageRepository = mock[OutboundMessageRepository]
     val wsSecurityServiceMock: WsSecurityService = mock[WsSecurityService]
+    val appConfigMock: AppConfig = mock[AppConfig]
 
     val expectedCreateDateTime: DateTime = DateTime.now(UTC)
     val expectedGlobalId: UUID = UUID.randomUUID
 
-    val underTest: OutboundService = new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock) {
+    val underTest: OutboundService = new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock, appConfigMock) {
       override def now: DateTime = expectedCreateDateTime
       override def randomUUID: UUID = expectedGlobalId
     }
@@ -117,7 +119,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
 
       val result: OutboundSoapMessage = await(underTest.sendMessage(messageRequest))
 
-      result.status shouldBe SendingStatus.FAILED
+      result.status shouldBe SendingStatus.RETRYING
       result.soapMessage shouldBe expectedSoapEnvelope()
       result.messageId shouldBe None
       result.globalId shouldBe expectedGlobalId
@@ -141,7 +143,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
       }
     }
 
-    "save the message as FAILED when the connector returns a non 2XX" in new Setup {
+    "save the message as RETRYING when the connector returns a non 2XX" in new Setup {
       (300 to 599).foreach { httpCode =>
         when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
         when(outboundConnectorMock.postMessage(*)).thenReturn(successful(httpCode))
@@ -150,7 +152,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with MockitoSugar wi
 
         await(underTest.sendMessage(messageRequest))
 
-        messageCaptor.getValue.status shouldBe SendingStatus.FAILED
+        messageCaptor.getValue.status shouldBe SendingStatus.RETRYING
         messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope()
         messageCaptor.getValue.messageId shouldBe None
         messageCaptor.getValue.globalId shouldBe expectedGlobalId

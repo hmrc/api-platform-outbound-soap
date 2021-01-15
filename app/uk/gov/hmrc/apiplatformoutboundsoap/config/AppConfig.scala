@@ -32,4 +32,8 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val ccn2Url: String = config.get[String]("ccn2Url")
   val ccn2Username: String = config.get[String]("ccn2Username")
   val ccn2Password: String = config.get[String]("ccn2Password")
+  val retryInterval: Int = config.get[Int]("retry.interval")
+  val retryDuration: Int = config.get[Int]("retry.duration")
+  val retryInitialDuration: Int = config.get[Int]("retry.initial.delay")
+  val retryEnabled: Boolean = config.get[Boolean]("retry.enabled")
 }

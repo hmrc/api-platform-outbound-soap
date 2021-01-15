@@ -22,7 +22,12 @@ import org.joda.time.DateTime
 import java.util.UUID
 import scala.collection.immutable
 
-case class OutboundSoapMessage(globalId: UUID, messageId: Option[String], soapMessage: String, status: SendingStatus, createDateTime: DateTime)
+case class OutboundSoapMessage(globalId: UUID,
+                               messageId: Option[String],
+                               soapMessage: String,
+                               status: SendingStatus,
+                               createDateTime: DateTime,
+                               retryDateTime: Option[DateTime])
 
 sealed trait SendingStatus extends EnumEntry
 
@@ -31,4 +36,5 @@ object SendingStatus extends Enum[SendingStatus] with PlayJsonEnum[SendingStatus
 
   case object SENT extends SendingStatus
   case object FAILED extends SendingStatus
+  case object RETRYING extends SendingStatus
 }

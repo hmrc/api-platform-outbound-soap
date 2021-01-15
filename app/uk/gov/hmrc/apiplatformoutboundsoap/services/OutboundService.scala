@@ -28,6 +28,7 @@ import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 import play.api.http.Status.MULTIPLE_CHOICES
 import play.api.{Logger, LoggerLike}
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, SendingStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
@@ -44,7 +45,8 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class OutboundService @Inject()(outboundConnector: OutboundConnector,
                                 wsSecurityService: WsSecurityService,
-                                outboundMessageRepository: OutboundMessageRepository)
+                                outboundMessageRepository: OutboundMessageRepository,
+                                appConfig: AppConfig)
                               (implicit val ec: ExecutionContext){
   val logger: LoggerLike = Logger
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
@@ -56,9 +58,9 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     outboundConnector.postMessage(envelope) flatMap { result =>
       val messageId = message.addressing.flatMap(_.messageId)
       val outboundSoapMessage = if (result < MULTIPLE_CHOICES) {
-        OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.SENT, now)
+        OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.SENT, now, None)
       } else {
-        OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.FAILED, now)
+        OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.RETRYING, now, None)
       }
       outboundMessageRepository.persist(outboundSoapMessage).map(_ => outboundSoapMessage)
     }

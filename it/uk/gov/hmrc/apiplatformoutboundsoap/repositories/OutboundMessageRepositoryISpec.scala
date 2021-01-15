@@ -31,7 +31,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
   }
 
   "persist" should {
-    val message = OutboundSoapMessage(UUID.randomUUID(), Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", SendingStatus.SENT, DateTime.now(UTC))
+    val message = OutboundSoapMessage(UUID.randomUUID(), Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", SendingStatus.SENT, DateTime.now(UTC), DateTime.now(UTC))
 
     "insert a message when it does not exist" in {
       await(repo.persist(message))
