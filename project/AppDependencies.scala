@@ -6,6 +6,8 @@ object AppDependencies {
   val compile = Seq(
     "uk.gov.hmrc" %% "bootstrap-backend-play-27" % "3.0.0",
     "uk.gov.hmrc" %% "simple-reactivemongo" % "7.30.0-play-27",
+    "uk.gov.hmrc" %% "play-scheduling-play-27" % "7.10.0",
+    "org.reactivemongo" %% "reactivemongo-akkastream" % "0.20.13",
     "org.apache.axis2" % "axis2-kernel" % "1.7.9",
     "org.apache.wss4j" % "wss4j-ws-security-dom" % "2.3.0",
     "com.beachape" %% "enumeratum-play-json" % "1.6.0",

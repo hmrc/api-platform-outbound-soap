@@ -42,8 +42,11 @@ import java.util.UUID.randomUUID
 import javax.wsdl.WSDLException
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
+import scala.concurrent.duration.Duration
 
 class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
+
+  implicit val mat: Materializer = app.injector.instanceOf[Materializer]
 
   trait Setup {
     val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]

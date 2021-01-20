@@ -49,8 +49,12 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
     outboundSoapMessageFormatter,
     ReactiveMongoFormats.objectIdFormats) {
 
+  val MESSAGE_TTL: Long = Duration("30 days").toSeconds
+
   override def indexes = Seq(
-    Index(key = List("globalId" -> Ascending), name = Some("globalIdIndex"), unique = true, background = true)
+    Index(key = List("globalId" -> Ascending), name = Some("globalIdIndex"), unique = true, background = true),
+    Index(key = List("createDateTime" -> Ascending),
+      name = Some("ttlIndex"), background = true, options = BSONDocument("expireAfterSeconds" -> BSONLong(MESSAGE_TTL)))
   )
 
   def persist(entity: OutboundSoapMessage)(implicit ec: ExecutionContext): Future[Unit] = {

@@ -50,7 +50,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
                                 wsSecurityService: WsSecurityService,
                                 outboundMessageRepository: OutboundMessageRepository,
                                 appConfig: AppConfig)
-                              (implicit val ec: ExecutionContext){
+                              (implicit val ec: ExecutionContext, mat: Materializer){
   val logger: LoggerLike = Logger
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
   def now: DateTime = DateTime.now(UTC)
