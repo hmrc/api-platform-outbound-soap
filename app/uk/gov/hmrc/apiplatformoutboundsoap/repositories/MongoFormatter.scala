@@ -18,10 +18,13 @@ package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
 import org.joda.time.DateTime
 import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.OutboundSoapMessage
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{FailedOutboundSoapMessage, OutboundSoapMessage, RetryingOutboundSoapMessage, SentOutboundSoapMessage}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 private[repositories] object MongoFormatter {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   implicit val outboundSoapMessageFormatter: OFormat[OutboundSoapMessage] = Json.format[OutboundSoapMessage]
+  implicit val retryingSoapMessageFormatter: OFormat[RetryingOutboundSoapMessage] = Json.format[RetryingOutboundSoapMessage]
+  implicit val sentSoapMessageFormatter: OFormat[SentOutboundSoapMessage] = Json.format[SentOutboundSoapMessage]
+  implicit val failedSoapMessageFormatter: OFormat[FailedOutboundSoapMessage] = Json.format[FailedOutboundSoapMessage]
 }

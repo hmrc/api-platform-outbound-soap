@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
+import akka.Done
+import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
 import org.apache.axiom.om.OMAbstractFactory.{getOMFactory, getSOAP12Factory}
 import org.apache.axiom.om._
 import org.apache.axiom.om.util.AXIOMUtil.stringToOM
@@ -30,7 +33,7 @@ import play.api.http.Status.MULTIPLE_CHOICES
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, SendingStatus}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, SentOutboundSoapMessage}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.NotFoundException
 
@@ -58,11 +61,30 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     outboundConnector.postMessage(envelope) flatMap { result =>
       val messageId = message.addressing.flatMap(_.messageId)
       val outboundSoapMessage = if (result < MULTIPLE_CHOICES) {
-        OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.SENT, now, None)
+        SentOutboundSoapMessage(randomUUID, messageId, envelope, now)
       } else {
-        OutboundSoapMessage(randomUUID, messageId, envelope, SendingStatus.RETRYING, now, None)
+        RetryingOutboundSoapMessage(randomUUID, messageId, envelope, now, now.plus(appConfig.retryInterval.toMillis))
       }
       outboundMessageRepository.persist(outboundSoapMessage).map(_ => outboundSoapMessage)
+    }
+  }
+
+  def retryMessages: Future[Done] = {
+    outboundMessageRepository.retrieveMessagesForRetry.runWith(Sink.foreachAsync[RetryingOutboundSoapMessage](appConfig.parallelism)(retryMessage))
+  }
+
+  private def retryMessage(message: RetryingOutboundSoapMessage): Future[Unit] = {
+    val nextRetryDateTime: DateTime = now.plus(appConfig.retryInterval.toMillis)
+    outboundConnector.postMessage(message.soapMessage) flatMap { result =>
+      if (result < MULTIPLE_CHOICES) {
+        outboundMessageRepository.updateStatus(message.globalId, SendingStatus.SENT).map(_ => ())
+      } else {
+        if (message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)){
+          outboundMessageRepository.updateStatus(message.globalId, SendingStatus.FAILED).map(_ => ())
+        } else{
+          outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryDateTime).map(_ => ())
+        }
+      }
     }
   }
 
