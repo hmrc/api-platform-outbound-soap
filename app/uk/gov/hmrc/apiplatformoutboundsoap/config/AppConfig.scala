@@ -39,5 +39,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val retryInitialDelay: Duration = Duration(config.getOptional[String]("retry.initial.delay").getOrElse("30 sec"))
   val retryEnabled: Boolean = config.getOptional[Boolean]("retry.enabled").getOrElse(false)
   val retryJobLockDuration: Duration = Duration(config.getOptional[String]("retry.lock.duration").getOrElse("1 hr"))
+  val retryMessagesTtl: Duration = Duration(config.getOptional[String]("retry.messages.ttl").getOrElse("30 day"))
   val parallelism: Int = config.getOptional[Int]("retry.parallelism").getOrElse(5)
 }
