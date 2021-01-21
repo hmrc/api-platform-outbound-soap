@@ -29,7 +29,7 @@ import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, SendingStatus, SentOutboundSoapMessage}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, SendingStatus, SentOutboundSoapMessage}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.http.NotFoundException
 
