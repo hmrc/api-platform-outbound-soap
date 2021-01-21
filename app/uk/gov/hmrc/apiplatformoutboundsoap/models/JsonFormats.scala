@@ -29,7 +29,8 @@ object JsonFormats {
     (JsPath \ "wsdlOperation").read[String] and
     (JsPath \ "messageBody").read[String] and
     (JsPath \ "addressing").readNullable[Addressing] and
-    ((JsPath \ "confirmationOfDelivery").read[Boolean] or Reads.pure(false))
-  )(MessageRequest.apply _)
+    ((JsPath \ "confirmationOfDelivery").read[Boolean] or Reads.pure(false)) and
+    (JsPath \ "notificationUrl").readNullable[String]
+    )(MessageRequest.apply _)
   implicit val messageRequestFormatter: OFormat[MessageRequest] = OFormat(messageRequestReads, Json.writes[MessageRequest])
 }

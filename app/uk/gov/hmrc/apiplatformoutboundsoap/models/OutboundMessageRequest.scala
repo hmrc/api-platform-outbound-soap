@@ -22,7 +22,8 @@ case class MessageRequest(wsdlUrl: String,
                           wsdlOperation: String,
                           messageBody: String,
                           addressing: Option[Addressing] = None,
-                          confirmationOfDelivery: Boolean)
+                          confirmationOfDelivery: Boolean,
+                          notificationUrl: Option[String] = None)
 
 case class Addressing(from: Option[String] = None,
                       to: Option[String] = None,
