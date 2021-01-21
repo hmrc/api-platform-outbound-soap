@@ -22,13 +22,53 @@ import org.joda.time.DateTime
 import java.util.UUID
 import scala.collection.immutable
 
-case class OutboundSoapMessage(globalId: UUID, messageId: Option[String], soapMessage: String, status: SendingStatus, createDateTime: DateTime)
+sealed trait OutboundSoapMessage {
+  val globalId: UUID
+  val messageId: Option[String]
+  val soapMessage: String
+  val status: SendingStatus
+  val createDateTime: DateTime
+}
 
-sealed trait SendingStatus extends EnumEntry
+case class SentOutboundSoapMessage(globalId: UUID,
+                                   messageId: Option[String],
+                                   soapMessage: String,
+                                   createDateTime: DateTime) extends OutboundSoapMessage {
+  override val status: SendingStatus = SendingStatus.SENT
+}
+
+case class FailedOutboundSoapMessage(globalId: UUID,
+                                   messageId: Option[String],
+                                   soapMessage: String,
+                                   createDateTime: DateTime) extends OutboundSoapMessage {
+  override val status: SendingStatus = SendingStatus.FAILED
+}
+
+case class RetryingOutboundSoapMessage(globalId: UUID,
+                                       messageId: Option[String],
+                                       soapMessage: String,
+                                       createDateTime: DateTime,
+                                       retryDateTime: DateTime) extends OutboundSoapMessage {
+  override val status: SendingStatus = SendingStatus.RETRYING
+}
+
+sealed trait SendingStatus extends EnumEntry {
+  val soapMessageType: String
+}
 
 object SendingStatus extends Enum[SendingStatus] with PlayJsonEnum[SendingStatus] {
   val values: immutable.IndexedSeq[SendingStatus] = findValues
 
-  case object SENT extends SendingStatus
-  case object FAILED extends SendingStatus
+  case object SENT extends SendingStatus {
+    override val soapMessageType: String = "uk.gov.hmrc.apiplatformoutboundsoap.models.SentOutboundSoapMessage"
+  }
+
+  case object FAILED extends SendingStatus {
+    override val soapMessageType: String = "uk.gov.hmrc.apiplatformoutboundsoap.models.FailedOutboundSoapMessage"
+  }
+
+  case object RETRYING extends SendingStatus {
+    override val soapMessageType: String = "uk.gov.hmrc.apiplatformoutboundsoap.models.RetryingOutboundSoapMessage"
+  }
+
 }
