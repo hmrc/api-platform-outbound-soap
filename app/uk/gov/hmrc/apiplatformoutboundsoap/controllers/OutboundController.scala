@@ -20,7 +20,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.{messageRequestFormatter, outboundMessageRequestFormatter, messageResponseFormatter}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, MessageResponse, OutboundMessageRequest}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, SoapMessageStatus, OutboundMessageRequest}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.apiplatformoutboundsoap.templates.xml.ie4n03Template
 import uk.gov.hmrc.http.NotFoundException
@@ -47,7 +47,7 @@ class OutboundController @Inject()(cc: ControllerComponents,
   def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
     withJsonBody[MessageRequest] { messageRequest =>
       outboundService.sendMessage(messageRequest)
-        .map(outboundSoapMessage => Ok(Json.toJson(MessageResponse(outboundSoapMessage.globalId, outboundSoapMessage.messageId, outboundSoapMessage.status))))
+        .map(outboundSoapMessage => Ok(Json.toJson(SoapMessageStatus(outboundSoapMessage.globalId, outboundSoapMessage.messageId, outboundSoapMessage.status))))
         .recover(recovery)
     }
   }

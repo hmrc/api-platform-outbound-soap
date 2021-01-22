@@ -54,6 +54,9 @@ case class RetryingOutboundSoapMessage(globalId: UUID,
                                        retryDateTime: DateTime,
                                        notificationUrl: Option[String] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.RETRYING
+
+  def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, notificationUrl)
+  def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, notificationUrl)
 }
 
 sealed trait SendingStatus extends EnumEntry {

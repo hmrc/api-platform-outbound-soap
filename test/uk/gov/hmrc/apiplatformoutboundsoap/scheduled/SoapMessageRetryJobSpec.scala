@@ -42,15 +42,15 @@ class SoapMessageRetryJobSpec extends AnyWordSpec with Matchers with MockitoSuga
 
   "executeInLock" should {
     "retry messages successfully" in new Setup {
-      when(outboundServiceMock.retryMessages).thenReturn(successful(Done))
+      when(outboundServiceMock.retryMessages(*)).thenReturn(successful(Done))
       val result: underTest.Result = await(underTest.executeInLock)
 
       result.message shouldBe "Done"
-      verify(outboundServiceMock).retryMessages
+      verify(outboundServiceMock).retryMessages(*)
     }
 
     "retry messages with an exception which is propagated" in new Setup {
-      when(outboundServiceMock.retryMessages).thenReturn(failed(new RuntimeException("Something went wrong")))
+      when(outboundServiceMock.retryMessages(*)).thenReturn(failed(new RuntimeException("Something went wrong")))
 
       val ex: RuntimeException = intercept[RuntimeException](await(underTest.executeInLock))
 
