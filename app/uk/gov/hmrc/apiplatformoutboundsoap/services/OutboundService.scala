@@ -60,11 +60,14 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   def sendMessage(message: MessageRequest): Future[OutboundSoapMessage] = {
     val envelope = buildEnvelope(message)
     outboundConnector.postMessage(envelope) flatMap { result =>
+      val globalId: UUID = randomUUID
       val messageId = message.addressing.flatMap(_.messageId)
       val outboundSoapMessage = if (is2xx(result)) {
-        SentOutboundSoapMessage(randomUUID, messageId, envelope, now)
+        logger.info(s"Message with global ID $globalId and message ID $messageId successfully sent")
+        SentOutboundSoapMessage(globalId, messageId, envelope, now)
       } else {
-        RetryingOutboundSoapMessage(randomUUID, messageId, envelope, now, now.plus(appConfig.retryInterval.toMillis))
+        logger.info(s"Message with global ID $globalId and message ID $messageId failed on first attempt")
+        RetryingOutboundSoapMessage(globalId, messageId, envelope, now, now.plus(appConfig.retryInterval.toMillis))
       }
       outboundMessageRepository.persist(outboundSoapMessage).map(_ => outboundSoapMessage)
     }
@@ -78,17 +81,20 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     val nextRetryDateTime: DateTime = now.plus(appConfig.retryInterval.toMillis)
     outboundConnector.postMessage(message.soapMessage) flatMap { result =>
       if (is2xx(result)) {
+        logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} succeeded")
         outboundMessageRepository.updateStatus(message.globalId, SendingStatus.SENT) map { updatedMessage =>
           updatedMessage.map(notificationCallbackConnector.sendNotification)
           ()
         }
       } else {
         if (message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)){
+          logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} failed on last attempt")
           outboundMessageRepository.updateStatus(message.globalId, SendingStatus.FAILED).map { updatedMessage =>
             updatedMessage.map(notificationCallbackConnector.sendNotification)
             ()
           }
         } else{
+          logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} failed")
           outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryDateTime).map(_ => ())
         }
       }
