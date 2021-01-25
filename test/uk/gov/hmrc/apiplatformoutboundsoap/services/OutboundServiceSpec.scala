@@ -53,14 +53,14 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]
     val outboundMessageRepositoryMock: OutboundMessageRepository = mock[OutboundMessageRepository]
     val wsSecurityServiceMock: WsSecurityService = mock[WsSecurityService]
-    val notificationCallbackConnector: NotificationCallbackConnector = mock[NotificationCallbackConnector]
+    val notificationCallbackConnectorMock: NotificationCallbackConnector = mock[NotificationCallbackConnector]
     val appConfigMock: AppConfig = mock[AppConfig]
 
     val expectedCreateDateTime: DateTime = DateTime.now(UTC)
     val expectedGlobalId: UUID = UUID.randomUUID
 
     val underTest: OutboundService = new OutboundService(outboundConnectorMock, wsSecurityServiceMock,
-      outboundMessageRepositoryMock, notificationCallbackConnector, appConfigMock) {
+      outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock) {
       override def now: DateTime = expectedCreateDateTime
       override def randomUUID: UUID = expectedGlobalId
     }
@@ -336,7 +336,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       await(underTest.retryMessages)
 
-      verify(notificationCallbackConnector).sendNotification(refEq(sentMessageForNotification))(*)
+      verify(notificationCallbackConnectorMock).sendNotification(refEq(sentMessageForNotification))(*)
     }
 
     "notify the caller on the notification URL supplied that the retrying message is now FAILED" in new Setup {
@@ -354,7 +354,27 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       await(underTest.retryMessages)
 
-      verify(notificationCallbackConnector).sendNotification(refEq(failedMessageForNotification))(*)
+      verify(notificationCallbackConnectorMock).sendNotification(refEq(failedMessageForNotification))(*)
+    }
+
+    "update the status of a successfully sent message to SENT even if calling the notification URL fails" in new Setup{
+      val retryDuration: Duration = Duration("30s")
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>",
+        DateTime.now(UTC).minus(retryDuration.plus(Duration("1s")).toMillis), DateTime.now(UTC))
+      val failedMessageForNotification: FailedOutboundSoapMessage = retryingMessage.toFailed
+      when(appConfigMock.parallelism).thenReturn(2)
+      when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
+      when(appConfigMock.retryDuration).thenReturn(retryDuration)
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
+      when(outboundMessageRepositoryMock.updateStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
+        thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryingMessage).toIterator))))
+      when(notificationCallbackConnectorMock.sendNotification(*)(*)).thenReturn(successful(Some(INTERNAL_SERVER_ERROR)))
+
+      await(underTest.retryMessages)
+
+      verify(outboundMessageRepositoryMock).updateStatus(retryingMessage.globalId, SendingStatus.SENT)
+
     }
   }
 
