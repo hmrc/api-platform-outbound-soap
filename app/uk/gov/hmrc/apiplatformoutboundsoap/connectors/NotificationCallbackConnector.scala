@@ -17,7 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
 import play.api.{Logger, LoggerLike}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.messageResponseFormatter
+import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, SoapMessageStatus}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HttpClient, _}

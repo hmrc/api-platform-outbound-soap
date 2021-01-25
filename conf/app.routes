@@ -1,5 +1,4 @@
 # microservice specific routes
 
 GET        /hello-world             uk.gov.hmrc.apiplatformoutboundsoap.controllers.MicroserviceHelloWorldController.hello
-POST       /send-message            uk.gov.hmrc.apiplatformoutboundsoap.controllers.OutboundController.sendMessage
 POST       /message                 uk.gov.hmrc.apiplatformoutboundsoap.controllers.OutboundController.message

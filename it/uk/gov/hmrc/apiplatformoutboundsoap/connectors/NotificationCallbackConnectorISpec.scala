@@ -28,7 +28,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, RetryingOutboundSoapMessage, SoapMessageStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.support.{NotificationsService, WireMockSupport}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.messageResponseFormatter
+import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
 
 import java.util.UUID
 import javax.ws.rs.core.MediaType.APPLICATION_JSON
