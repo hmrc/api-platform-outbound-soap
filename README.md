@@ -17,6 +17,7 @@ Send a SOAP message for the given operation
     "wsdlOperation": "IE4N03notifyERiskAnalysisHit",
     "messageBody": "<IE4N03 xmlns=\"urn:wco:datamodel:WCO:CIS:1\">...</IE4N03>",
     "confirmationOfDelivery": true,
+    "notificationUrl": "http://callmeback.url",
     "addressing": {
         "from": "ICS_NES",
         "to": "ICS_CR",
@@ -33,6 +34,7 @@ Send a SOAP message for the given operation
 | `wsdlOperation` | The operation to be used in the SOAP envelope |
 | `messageBody` | The XML message to send in the SOAP envelope |
 | `confirmationOfDelivery` | An optional boolean specifying whether the sender wishes to receive a confirmation of delivery from the target SOAP service. Defaults to false if not provided in the request |
+| `notificationUrl` | An optional String property which, if provided, will be used to POST a status update when the message is successfully sent, or is marked as failed after retries have been exhausted. The body will be in the same form as [the response below this table](#response) |
 | `addressing` | Optional property to provide WS addressing data |
 | `addressing.from` | This optional property provides the value for the `From` element in the SOAP header |
 | `addressing.to` | This optional property provides the value for the `To` element in the SOAP header |
