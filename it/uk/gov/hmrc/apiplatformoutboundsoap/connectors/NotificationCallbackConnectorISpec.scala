@@ -53,7 +53,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
 
   "sendNotification" should {
     "successfully send a status update to the caller's notification URL" in new Setup {
-      val message: OutboundSoapMessage = new RetryingOutboundSoapMessage(
+      val message: OutboundSoapMessage = RetryingOutboundSoapMessage(
         globalId, messageId, "<Envelope><Body>foobar</Body></Envelope>", now, now, Some(wireMockBaseUrlAsString))
       val expectedStatus: Int = OK
       primeNotificationsEndpoint(expectedStatus)
@@ -64,7 +64,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
     }
 
     "not send a status update when notification URL is absent" in new Setup {
-      val message: OutboundSoapMessage = new RetryingOutboundSoapMessage(
+      val message: OutboundSoapMessage = RetryingOutboundSoapMessage(
         globalId, messageId, "<Envelope><Body>foobar</Body></Envelope>", now, now, None)
 
       val result: Option[Int] = await(underTest.sendNotification(message))
@@ -73,10 +73,10 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
     }
 
     "successfully send a status update with a body to the caller's notification URL" in new Setup {
-      val message: OutboundSoapMessage = new RetryingOutboundSoapMessage(
+      val message: OutboundSoapMessage = RetryingOutboundSoapMessage(
         globalId, messageId, "<Envelope><Body>foobar</Body></Envelope>", now, now, Some(wireMockBaseUrlAsString))
       val expectedStatus: Int = OK
-      val expectedNotificationBody = Json.toJson(SoapMessageStatus(message.globalId, message.messageId, message.status)).toString()
+      val expectedNotificationBody: String = Json.toJson(SoapMessageStatus(message.globalId, message.messageId, message.status)).toString()
       primeNotificationsEndpoint(expectedStatus)
 
       await(underTest.sendNotification(message))
@@ -84,7 +84,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
     }
 
     "set the Content-Type header to application/json" in new Setup {
-      val message: OutboundSoapMessage = new RetryingOutboundSoapMessage(
+      val message: OutboundSoapMessage = RetryingOutboundSoapMessage(
         globalId, messageId, "<Envelope><Body>foobar</Body></Envelope>", now, now, Some(wireMockBaseUrlAsString))
       val expectedStatus: Int = OK
       primeNotificationsEndpoint(expectedStatus)
@@ -94,7 +94,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
     }
 
     "handle failed requests to the notification URL" in new Setup {
-      val message: OutboundSoapMessage = new RetryingOutboundSoapMessage(
+      val message: OutboundSoapMessage = RetryingOutboundSoapMessage(
         globalId, messageId, "<Envelope><Body>foobar</Body></Envelope>", now, now, Some(wireMockBaseUrlAsString))
       val expectedStatus: Int = INTERNAL_SERVER_ERROR
       primeNotificationsEndpoint(expectedStatus)
