@@ -31,10 +31,10 @@ import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
+import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, SentOutboundSoapMessage}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
-import uk.gov.hmrc.http.{HttpErrorFunctions, NotFoundException}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, NotFoundException}
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
@@ -48,6 +48,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class OutboundService @Inject()(outboundConnector: OutboundConnector,
                                 wsSecurityService: WsSecurityService,
                                 outboundMessageRepository: OutboundMessageRepository,
+                                notificationCallbackConnector: NotificationCallbackConnector,
                                 appConfig: AppConfig)
                               (implicit val ec: ExecutionContext, mat: Materializer)
                               extends HttpErrorFunctions {
@@ -69,18 +70,24 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     }
   }
 
-  def retryMessages: Future[Done] = {
+  def retryMessages(implicit hc: HeaderCarrier): Future[Done] = {
     outboundMessageRepository.retrieveMessagesForRetry.runWith(Sink.foreachAsync[RetryingOutboundSoapMessage](appConfig.parallelism)(retryMessage))
   }
 
-  private def retryMessage(message: RetryingOutboundSoapMessage): Future[Unit] = {
+  private def retryMessage(message: RetryingOutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Unit] = {
     val nextRetryDateTime: DateTime = now.plus(appConfig.retryInterval.toMillis)
     outboundConnector.postMessage(message.soapMessage) flatMap { result =>
       if (is2xx(result)) {
-        outboundMessageRepository.updateStatus(message.globalId, SendingStatus.SENT).map(_ => ())
+        outboundMessageRepository.updateStatus(message.globalId, SendingStatus.SENT) map { updatedMessage =>
+          updatedMessage.map(notificationCallbackConnector.sendNotification)
+          ()
+        }
       } else {
         if (message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)){
-          outboundMessageRepository.updateStatus(message.globalId, SendingStatus.FAILED).map(_ => ())
+          outboundMessageRepository.updateStatus(message.globalId, SendingStatus.FAILED).map { updatedMessage =>
+            updatedMessage.map(notificationCallbackConnector.sendNotification)
+            ()
+          }
         } else{
           outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryDateTime).map(_ => ())
         }

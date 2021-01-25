@@ -18,11 +18,9 @@ package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import play.api.libs.json._
 import play.api.mvc._
-import uk.gov.hmrc.apiplatformoutboundsoap.connectors.OutboundConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.{messageRequestFormatter, outboundMessageRequestFormatter, messageResponseFormatter}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, MessageResponse, OutboundMessageRequest}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.{messageRequestFormatter, soapMessageStatusFormatter}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, SoapMessageStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
-import uk.gov.hmrc.apiplatformoutboundsoap.templates.xml.ie4n03Template
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -32,22 +30,14 @@ import scala.concurrent.ExecutionContext
 
 @Singleton
 class OutboundController @Inject()(cc: ControllerComponents,
-                                   outboundConnector: OutboundConnector,
                                    outboundService: OutboundService)
                                   (implicit ec: ExecutionContext)
   extends BackendController(cc) {
 
-  def sendMessage(): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    withJsonBody[OutboundMessageRequest] { outboundMessageRequest =>
-      val renderedMessage: String = ie4n03Template.render(outboundMessageRequest.message).body
-      outboundConnector.postMessage(renderedMessage).map(new Status(_))
-    }
-  }
-
   def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
     withJsonBody[MessageRequest] { messageRequest =>
       outboundService.sendMessage(messageRequest)
-        .map(outboundSoapMessage => Ok(Json.toJson(MessageResponse(outboundSoapMessage.globalId, outboundSoapMessage.messageId, outboundSoapMessage.status))))
+        .map(outboundSoapMessage => Ok(Json.toJson(SoapMessageStatus(outboundSoapMessage.globalId, outboundSoapMessage.messageId, outboundSoapMessage.status))))
         .recover(recovery)
     }
   }

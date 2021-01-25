@@ -2,34 +2,6 @@
 
 This service allows other HMRC services to send messages to external SOAP web services.
 
-## `POST /send-message`
-Send an IE4N03 SOAP message
-
-This is an endpoint that was created as a PoC and only supports IE4N03 messages.
-
-### Request headers
-| Name | Description |
-| --- | --- |
-| `Content-Type` | `application/json` |
-
-### Request
-```
-{
-    "message": "<IE4N03>...</IE4N03>"
-}
-```
-| Name | Description |
-| --- | --- |
-| `message` | The IE4N03 message to send in the SOAP envelope |
-
-### Response
-HTTP Status: the HTTP status received by the destination service (CCN2/stub)
-
-### Error scenarios
-| Scenario | HTTP Status |
-| --- | --- |
-| `message` missing from request body | `400` |
-
 ## `POST /message`
 Send a SOAP message for the given operation
 
@@ -45,6 +17,7 @@ Send a SOAP message for the given operation
     "wsdlOperation": "IE4N03notifyERiskAnalysisHit",
     "messageBody": "<IE4N03 xmlns=\"urn:wco:datamodel:WCO:CIS:1\">...</IE4N03>",
     "confirmationOfDelivery": true,
+    "notificationUrl": "http://callmeback.url",
     "addressing": {
         "from": "ICS_NES",
         "to": "ICS_CR",
@@ -61,6 +34,7 @@ Send a SOAP message for the given operation
 | `wsdlOperation` | The operation to be used in the SOAP envelope |
 | `messageBody` | The XML message to send in the SOAP envelope |
 | `confirmationOfDelivery` | An optional boolean specifying whether the sender wishes to receive a confirmation of delivery from the target SOAP service. Defaults to false if not provided in the request |
+| `notificationUrl` | An optional String property which, if provided, will be used to POST a status update when the message is successfully sent, or is marked as failed after retries have been exhausted. The body will be in the same form as [the response below this table](#response) |
 | `addressing` | Optional property to provide WS addressing data |
 | `addressing.from` | This optional property provides the value for the `From` element in the SOAP header |
 | `addressing.to` | This optional property provides the value for the `To` element in the SOAP header |

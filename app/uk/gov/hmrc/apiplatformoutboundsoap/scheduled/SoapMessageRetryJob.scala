@@ -19,6 +19,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 import org.joda.time.Duration
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.LockRepository
 import uk.gov.hmrc.play.scheduling.LockedScheduledJob
 
@@ -39,6 +40,6 @@ class SoapMessageRetryJob @Inject()(appConfig: AppConfig, override val lockRepos
   override def interval: FiniteDuration = appConfig.retryInterval.asInstanceOf[FiniteDuration] / 10
 
   override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
-    outboundService.retryMessages.map(done => Result(done.toString))
+    outboundService.retryMessages(HeaderCarrier()).map(done => Result(done.toString))
   }
 }

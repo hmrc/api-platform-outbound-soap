@@ -28,19 +28,22 @@ sealed trait OutboundSoapMessage {
   val soapMessage: String
   val status: SendingStatus
   val createDateTime: DateTime
+  val notificationUrl: Option[String]
 }
 
 case class SentOutboundSoapMessage(globalId: UUID,
                                    messageId: Option[String],
                                    soapMessage: String,
-                                   createDateTime: DateTime) extends OutboundSoapMessage {
+                                   createDateTime: DateTime,
+                                   notificationUrl: Option[String] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.SENT
 }
 
 case class FailedOutboundSoapMessage(globalId: UUID,
-                                   messageId: Option[String],
-                                   soapMessage: String,
-                                   createDateTime: DateTime) extends OutboundSoapMessage {
+                                     messageId: Option[String],
+                                     soapMessage: String,
+                                     createDateTime: DateTime,
+                                     notificationUrl: Option[String] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.FAILED
 }
 
@@ -48,8 +51,12 @@ case class RetryingOutboundSoapMessage(globalId: UUID,
                                        messageId: Option[String],
                                        soapMessage: String,
                                        createDateTime: DateTime,
-                                       retryDateTime: DateTime) extends OutboundSoapMessage {
+                                       retryDateTime: DateTime,
+                                       notificationUrl: Option[String] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.RETRYING
+
+  def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, notificationUrl)
+  def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, notificationUrl)
 }
 
 sealed trait SendingStatus extends EnumEntry {
