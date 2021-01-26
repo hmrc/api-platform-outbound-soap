@@ -35,7 +35,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val ccn2Password: String = config.get[String]("ccn2Password")
 
   val retryInterval: Duration = Duration(config.getOptional[String]("retry.interval").getOrElse("60 sec"))
-  val retryDuration: Duration = Duration(config.getOptional[String]("retry.duration").getOrElse("5 min"))
+  val retryDuration: Duration = Duration(config.getOptional[String]("retry.duration").getOrElse("15 min"))
   val retryInitialDelay: Duration = Duration(config.getOptional[String]("retry.initial.delay").getOrElse("30 sec"))
   val retryEnabled: Boolean = config.getOptional[Boolean]("retry.enabled").getOrElse(false)
   val retryJobLockDuration: Duration = Duration(config.getOptional[String]("retry.lock.duration").getOrElse("1 hr"))
