@@ -73,7 +73,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       "IE4N03notifyERiskAnalysisHit",
       """<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>""",
       None,
-      confirmationOfDelivery = false
+      confirmationOfDelivery = false,
+      Some("http://somenotification.url")
     )
     val messageId = Some("123")
     val messageRequestWithAddressing = messageRequest
@@ -153,6 +154,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         messageCaptor.getValue.messageId shouldBe None
         messageCaptor.getValue.globalId shouldBe expectedGlobalId
         messageCaptor.getValue.createDateTime shouldBe expectedCreateDateTime
+        messageCaptor.getValue.notificationUrl shouldBe messageRequest.notificationUrl
       }
     }
 
@@ -174,6 +176,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         messageCaptor.getValue.createDateTime shouldBe expectedCreateDateTime
         messageCaptor.getValue.asInstanceOf[RetryingOutboundSoapMessage].retryDateTime shouldBe
           expectedCreateDateTime.plus(expectedInterval.toMillis)
+        messageCaptor.getValue.notificationUrl shouldBe messageRequest.notificationUrl
       }
     }
 
