@@ -26,7 +26,8 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class OutboundConnector @Inject()(appConfig: AppConfig, httpClient: HttpClient)(implicit ec: ExecutionContext) {
+class OutboundConnector @Inject()(appConfig: AppConfig, httpClient: HttpClient)
+                                 (implicit ec: ExecutionContext) extends HttpErrorFunctions {
 
   val logger: LoggerLike = Logger
 
@@ -34,7 +35,7 @@ class OutboundConnector @Inject()(appConfig: AppConfig, httpClient: HttpClient)(
     implicit val hc: HeaderCarrier =  HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
 
     httpClient.POSTString[HttpResponse](appConfig.ccn2Url, message) map { response =>
-      if (response.status >= 400) {
+      if (!is2xx(response.status)) {
         logger.warn(s"Attempted request to ${appConfig.ccn2Url} responded with HTTP response code ${response.status}")
       }
       response.status
