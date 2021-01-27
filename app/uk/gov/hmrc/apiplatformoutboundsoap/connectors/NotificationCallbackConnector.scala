@@ -35,10 +35,12 @@ class NotificationCallbackConnector @Inject()(httpClient: HttpClient)
   def sendNotification(message: OutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Option[Int]] = {
     (message.notificationUrl map { url =>
       httpClient.POST[SoapMessageStatus, HttpResponse](url, SoapMessageStatus(message.globalId, message.messageId, message.status)) map { response =>
-        if (!is2xx(response.status)) {
-          logger.warn(s"Attempted request to $url responded with HTTP response code ${response.status}")
-        }
+        logger.info(s"Notification to $url with global ID ${message.globalId} and message ID ${message.messageId} responded with HTTP code ${response.status}")
         Some(response.status)
+      } recover {
+        case e: Exception =>
+          logger.error(s"Notification to $url with global ID ${message.globalId} and message ID ${message.messageId} failed: ${e.getMessage}", e)
+          None
       }
     }).getOrElse(successful(None))
   }
