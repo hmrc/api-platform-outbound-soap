@@ -103,5 +103,14 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
 
       result shouldBe expectedStatus
     }
+
+    "recover from exceptions" in new Setup {
+      val message: OutboundSoapMessage = RetryingOutboundSoapMessage(
+        globalId, messageId, "<Envelope><Body>foobar</Body></Envelope>", now, now, Some("https://invalidUrl"))
+
+      val result: Option[Int] = await(underTest.sendNotification(message))
+
+      result shouldBe None
+    }
   }
 }
