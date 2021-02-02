@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source.{fromFutureSource, fromIterator}
 import org.apache.axiom.soap.SOAPEnvelope
 import org.joda.time.DateTime
@@ -48,6 +49,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
+  val actorSystem: ActorSystem = app.injector.instanceOf[ActorSystem]
 
   trait Setup {
     val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]
@@ -60,7 +62,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val expectedGlobalId: UUID = UUID.randomUUID
 
     val underTest: OutboundService = new OutboundService(outboundConnectorMock, wsSecurityServiceMock,
-      outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock) {
+      outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock, actorSystem) {
       override def now: DateTime = expectedCreateDateTime
       override def randomUUID: UUID = expectedGlobalId
     }
