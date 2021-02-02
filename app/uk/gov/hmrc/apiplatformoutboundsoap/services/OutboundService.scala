@@ -17,6 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
 import akka.Done
+import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.apache.axiom.om.OMAbstractFactory.{getOMFactory, getSOAP12Factory}
@@ -49,28 +50,23 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
                                 wsSecurityService: WsSecurityService,
                                 outboundMessageRepository: OutboundMessageRepository,
                                 notificationCallbackConnector: NotificationCallbackConnector,
-                                appConfig: AppConfig)
+                                appConfig: AppConfig,
+                                actorSystem: ActorSystem)
                               (implicit val ec: ExecutionContext, mat: Materializer)
                               extends HttpErrorFunctions {
   val logger: LoggerLike = Logger
+  val blockingIoContext: ExecutionContext = actorSystem.dispatchers.lookup("blocking-io-context")
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
   def now: DateTime = DateTime.now(UTC)
   def randomUUID: UUID = UUID.randomUUID
 
   def sendMessage(message: MessageRequest): Future[OutboundSoapMessage] = {
-    val envelope = buildEnvelope(message)
-    outboundConnector.postMessage(envelope) flatMap { result =>
-      val globalId: UUID = randomUUID
-      val messageId = message.addressing.flatMap(_.messageId)
-      val outboundSoapMessage = if (is2xx(result)) {
-        logger.info(s"Message with global ID $globalId and message ID $messageId successfully sent")
-        SentOutboundSoapMessage(globalId, messageId, envelope, now, message.notificationUrl)
-      } else {
-        logger.info(s"Message with global ID $globalId and message ID $messageId failed on first attempt")
-        RetryingOutboundSoapMessage(globalId, messageId, envelope, now, now.plus(appConfig.retryInterval.toMillis), message.notificationUrl)
-      }
-      outboundMessageRepository.persist(outboundSoapMessage).map(_ => outboundSoapMessage)
-    }
+    for {
+      envelope <- buildEnvelope(message)
+      result <- outboundConnector.postMessage(envelope)
+      outboundSoapMessage = buildOutboundSoapMessage(message, envelope, result)
+      _ <- outboundMessageRepository.persist(outboundSoapMessage)
+    } yield outboundSoapMessage
   }
 
   def retryMessages(implicit hc: HeaderCarrier): Future[Done] = {
@@ -101,22 +97,37 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     }
   }
 
-  private def buildEnvelope(message: MessageRequest): String = {
-    val wsdlDefinition: Definition = parseWsdl(message.wsdlUrl)
-    val portType = wsdlDefinition.getAllPortTypes.asScala.values.head.asInstanceOf[PortType]
-    val operation: Operation = portType.getOperations.asScala.map(_.asInstanceOf[Operation])
-      .find(_.getName == message.wsdlOperation).getOrElse(throw new NotFoundException(s"Operation ${message.wsdlOperation} not found"))
-
-    val envelope: SOAPEnvelope = getSOAP12Factory.getDefaultEnvelope
-    addHeaders(message, operation, envelope)
-    addBody(message, operation, envelope)
-    wsSecurityService.addUsernameToken(envelope)
+  private def buildOutboundSoapMessage(message: MessageRequest, envelope: String, result: Int): OutboundSoapMessage = {
+    val globalId: UUID = randomUUID
+    val messageId = message.addressing.flatMap(_.messageId)
+    if (is2xx(result)) {
+      logger.info(s"Message with global ID $globalId and message ID $messageId successfully sent")
+      SentOutboundSoapMessage(globalId, messageId, envelope, now, message.notificationUrl)
+    } else {
+      logger.info(s"Message with global ID $globalId and message ID $messageId failed on first attempt")
+      RetryingOutboundSoapMessage(globalId, messageId, envelope, now, now.plus(appConfig.retryInterval.toMillis), message.notificationUrl)
+    }
   }
 
-  private def parseWsdl(wsdlUrl: String): Definition = {
+  private def buildEnvelope(message: MessageRequest): Future[String] = {
+    parseWsdl(message.wsdlUrl) map { wsdlDefinition: Definition =>
+      val portType = wsdlDefinition.getAllPortTypes.asScala.values.head.asInstanceOf[PortType]
+      val operation: Operation = portType.getOperations.asScala.map(_.asInstanceOf[Operation])
+        .find(_.getName == message.wsdlOperation).getOrElse(throw new NotFoundException(s"Operation ${message.wsdlOperation} not found"))
+
+      val envelope: SOAPEnvelope = getSOAP12Factory.getDefaultEnvelope
+      addHeaders(message, operation, envelope)
+      addBody(message, operation, envelope)
+      wsSecurityService.addUsernameToken(envelope)
+    }
+  }
+
+  private def parseWsdl(wsdlUrl: String): Future[Definition] = {
     val reader: WSDLReader = WSDLUtil.newWSDLReaderWithPopulatedExtensionRegistry
     reader.setFeature("javax.wsdl.importDocuments", true)
-    reader.readWSDL(wsdlUrl)
+    Future {
+      reader.readWSDL(wsdlUrl)
+    }(blockingIoContext)
   }
 
   private def addHeaders(message: MessageRequest, operation: Operation, envelope: SOAPEnvelope): Unit = {
