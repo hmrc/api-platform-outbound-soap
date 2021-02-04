@@ -17,7 +17,6 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
 import akka.Done
-import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.apache.axiom.om.OMAbstractFactory.{getOMFactory, getSOAP12Factory}
@@ -30,10 +29,11 @@ import org.apache.axis2.wsdl.WSDLUtil
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
+import play.api.cache.AsyncCacheApi
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, SentOutboundSoapMessage}
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, NotFoundException}
 
@@ -51,11 +51,10 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
                                 outboundMessageRepository: OutboundMessageRepository,
                                 notificationCallbackConnector: NotificationCallbackConnector,
                                 appConfig: AppConfig,
-                                actorSystem: ActorSystem)
+                                cache: AsyncCacheApi)
                               (implicit val ec: ExecutionContext, mat: Materializer)
                               extends HttpErrorFunctions {
   val logger: LoggerLike = Logger
-  val blockingIoContext: ExecutionContext = actorSystem.dispatchers.lookup("blocking-io-context")
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
   def now: DateTime = DateTime.now(UTC)
   def randomUUID: UUID = UUID.randomUUID
@@ -110,7 +109,9 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   }
 
   private def buildEnvelope(message: MessageRequest): Future[String] = {
-    parseWsdl(message.wsdlUrl) map { wsdlDefinition: Definition =>
+    cache.getOrElseUpdate[Definition](message.wsdlUrl, appConfig.cacheDuration) {
+      parseWsdl(message.wsdlUrl)
+    } map { wsdlDefinition: Definition =>
       val portType = wsdlDefinition.getAllPortTypes.asScala.values.head.asInstanceOf[PortType]
       val operation: Operation = portType.getOperations.asScala.map(_.asInstanceOf[Operation])
         .find(_.getName == message.wsdlOperation).getOrElse(throw new NotFoundException(s"Operation ${message.wsdlOperation} not found"))
@@ -125,9 +126,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   private def parseWsdl(wsdlUrl: String): Future[Definition] = {
     val reader: WSDLReader = WSDLUtil.newWSDLReaderWithPopulatedExtensionRegistry
     reader.setFeature("javax.wsdl.importDocuments", true)
-    Future {
-      reader.readWSDL(wsdlUrl)
-    }(blockingIoContext)
+    Future.successful(reader.readWSDL(wsdlUrl))
   }
 
   private def addHeaders(message: MessageRequest, operation: Operation, envelope: SOAPEnvelope): Unit = {
