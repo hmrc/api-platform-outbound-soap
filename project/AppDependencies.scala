@@ -1,4 +1,5 @@
 import play.core.PlayVersion.current
+import play.sbt.PlayImport.caffeine
 import sbt._
 
 object AppDependencies {
@@ -11,7 +12,8 @@ object AppDependencies {
     "org.apache.axis2" % "axis2-kernel" % "1.7.9",
     "org.apache.wss4j" % "wss4j-ws-security-dom" % "2.3.0",
     "com.beachape" %% "enumeratum-play-json" % "1.6.0",
-    "com.typesafe.play" %% "play-json-joda" % "2.7.1"
+    "com.typesafe.play" %% "play-json-joda" % "2.7.1",
+    caffeine
   )
 
   val test = Seq(

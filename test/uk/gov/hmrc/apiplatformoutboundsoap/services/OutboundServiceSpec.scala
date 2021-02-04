@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import akka.actor.ActorSystem
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source.{fromFutureSource, fromIterator}
 import org.apache.axiom.soap.SOAPEnvelope
 import org.joda.time.DateTime
@@ -24,19 +24,19 @@ import org.joda.time.DateTimeZone.UTC
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import org.xmlunit.builder.DiffBuilder
 import org.xmlunit.builder.DiffBuilder.compare
 import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
+import play.api.cache.AsyncCacheApi
 import play.api.http.Status.OK
 import play.api.test.Helpers._
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, FailedOutboundSoapMessage, MessageRequest, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, SentOutboundSoapMessage}
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
-import akka.stream.Materializer
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import java.util.UUID
 import java.util.UUID.randomUUID
@@ -49,7 +49,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
-  val actorSystem: ActorSystem = app.injector.instanceOf[ActorSystem]
+  val cache: AsyncCacheApi = app.injector.instanceOf[AsyncCacheApi]
 
   trait Setup {
     val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]
@@ -57,12 +57,14 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val wsSecurityServiceMock: WsSecurityService = mock[WsSecurityService]
     val notificationCallbackConnectorMock: NotificationCallbackConnector = mock[NotificationCallbackConnector]
     val appConfigMock: AppConfig = mock[AppConfig]
+    val cacheSpy: AsyncCacheApi = spy[AsyncCacheApi](cache)
 
     val expectedCreateDateTime: DateTime = DateTime.now(UTC)
     val expectedGlobalId: UUID = UUID.randomUUID
+    when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
 
     val underTest: OutboundService = new OutboundService(outboundConnectorMock, wsSecurityServiceMock,
-      outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock, actorSystem) {
+      outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock, cacheSpy) {
       override def now: DateTime = expectedCreateDateTime
       override def randomUUID: UUID = expectedGlobalId
     }
@@ -123,6 +125,16 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       result.messageId shouldBe None
       result.globalId shouldBe expectedGlobalId
       result.createDateTime shouldBe expectedCreateDateTime
+    }
+
+    "get the WSDL definition from cache" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
+      when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
+
+      await(underTest.sendMessage(messageRequest))
+
+      verify(cacheSpy).getOrElseUpdate(*, *)(*)(*)
     }
 
     "return the outbound soap message for failure" in new Setup {
