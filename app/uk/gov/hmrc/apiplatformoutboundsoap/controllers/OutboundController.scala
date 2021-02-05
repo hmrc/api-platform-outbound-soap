@@ -23,6 +23,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, SoapMessageSt
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.{Inject, Singleton}
 import javax.wsdl.WSDLException
@@ -43,7 +44,7 @@ class OutboundController @Inject()(cc: ControllerComponents,
   }
 
   private def recovery: PartialFunction[Throwable, Result] = {
-    case e: WSDLException => BadRequest(e.getMessage)
-    case e: NotFoundException => NotFound(e.message)
+    case e: WSDLException => BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, e.getMessage)))
+    case e: NotFoundException => NotFound(Json.toJson(ErrorResponse(NOT_FOUND, e.message)))
   }
 }
