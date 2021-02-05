@@ -125,7 +125,8 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe "WSDLException: faultCode=the fault code: the error"
+      (contentAsJson(result) \ "statusCode").as[Int] shouldBe BAD_REQUEST
+      (contentAsJson(result) \ "message").as[String] shouldBe "WSDLException: faultCode=the fault code: the error"
     }
 
     "return not found when the operation is missing in the WSDL definition" in new Setup {
@@ -134,7 +135,8 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
       status(result) shouldBe NOT_FOUND
-      contentAsString(result) shouldBe "Operation foobar not found"
+      (contentAsJson(result) \ "statusCode").as[Int] shouldBe NOT_FOUND
+      (contentAsJson(result) \ "message").as[String] shouldBe "Operation foobar not found"
     }
   }
 }
