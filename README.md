@@ -1,6 +1,8 @@
 # api-platform-outbound-soap
 
-This service allows other HMRC services to send messages to external SOAP web services.
+This service allows other HMRC services to send messages to external SOAP web services. It has a retry mechanism whereby if the
+CCN2 SOAP service doesn't return a 2xx response, the request will be retried every 60 seconds for 5 minutes by default.
+The total duration and the interval are both configurable.
 
 ## `POST /message`
 Send a SOAP message for the given operation
@@ -57,7 +59,7 @@ HTTP Status: 200 (OK)
 | --- | --- |
 | `globalId` | Unique identifier allocated to the request when it is received  |
 | `messageId` | This optional property, if present, is the value provided by the `addressing.messageId` property of the request|
-| `status` | Either `SENT` if the response from the SOAP service was 2xx or `FAILED` otherwise|
+| `status` | One of `SENT` if the response from the SOAP service was 2xx, `RETRYING` if an error response was received from the SOAP service, or `FAILED` if all retries have been exhausted|
 
 ### Error scenarios
 | Scenario | HTTP Status |
