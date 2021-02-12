@@ -101,10 +101,10 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     val messageId = message.addressing.flatMap(_.messageId)
     if (is2xx(result)) {
       logger.info(s"Message with global ID $globalId and message ID $messageId successfully sent")
-      SentOutboundSoapMessage(globalId, messageId, envelope, now, message.notificationUrl)
+      SentOutboundSoapMessage(globalId, messageId, envelope, now, result, message.notificationUrl)
     } else {
       logger.info(s"Message with global ID $globalId and message ID $messageId failed on first attempt")
-      RetryingOutboundSoapMessage(globalId, messageId, envelope, now, now.plus(appConfig.retryInterval.toMillis), message.notificationUrl)
+      RetryingOutboundSoapMessage(globalId, messageId, envelope, now, now.plus(appConfig.retryInterval.toMillis), result, message.notificationUrl)
     }
   }
 

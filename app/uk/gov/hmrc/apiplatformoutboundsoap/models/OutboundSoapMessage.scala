@@ -29,12 +29,14 @@ sealed trait OutboundSoapMessage {
   val status: SendingStatus
   val createDateTime: DateTime
   val notificationUrl: Option[String]
+  val ccnHttpStatus: Int
 }
 
 case class SentOutboundSoapMessage(globalId: UUID,
                                    messageId: Option[String],
                                    soapMessage: String,
                                    createDateTime: DateTime,
+                                   ccnHttpStatus: Int,
                                    notificationUrl: Option[String] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.SENT
 }
@@ -43,6 +45,7 @@ case class FailedOutboundSoapMessage(globalId: UUID,
                                      messageId: Option[String],
                                      soapMessage: String,
                                      createDateTime: DateTime,
+                                     ccnHttpStatus: Int,
                                      notificationUrl: Option[String] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.FAILED
 }
@@ -52,11 +55,12 @@ case class RetryingOutboundSoapMessage(globalId: UUID,
                                        soapMessage: String,
                                        createDateTime: DateTime,
                                        retryDateTime: DateTime,
+                                       ccnHttpStatus: Int,
                                        notificationUrl: Option[String] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.RETRYING
 
-  def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, notificationUrl)
-  def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, notificationUrl)
+  def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, ccnHttpStatus, notificationUrl)
+  def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, ccnHttpStatus, notificationUrl)
 }
 
 sealed trait SendingStatus extends EnumEntry {
