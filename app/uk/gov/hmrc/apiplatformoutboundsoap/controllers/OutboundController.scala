@@ -38,7 +38,7 @@ class OutboundController @Inject()(cc: ControllerComponents,
   def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
     withJsonBody[MessageRequest] { messageRequest =>
       outboundService.sendMessage(messageRequest)
-        .map(outboundSoapMessage => Ok(Json.toJson(SoapMessageStatus(outboundSoapMessage.globalId, outboundSoapMessage.messageId, outboundSoapMessage.status))))
+        .map(outboundSoapMessage => Ok(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(outboundSoapMessage))))
         .recover(recovery)
     }
   }

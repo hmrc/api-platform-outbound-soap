@@ -28,14 +28,15 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
 
   override implicit lazy val app: Application = appBuilder.build()
   val repo: OutboundMessageRepository = app.injector.instanceOf[OutboundMessageRepository]
+  val ccnHttpStatus: Int = 200
   implicit val materialiser: Materializer = app.injector.instanceOf[Materializer]
 
   override def beforeEach(): Unit = {
     prepare(repo)
   }
 
-  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC), DateTime.now(UTC))
-  val sentMessage = SentOutboundSoapMessage(randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC))
+  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
+  val sentMessage = SentOutboundSoapMessage(randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC), ccnHttpStatus)
   "persist" should {
 
     "insert a retrying message when it does not exist" in {
@@ -94,7 +95,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
 
     "not retrieve retrying messages when they are not ready for retrying" in {
       val retryingMessageNotReadyForRetrying = RetryingOutboundSoapMessage(
-        randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC), DateTime.now(UTC).plusHours(1))
+        randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC), DateTime.now(UTC).plusHours(1), ccnHttpStatus)
 
       await(repo.persist(retryingMessageNotReadyForRetrying))
       await(repo.persist(sentMessage))
