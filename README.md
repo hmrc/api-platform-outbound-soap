@@ -49,9 +49,10 @@ Send a SOAP message for the given operation
 HTTP Status: 200 (OK)
 ```
 {
-    "globalId":"28a76012-b417-493a-ae64-c241f17a22ca",
-    "messageId":"154517743d31-4251-b820-276809a6762b",
-    "status":"SENT"
+    "globalId": "28a76012-b417-493a-ae64-c241f17a22ca",
+    "messageId": "154517743d31-4251-b820-276809a6762b",
+    "status": "SENT",
+    "ccnHttpStatus": 201
 }
 ```
 
@@ -60,6 +61,7 @@ HTTP Status: 200 (OK)
 | `globalId` | Unique identifier allocated to the request when it is received  |
 | `messageId` | This optional property, if present, is the value provided by the `addressing.messageId` property of the request|
 | `status` | One of `SENT` if the response from the SOAP service was 2xx, `RETRYING` if an error response was received from the SOAP service, or `FAILED` if all retries have been exhausted|
+| `ccnHttpStatus` | The HTTP status code returned by the SOAP service|
 
 ### Error scenarios
 | Scenario | HTTP Status |
