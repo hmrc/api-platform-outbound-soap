@@ -63,7 +63,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
     import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.retryingSoapMessageFormatter
 
     collection
-      .find(Json.obj("_type" -> SendingStatus.RETRYING.soapMessageType,
+      .find(Json.obj("status" -> SendingStatus.RETRYING.entryName,
         "retryDateTime" -> Json.obj("$lte" -> now(UTC))), Option.empty[OutboundSoapMessage])
       .sort(Json.obj("retryDateTime" -> 1))
       .cursor[RetryingOutboundSoapMessage](ReadPreference.primaryPreferred)
@@ -80,7 +80,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
 
   def updateStatus(globalId: UUID, newStatus: SendingStatus): Future[Option[OutboundSoapMessage]] = {
     findAndUpdate(Json.obj("globalId" -> globalId),
-      Json.obj("$set" -> Json.obj("_type" -> newStatus.soapMessageType)), fetchNewObject = true)
+      Json.obj("$set" -> Json.obj("status" -> newStatus.entryName)), fetchNewObject = true)
       .map(_.result[OutboundSoapMessage])
   }
 }
