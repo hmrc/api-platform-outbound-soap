@@ -21,6 +21,7 @@ import org.joda.time.DateTime
 
 import java.util.UUID
 import scala.collection.immutable
+import scala.reflect.classTag
 
 sealed trait OutboundSoapMessage {
   val globalId: UUID
@@ -30,6 +31,22 @@ sealed trait OutboundSoapMessage {
   val createDateTime: DateTime
   val notificationUrl: Option[String]
   val ccnHttpStatus: Int
+}
+
+object OutboundSoapMessage {
+
+  def typeToStatus (fullyQualifiedName: String): SendingStatus = {
+
+    if (fullyQualifiedName == classTag[SentOutboundSoapMessage].runtimeClass.getCanonicalName) {
+      SendingStatus.SENT
+    } else if (fullyQualifiedName == classTag[FailedOutboundSoapMessage].runtimeClass.getCanonicalName) {
+      SendingStatus.FAILED
+    } else if (fullyQualifiedName == classTag[RetryingOutboundSoapMessage].runtimeClass.getCanonicalName) {
+      SendingStatus.RETRYING
+    } else {
+      throw new IllegalArgumentException
+    }
+  }
 }
 
 case class SentOutboundSoapMessage(globalId: UUID,
@@ -63,23 +80,15 @@ case class RetryingOutboundSoapMessage(globalId: UUID,
   def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, ccnHttpStatus, notificationUrl)
 }
 
-sealed trait SendingStatus extends EnumEntry {
-  val soapMessageType: String
-}
+sealed trait SendingStatus extends EnumEntry
 
 object SendingStatus extends Enum[SendingStatus] with PlayJsonEnum[SendingStatus] {
   val values: immutable.IndexedSeq[SendingStatus] = findValues
 
-  case object SENT extends SendingStatus {
-    override val soapMessageType: String = "uk.gov.hmrc.apiplatformoutboundsoap.models.SentOutboundSoapMessage"
-  }
+  case object SENT extends SendingStatus
 
-  case object FAILED extends SendingStatus {
-    override val soapMessageType: String = "uk.gov.hmrc.apiplatformoutboundsoap.models.FailedOutboundSoapMessage"
-  }
+  case object FAILED extends SendingStatus
 
-  case object RETRYING extends SendingStatus {
-    override val soapMessageType: String = "uk.gov.hmrc.apiplatformoutboundsoap.models.RetryingOutboundSoapMessage"
-  }
+  case object RETRYING extends SendingStatus
 
 }
