@@ -23,6 +23,7 @@ import play.api.Application
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 import uk.gov.hmrc.apiplatformoutboundsoap.support.{Ccn2Service, WireMockSupport}
 
 class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with WireMockSupport with Ccn2Service {
@@ -31,9 +32,8 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
   protected  def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
       .configure(
-        "metrics.enabled"                 -> false,
-        "auditing.enabled"                -> false,
-        "ccn2Url" -> wireMockBaseUrlAsString
+        "metrics.enabled" -> false,
+        "auditing.enabled" -> false
       )
 
   trait Setup {
@@ -41,11 +41,11 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
   }
 
   "postMessage" should {
-    val message = "<Envelope><Body>foobar</Body></Envelope>"
+    val message = SoapRequest("<Envelope><Body>foobar</Body></Envelope>", wireMockBaseUrlAsString)
 
     "return successful statuses returned by the CCN2 service" in new Setup {
       val expectedStatus: Int = OK
-      primeCcn2Endpoint(message, expectedStatus)
+      primeCcn2Endpoint(message.soapEnvelope, expectedStatus)
 
       val result: Int = await(underTest.postMessage(message))
 
@@ -54,7 +54,7 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
 
     "return error statuses returned by the CCN2 service" in new Setup {
       val expectedStatus: Int = INTERNAL_SERVER_ERROR
-      primeCcn2Endpoint(message, expectedStatus)
+      primeCcn2Endpoint(message.soapEnvelope, expectedStatus)
 
       val result: Int = await(underTest.postMessage(message))
 
@@ -62,15 +62,15 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
     }
 
     "send the given message to the CCN2 service" in new Setup {
-      primeCcn2Endpoint(message, OK)
+      primeCcn2Endpoint(message.soapEnvelope, OK)
 
       await(underTest.postMessage(message))
 
-      verifyRequestBody(message)
+      verifyRequestBody(message.soapEnvelope)
     }
 
     "send the right SOAP content type header" in new Setup {
-      primeCcn2Endpoint(message, OK)
+      primeCcn2Endpoint(message.soapEnvelope, OK)
 
       await(underTest.postMessage(message))
 

@@ -27,6 +27,7 @@ sealed trait OutboundSoapMessage {
   val globalId: UUID
   val messageId: Option[String]
   val soapMessage: String
+  val destinationUrl: String
   val status: SendingStatus
   val createDateTime: DateTime
   val notificationUrl: Option[String]
@@ -52,6 +53,7 @@ object OutboundSoapMessage {
 case class SentOutboundSoapMessage(globalId: UUID,
                                    messageId: Option[String],
                                    soapMessage: String,
+                                   destinationUrl: String,
                                    createDateTime: DateTime,
                                    ccnHttpStatus: Int,
                                    notificationUrl: Option[String] = None) extends OutboundSoapMessage {
@@ -61,6 +63,7 @@ case class SentOutboundSoapMessage(globalId: UUID,
 case class FailedOutboundSoapMessage(globalId: UUID,
                                      messageId: Option[String],
                                      soapMessage: String,
+                                     destinationUrl: String,
                                      createDateTime: DateTime,
                                      ccnHttpStatus: Int,
                                      notificationUrl: Option[String] = None) extends OutboundSoapMessage {
@@ -70,14 +73,15 @@ case class FailedOutboundSoapMessage(globalId: UUID,
 case class RetryingOutboundSoapMessage(globalId: UUID,
                                        messageId: Option[String],
                                        soapMessage: String,
+                                       destinationUrl: String,
                                        createDateTime: DateTime,
                                        retryDateTime: DateTime,
                                        ccnHttpStatus: Int,
                                        notificationUrl: Option[String] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.RETRYING
 
-  def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, ccnHttpStatus, notificationUrl)
-  def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, createDateTime, ccnHttpStatus, notificationUrl)
+  def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl)
+  def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl)
 }
 
 sealed trait SendingStatus extends EnumEntry

@@ -11,13 +11,12 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
-import play.api.test.Helpers.contentAsJson
 import reactivemongo.api.ReadPreference
 import reactivemongo.bson.BSONLong
 import reactivemongo.core.errors.DatabaseException
+import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{FailedOutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, SentOutboundSoapMessage}
 import uk.gov.hmrc.mongo.RepositoryPreparation
-import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 
 import java.util.UUID.randomUUID
 
@@ -38,16 +37,16 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
     prepare(repo)
   }
 
-  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
-  val sentMessage = SentOutboundSoapMessage(randomUUID, Some("MessageId-A2"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC), ccnHttpStatus)
-  val failedMessage = FailedOutboundSoapMessage(randomUUID, Some("MessageId-A3"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC), ccnHttpStatus)
+  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
+  val sentMessage = SentOutboundSoapMessage(randomUUID, Some("MessageId-A2"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
+  val failedMessage = FailedOutboundSoapMessage(randomUUID, Some("MessageId-A3"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
   "persist" should {
 
     "insert a retrying message when it does not exist" in {
       await(repo.persist(retryingMessage))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
-      val Some(jsonRecord) = await(repo.collection.find(Json.obj()).one[JsObject])
+      val Some(jsonRecord) = await(repo.collection.find(Json.obj(), Option.empty[JsObject]).one[JsObject])
       (jsonRecord \ "status").as[String] shouldBe "RETRYING"
 
 
@@ -59,7 +58,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
       await(repo.persist(sentMessage))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
-      val Some(jsonRecord) = await(repo.collection.find(Json.obj()).one[JsObject])
+      val Some(jsonRecord) = await(repo.collection.find(Json.obj(), Option.empty[JsObject]).one[JsObject])
       (jsonRecord \ "status").as[String] shouldBe "SENT"
 
       fetchedRecords.size shouldBe 1
@@ -70,7 +69,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
       await(repo.persist(failedMessage))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
-      val Some(jsonRecord) = await(repo.collection.find(Json.obj()).one[JsObject])
+      val Some(jsonRecord) = await(repo.collection.find(Json.obj(), Option.empty[JsObject]).one[JsObject])
       (jsonRecord \ "status").as[String] shouldBe "FAILED"
 
       fetchedRecords.size shouldBe 1
@@ -117,7 +116,8 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
 
     "not retrieve retrying messages when they are not ready for retrying" in {
       val retryingMessageNotReadyForRetrying = RetryingOutboundSoapMessage(
-        randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", DateTime.now(UTC), DateTime.now(UTC).plusHours(1), ccnHttpStatus)
+        randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC),
+        DateTime.now(UTC).plusHours(1), ccnHttpStatus)
 
       await(repo.persist(retryingMessageNotReadyForRetrying))
       await(repo.persist(sentMessage))

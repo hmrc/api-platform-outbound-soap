@@ -39,8 +39,9 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, NotFoundException}
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
+import javax.wsdl.extensions.soap12.SOAP12Address
 import javax.wsdl.xml.WSDLReader
-import javax.wsdl.{Definition, Operation, Part, PortType}
+import javax.wsdl.{Definition, Operation, Part, PortType, Service, Port}
 import javax.xml.namespace.QName
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -61,9 +62,9 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
 
   def sendMessage(message: MessageRequest): Future[OutboundSoapMessage] = {
     for {
-      envelope <- buildEnvelope(message)
-      result <- outboundConnector.postMessage(envelope)
-      outboundSoapMessage = buildOutboundSoapMessage(message, envelope, result)
+      soapRequest <- buildSoapRequest(message)
+      result <- outboundConnector.postMessage(soapRequest)
+      outboundSoapMessage = buildOutboundSoapMessage(message, soapRequest, result)
       _ <- outboundMessageRepository.persist(outboundSoapMessage)
     } yield outboundSoapMessage
   }
@@ -74,7 +75,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
 
   private def retryMessage(message: RetryingOutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Unit] = {
     val nextRetryDateTime: DateTime = now.plus(appConfig.retryInterval.toMillis)
-    outboundConnector.postMessage(message.soapMessage) flatMap { result =>
+    outboundConnector.postMessage(SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { result =>
       if (is2xx(result)) {
         logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} succeeded")
         outboundMessageRepository.updateStatus(message.globalId, SendingStatus.SENT) map { updatedMessage =>
@@ -96,19 +97,20 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     }
   }
 
-  private def buildOutboundSoapMessage(message: MessageRequest, envelope: String, result: Int): OutboundSoapMessage = {
+  private def buildOutboundSoapMessage(message: MessageRequest, soapRequest: SoapRequest, result: Int): OutboundSoapMessage = {
     val globalId: UUID = randomUUID
     val messageId = message.addressing.flatMap(_.messageId)
     if (is2xx(result)) {
       logger.info(s"Message with global ID $globalId and message ID $messageId successfully sent")
-      SentOutboundSoapMessage(globalId, messageId, envelope, now, result, message.notificationUrl)
+      SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl , now, result, message.notificationUrl)
     } else {
       logger.info(s"Message with global ID $globalId and message ID $messageId failed on first attempt")
-      RetryingOutboundSoapMessage(globalId, messageId, envelope, now, now.plus(appConfig.retryInterval.toMillis), result, message.notificationUrl)
+      RetryingOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
+        now.plus(appConfig.retryInterval.toMillis), result, message.notificationUrl)
     }
   }
 
-  private def buildEnvelope(message: MessageRequest): Future[String] = {
+  private def buildSoapRequest(message: MessageRequest): Future[SoapRequest] = {
     cache.getOrElseUpdate[Definition](message.wsdlUrl, appConfig.cacheDuration) {
       parseWsdl(message.wsdlUrl)
     } map { wsdlDefinition: Definition =>
@@ -119,7 +121,12 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
       val envelope: SOAPEnvelope = getSOAP12Factory.getDefaultEnvelope
       addHeaders(message, operation, envelope)
       addBody(message, operation, envelope)
-      wsSecurityService.addUsernameToken(envelope)
+      val enrichedEnvelope: String = wsSecurityService.addUsernameToken(envelope)
+      val url: String = wsdlDefinition.getAllServices.asScala.values.head.asInstanceOf[Service]
+        .getPorts.asScala.values.head.asInstanceOf[Port]
+        .getExtensibilityElements.asScala.filter(_.isInstanceOf[SOAP12Address]).head.asInstanceOf[SOAP12Address]
+        .getLocationURI
+      SoapRequest(enrichedEnvelope, url)
     }
   }
 

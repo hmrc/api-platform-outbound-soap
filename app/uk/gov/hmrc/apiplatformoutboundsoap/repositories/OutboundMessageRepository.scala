@@ -21,7 +21,7 @@ import akka.stream.scaladsl.Source
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.akkastream.cursorProducer
 import reactivemongo.api.ReadPreference
@@ -64,7 +64,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
 
     collection
       .find(Json.obj("status" -> SendingStatus.RETRYING.entryName,
-        "retryDateTime" -> Json.obj("$lte" -> now(UTC))), Option.empty[OutboundSoapMessage])
+        "retryDateTime" -> Json.obj("$lte" -> now(UTC))), Option.empty[JsObject])
       .sort(Json.obj("retryDateTime" -> 1))
       .cursor[RetryingOutboundSoapMessage](ReadPreference.primaryPreferred)
       .documentSource()
