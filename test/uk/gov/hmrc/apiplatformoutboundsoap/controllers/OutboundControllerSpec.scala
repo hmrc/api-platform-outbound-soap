@@ -51,7 +51,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
     val fakeRequest = FakeRequest("POST", "/message")
     val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>")
-    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, Some("123"), "envelope", DateTime.now(UTC), 200)
+    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, Some("123"), "envelope", "some url", DateTime.now(UTC), 200)
 
     "return the response returned by the outbound service" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))

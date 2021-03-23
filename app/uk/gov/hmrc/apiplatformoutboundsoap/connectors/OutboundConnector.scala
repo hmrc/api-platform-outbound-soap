@@ -18,7 +18,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.{Logger, LoggerLike}
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
+import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HttpClient, _}
 
@@ -26,17 +26,17 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class OutboundConnector @Inject()(appConfig: AppConfig, httpClient: HttpClient)
+class OutboundConnector @Inject()(httpClient: HttpClient)
                                  (implicit ec: ExecutionContext) extends HttpErrorFunctions {
 
   val logger: LoggerLike = Logger
 
-  def postMessage(message: String): Future[Int] = {
+  def postMessage(soapRequest: SoapRequest): Future[Int] = {
     implicit val hc: HeaderCarrier =  HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
 
-    httpClient.POSTString[HttpResponse](appConfig.ccn2Url, message) map { response =>
+    httpClient.POSTString[HttpResponse](soapRequest.destinationUrl, soapRequest.soapEnvelope) map { response =>
       if (!is2xx(response.status)) {
-        logger.warn(s"Attempted request to ${appConfig.ccn2Url} responded with HTTP response code ${response.status}")
+        logger.warn(s"Attempted request to ${soapRequest.destinationUrl} responded with HTTP response code ${response.status}")
       }
       response.status
     }
