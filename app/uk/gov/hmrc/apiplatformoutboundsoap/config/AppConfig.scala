@@ -35,7 +35,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val cryptoKeystoreLocation: String = config.get[String]("cryptoKeystoreLocation")
   val keystoreAlias:String = config.get[String]("keystoreAlias")
   val keystorePassword: String = config.get[String]("keystorePassword")
-  val signMessage: Boolean = config.get[Boolean]("signMessage")
+  val enableMessageSigning: Boolean = config.get[Boolean]("enableMessageSigning")
 
   val retryInterval: Duration = Duration(config.getOptional[String]("retry.interval").getOrElse("60 sec"))
   val retryDuration: Duration = Duration(config.getOptional[String]("retry.duration").getOrElse("5 min"))

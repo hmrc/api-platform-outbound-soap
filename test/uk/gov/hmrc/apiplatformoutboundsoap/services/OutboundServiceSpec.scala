@@ -222,7 +222,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
      "send the expected SOAP envelope to the security service which adds signature" in new Setup {
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
-      when(appConfigMock.signMessage).thenReturn(true)
+      when(appConfigMock.enableMessageSigning).thenReturn(true)
       when(wsSecurityServiceMock.addSignature(messageCaptor.capture())).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
