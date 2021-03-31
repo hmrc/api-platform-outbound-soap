@@ -121,7 +121,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
       val envelope: SOAPEnvelope = getSOAP12Factory.getDefaultEnvelope
       addHeaders(message, operation, envelope)
       addBody(message, operation, envelope)
-      val enrichedEnvelope: String = wsSecurityService.addUsernameToken(envelope)
+      val enrichedEnvelope: String = if (appConfig.signMessage) wsSecurityService.addSignature(envelope) else wsSecurityService.addUsernameToken(envelope)
       val url: String = wsdlDefinition.getAllServices.asScala.values.head.asInstanceOf[Service]
         .getPorts.asScala.values.head.asInstanceOf[Port]
         .getExtensibilityElements.asScala.filter(_.isInstanceOf[SOAP12Address]).head.asInstanceOf[SOAP12Address]

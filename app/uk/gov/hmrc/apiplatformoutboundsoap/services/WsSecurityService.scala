@@ -18,25 +18,48 @@ package uk.gov.hmrc.apiplatformoutboundsoap.services
 
 import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.util.XMLUtils.toDOM
+import org.apache.wss4j.common.WSS4JConstants
 import org.apache.wss4j.common.WSS4JConstants.PASSWORD_TEXT
+import org.apache.wss4j.common.crypto.{Crypto, CryptoFactory}
 import org.apache.wss4j.common.util.XMLUtils.prettyDocumentToString
-import org.apache.wss4j.dom.message.{WSSecHeader, WSSecUsernameToken}
+import org.apache.wss4j.dom.WSConstants
+import org.apache.wss4j.dom.message.{WSSecHeader, WSSecSignature, WSSecUsernameToken}
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
+import java.util.Properties
 import javax.inject.{Inject, Singleton}
 
 @Singleton
 class WsSecurityService @Inject()(appConfig: AppConfig) {
   val ROLE = "CCN2.Platform"
 
-  def addUsernameToken(soapEnvelope: SOAPEnvelope): String = {
-    val envelopeDocument = toDOM(soapEnvelope).getOwnerDocument
+  val crytoProperties: Properties = new Properties()
+  crytoProperties.setProperty("org.apache.wss4j.crypto.merlin.keystore.file", appConfig.cryptoKeystoreLocation)
+  crytoProperties.setProperty("org.apache.wss4j.crypto.merlin.keystore.password", appConfig.keystorePassword)
+  lazy val crypto: Crypto = CryptoFactory.getInstance(crytoProperties)
 
-    val secHeader: WSSecHeader = new WSSecHeader(ROLE, envelopeDocument)
-    secHeader.insertSecurityHeader()
+  def addUsernameToken(soapEnvelope: SOAPEnvelope): String = {
+    val secHeader: WSSecHeader = createSecurityHeader(soapEnvelope)
     val builder = new WSSecUsernameToken(secHeader)
     builder.setPasswordType(PASSWORD_TEXT)
     builder.setUserInfo(appConfig.ccn2Username, appConfig.ccn2Password)
     prettyDocumentToString(builder.build())
+  }
+
+  def addSignature(soapEnvelope: SOAPEnvelope): String = {
+    val secHeader: WSSecHeader = createSecurityHeader(soapEnvelope)
+    val builder = new WSSecSignature(secHeader)
+    builder.setKeyIdentifierType(WSConstants.ISSUER_SERIAL)
+    builder.setUserInfo(appConfig.keystoreAlias, appConfig.keystorePassword)
+    builder.setDigestAlgo(WSS4JConstants.SHA256)
+    builder.setSignatureAlgorithm(WSS4JConstants.RSA_SHA256)
+    prettyDocumentToString(builder.build(crypto))
+  }
+
+  private def createSecurityHeader(soapEnvelope: SOAPEnvelope) = {
+    val envelopeDocument = toDOM(soapEnvelope).getOwnerDocument
+    val secHeader: WSSecHeader = new WSSecHeader(ROLE, envelopeDocument)
+    secHeader.insertSecurityHeader()
+    secHeader
   }
 }
