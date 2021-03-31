@@ -27,13 +27,13 @@ import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
-import java.util.UUID
+import java.util.UUID.randomUUID
 
 class WsSecurityServiceSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
   trait Setup {
     val ccn2Username = "Joe Bloggs"
-    val ccn2Password: String = UUID.randomUUID().toString
+    val ccn2Password: String = randomUUID().toString
     val mockAppConfig: AppConfig = mock[AppConfig]
     when(mockAppConfig.ccn2Username).thenReturn(ccn2Username)
     when(mockAppConfig.ccn2Password).thenReturn(ccn2Password)
