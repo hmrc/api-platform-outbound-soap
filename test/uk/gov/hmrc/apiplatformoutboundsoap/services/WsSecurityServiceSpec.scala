@@ -33,7 +33,7 @@ class WsSecurityServiceSpec extends AnyWordSpec with Matchers with MockitoSugar 
 
   trait Setup {
     val ccn2Username = "Joe Bloggs"
-    val ccn2Password: String = randomUUID().toString
+    val ccn2Password: String = randomUUID.toString
     val mockAppConfig: AppConfig = mock[AppConfig]
     when(mockAppConfig.ccn2Username).thenReturn(ccn2Username)
     when(mockAppConfig.ccn2Password).thenReturn(ccn2Password)
