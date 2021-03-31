@@ -32,6 +32,10 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
 
   val ccn2Username: String = config.get[String]("ccn2Username")
   val ccn2Password: String = config.get[String]("ccn2Password")
+  val cryptoKeystoreLocation: String = config.get[String]("cryptoKeystoreLocation")
+  val keystoreAlias:String = config.get[String]("keystoreAlias")
+  val keystorePassword: String = config.get[String]("keystorePassword")
+  val enableMessageSigning: Boolean = config.get[Boolean]("enableMessageSigning")
 
   val retryInterval: Duration = Duration(config.getOptional[String]("retry.interval").getOrElse("60 sec"))
   val retryDuration: Duration = Duration(config.getOptional[String]("retry.duration").getOrElse("5 min"))

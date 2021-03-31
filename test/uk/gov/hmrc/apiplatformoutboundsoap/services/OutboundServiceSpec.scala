@@ -209,9 +209,21 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       messageCaptor.getValue.destinationUrl shouldBe "http://example.com/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
     }
 
-    "send the expected SOAP envelope to the connector" in new Setup {
+    "send the expected SOAP envelope to the security service which adds username token" in new Setup {
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope())
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
+
+      await(underTest.sendMessage(messageRequest))
+
+      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope()).build().hasDifferences shouldBe false
+    }
+
+     "send the expected SOAP envelope to the security service which adds signature" in new Setup {
+      val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
+      when(appConfigMock.enableMessageSigning).thenReturn(true)
+      when(wsSecurityServiceMock.addSignature(messageCaptor.capture())).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
 

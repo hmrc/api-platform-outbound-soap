@@ -42,5 +42,8 @@ lazy val microservice = Project(appName, file("."))
   .settings(
     unmanagedResourceDirectories in IntegrationTest += baseDirectory.value / "test" / "resources"
   )
+  .settings(
+    unmanagedResourceDirectories in Compile += baseDirectory.value / "app" / "resources"
+  )
   .settings(resolvers += Resolver.jcenterRepo)
   .settings(scalacOptions ++= Seq("-Ypartial-unification"))
