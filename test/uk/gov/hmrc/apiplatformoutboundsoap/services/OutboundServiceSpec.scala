@@ -75,7 +75,6 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
   "sendMessage" should {
     val messageId = "123"
     val to = "CCN2"
-//    val replyTo = "HMRC_reply"
     val messageRequest = MessageRequest(
       "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
       "IE4N03notifyERiskAnalysisHit",
@@ -224,7 +223,6 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       await(underTest.sendMessage(messageRequest))
 
-      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().getDifferences.forEach(d => println(d))
       getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
