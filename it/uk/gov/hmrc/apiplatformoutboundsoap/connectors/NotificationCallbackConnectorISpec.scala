@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
   trait Setup {
     val underTest: NotificationCallbackConnector = app.injector.instanceOf[NotificationCallbackConnector]
     val globalId: UUID = UUID.randomUUID()
-    val messageId: Option[String] = Some("some message id")
+    val messageId: String = "some message id"
     val now: DateTime = DateTime.now
     val httpStatus: Int = 200
     implicit val hc: HeaderCarrier = HeaderCarrier()

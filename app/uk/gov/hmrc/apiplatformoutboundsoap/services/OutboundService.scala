@@ -53,11 +53,13 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
                                 notificationCallbackConnector: NotificationCallbackConnector,
                                 appConfig: AppConfig,
                                 cache: AsyncCacheApi)
-                              (implicit val ec: ExecutionContext, mat: Materializer)
-                              extends HttpErrorFunctions {
+                               (implicit val ec: ExecutionContext, mat: Materializer)
+  extends HttpErrorFunctions {
   val logger: LoggerLike = Logger
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
+
   def now: DateTime = DateTime.now(UTC)
+
   def randomUUID: UUID = UUID.randomUUID
 
   def sendMessage(message: MessageRequest): Future[OutboundSoapMessage] = {
@@ -83,13 +85,13 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
           ()
         }
       } else {
-        if (message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)){
+        if (message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)) {
           logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} failed on last attempt")
           outboundMessageRepository.updateStatus(message.globalId, SendingStatus.FAILED).map { updatedMessage =>
             updatedMessage.map(notificationCallbackConnector.sendNotification)
             ()
           }
-        } else{
+        } else {
           logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} failed")
           outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryDateTime).map(_ => ())
         }
@@ -99,10 +101,10 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
 
   private def buildOutboundSoapMessage(message: MessageRequest, soapRequest: SoapRequest, result: Int): OutboundSoapMessage = {
     val globalId: UUID = randomUUID
-    val messageId = message.addressing.flatMap(_.messageId)
+    val messageId = message.addressing.messageId
     if (is2xx(result)) {
       logger.info(s"Message with global ID $globalId and message ID $messageId successfully sent")
-      SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl , now, result, message.notificationUrl)
+      SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, result, message.notificationUrl)
     } else {
       logger.info(s"Message with global ID $globalId and message ID $messageId failed on first attempt")
       RetryingOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
@@ -172,14 +174,14 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   }
 
   private def addOptionalAddressingHeaders(message: MessageRequest, wsaNs: OMNamespace, envelope: SOAPEnvelope): Unit = {
-    message.addressing foreach { addressing =>
-      addressing.from.foreach(addToSoapHeader(_, WSA_FROM, wsaNs, envelope))
-      addressing.to.foreach(addToSoapHeader(_, WSA_TO, wsaNs, envelope))
-      addressing.replyTo.foreach(addToSoapHeader(_, WSA_REPLY_TO, wsaNs, envelope))
-      addressing.faultTo.foreach(addToSoapHeader(_, WSA_FAULT_TO, wsaNs, envelope))
-      addressing.messageId.foreach(addToSoapHeader(_, WSA_MESSAGE_ID, wsaNs, envelope))
-      addressing.relatesTo.foreach(addToSoapHeader(_, WSA_RELATES_TO, wsaNs, envelope))
-    }
+    //    message.addressing foreach { addressing =>
+    message.addressing.from.foreach(addToSoapHeader(_, WSA_FROM, wsaNs, envelope))
+    addToSoapHeader(message.addressing.to, WSA_TO, wsaNs, envelope)
+    message.addressing.replyTo.foreach(addToSoapHeader(_, WSA_REPLY_TO, wsaNs, envelope))
+    message.addressing.faultTo.foreach(addToSoapHeader(_, WSA_FAULT_TO, wsaNs, envelope))
+    addToSoapHeader(message.addressing.messageId, WSA_MESSAGE_ID, wsaNs, envelope)
+    message.addressing.relatesTo.foreach(addToSoapHeader(_, WSA_RELATES_TO, wsaNs, envelope))
+    //    }
   }
 
   private def addToSoapHeader(property: String, elementName: String, namespace: OMNamespace, envelope: SOAPEnvelope): Unit = {

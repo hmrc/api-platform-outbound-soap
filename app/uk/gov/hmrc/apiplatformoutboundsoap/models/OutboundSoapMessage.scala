@@ -25,7 +25,7 @@ import scala.reflect.classTag
 
 sealed trait OutboundSoapMessage {
   val globalId: UUID
-  val messageId: Option[String]
+  val messageId: String
   val soapMessage: String
   val destinationUrl: String
   val status: SendingStatus
@@ -51,7 +51,7 @@ object OutboundSoapMessage {
 }
 
 case class SentOutboundSoapMessage(globalId: UUID,
-                                   messageId: Option[String],
+                                   messageId: String,
                                    soapMessage: String,
                                    destinationUrl: String,
                                    createDateTime: DateTime,
@@ -61,7 +61,7 @@ case class SentOutboundSoapMessage(globalId: UUID,
 }
 
 case class FailedOutboundSoapMessage(globalId: UUID,
-                                     messageId: Option[String],
+                                     messageId: String,
                                      soapMessage: String,
                                      destinationUrl: String,
                                      createDateTime: DateTime,
@@ -71,7 +71,7 @@ case class FailedOutboundSoapMessage(globalId: UUID,
 }
 
 case class RetryingOutboundSoapMessage(globalId: UUID,
-                                       messageId: Option[String],
+                                       messageId: String,
                                        soapMessage: String,
                                        destinationUrl: String,
                                        createDateTime: DateTime,
