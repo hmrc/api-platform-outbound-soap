@@ -174,14 +174,12 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   }
 
   private def addOptionalAddressingHeaders(message: MessageRequest, wsaNs: OMNamespace, envelope: SOAPEnvelope): Unit = {
-    //    message.addressing foreach { addressing =>
     message.addressing.from.foreach(addToSoapHeader(_, WSA_FROM, wsaNs, envelope))
     addToSoapHeader(message.addressing.to, WSA_TO, wsaNs, envelope)
     message.addressing.replyTo.foreach(addToSoapHeader(_, WSA_REPLY_TO, wsaNs, envelope))
     message.addressing.faultTo.foreach(addToSoapHeader(_, WSA_FAULT_TO, wsaNs, envelope))
     addToSoapHeader(message.addressing.messageId, WSA_MESSAGE_ID, wsaNs, envelope)
     message.addressing.relatesTo.foreach(addToSoapHeader(_, WSA_RELATES_TO, wsaNs, envelope))
-    //    }
   }
 
   private def addToSoapHeader(property: String, elementName: String, namespace: OMNamespace, envelope: SOAPEnvelope): Unit = {
