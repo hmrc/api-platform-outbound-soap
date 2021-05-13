@@ -121,7 +121,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       val result: OutboundSoapMessage = await(underTest.sendMessage(messageRequest))
 
-      result.status shouldBe SendingStatus.SENT
+      result.status shouldBe DeliveryStatus.SENT
       result.soapMessage shouldBe expectedSoapEnvelope()
       result.messageId shouldBe None
       result.globalId shouldBe expectedGlobalId
@@ -147,7 +147,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       val result: OutboundSoapMessage = await(underTest.sendMessage(messageRequest))
 
-      result.status shouldBe SendingStatus.RETRYING
+      result.status shouldBe DeliveryStatus.RETRYING
       result.soapMessage shouldBe expectedSoapEnvelope()
       result.messageId shouldBe None
       result.globalId shouldBe expectedGlobalId
@@ -164,7 +164,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
         await(underTest.sendMessage(messageRequest))
 
-        messageCaptor.getValue.status shouldBe SendingStatus.SENT
+        messageCaptor.getValue.status shouldBe DeliveryStatus.SENT
         messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope()
         messageCaptor.getValue.messageId shouldBe None
         messageCaptor.getValue.globalId shouldBe expectedGlobalId
@@ -185,7 +185,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
         await(underTest.sendMessage(messageRequest))
 
-        messageCaptor.getValue.status shouldBe SendingStatus.RETRYING
+        messageCaptor.getValue.status shouldBe DeliveryStatus.RETRYING
         messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope()
         messageCaptor.getValue.messageId shouldBe None
         messageCaptor.getValue.globalId shouldBe expectedGlobalId
@@ -296,13 +296,13 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
-      when(outboundMessageRepositoryMock.updateStatus(*, *)).thenReturn(successful(None))
+      when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryingMessage).toIterator))))
 
       await(underTest.retryMessages)
 
-      verify(outboundMessageRepositoryMock).updateStatus(retryingMessage.globalId, SendingStatus.SENT)
+      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, DeliveryStatus.SENT)
     }
 
     "abort retrying messages if unexpected exception thrown" in new Setup {
@@ -314,13 +314,13 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.retryDuration).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(SoapRequest(anotherRetryingMessage.soapMessage, anotherRetryingMessage.destinationUrl)))
         .thenReturn(successful(OK))
-      when(outboundMessageRepositoryMock.updateStatus(*, *)).thenReturn(successful(None))
+      when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryingMessage, anotherRetryingMessage).toIterator))))
 
       intercept[Exception](await(underTest.retryMessages))
 
-      verify(outboundMessageRepositoryMock, never).updateStatus(anotherRetryingMessage.globalId, SendingStatus.SENT)
+      verify(outboundMessageRepositoryMock, never).updateSendingStatus(anotherRetryingMessage.globalId, DeliveryStatus.SENT)
     }
 
     "retry a message and persist with retrying status when SOAP request returned error status" in new Setup {
@@ -330,7 +330,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(INTERNAL_SERVER_ERROR))
-      when(outboundMessageRepositoryMock.updateStatus(*, *)).thenReturn(successful(None))
+      when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.updateNextRetryTime(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryingMessage).toIterator))))
@@ -348,13 +348,13 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(appConfigMock.retryDuration).thenReturn(retryDuration)
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(INTERNAL_SERVER_ERROR))
-      when(outboundMessageRepositoryMock.updateStatus(*, *)).thenReturn(successful(None))
+      when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryingMessage).toIterator))))
 
       await(underTest.retryMessages)
 
-      verify(outboundMessageRepositoryMock).updateStatus(retryingMessage.globalId, SendingStatus.FAILED)
+      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, DeliveryStatus.FAILED)
       verify(outboundMessageRepositoryMock, never).updateNextRetryTime(*, *)
     }
 
@@ -366,7 +366,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
-      when(outboundMessageRepositoryMock.updateStatus(*, *)).thenReturn(successful(Some(sentMessageForNotification)))
+      when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(sentMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryingMessage).toIterator))))
 
@@ -384,7 +384,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(appConfigMock.retryDuration).thenReturn(retryDuration)
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(INTERNAL_SERVER_ERROR))
-      when(outboundMessageRepositoryMock.updateStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
+      when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryingMessage).toIterator))))
 
@@ -402,14 +402,14 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(appConfigMock.retryDuration).thenReturn(retryDuration)
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
-      when(outboundMessageRepositoryMock.updateStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
+      when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryingMessage).toIterator))))
       when(notificationCallbackConnectorMock.sendNotification(*)(*)).thenReturn(successful(Some(INTERNAL_SERVER_ERROR)))
 
       await(underTest.retryMessages)
 
-      verify(outboundMessageRepositoryMock).updateStatus(retryingMessage.globalId, SendingStatus.SENT)
+      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, DeliveryStatus.SENT)
 
     }
   }

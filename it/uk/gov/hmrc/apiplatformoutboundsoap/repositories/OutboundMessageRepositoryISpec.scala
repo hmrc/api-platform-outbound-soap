@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
 import akka.stream.Materializer
@@ -15,7 +31,7 @@ import reactivemongo.api.ReadPreference
 import reactivemongo.bson.BSONLong
 import reactivemongo.core.errors.DatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{FailedOutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, SentOutboundSoapMessage}
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.mongo.RepositoryPreparation
 
 import java.util.UUID.randomUUID
@@ -165,26 +181,59 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
   "updateStatus" should {
     "update the message to have a status of FAILED" in {
       await(repo.persist(retryingMessage))
-      val Some(returnedSoapMessage) = await(repo.updateStatus(retryingMessage.globalId, SendingStatus.FAILED))
+      val Some(returnedSoapMessage) = await(repo.updateSendingStatus(retryingMessage.globalId, DeliveryStatus.FAILED))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
-      fetchedRecords.head.status shouldBe SendingStatus.FAILED
+      fetchedRecords.head.status shouldBe DeliveryStatus.FAILED
       fetchedRecords.head.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
-      returnedSoapMessage.status shouldBe SendingStatus.FAILED
+      returnedSoapMessage.status shouldBe DeliveryStatus.FAILED
       returnedSoapMessage.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
     }
 
     "update the message to have a status of SENT" in {
       await(repo.persist(retryingMessage))
-      val Some(returnedSoapMessage) = await(repo.updateStatus(retryingMessage.globalId, SendingStatus.SENT))
+      val Some(returnedSoapMessage) = await(repo.updateSendingStatus(retryingMessage.globalId, DeliveryStatus.SENT))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
-      fetchedRecords.head.status shouldBe SendingStatus.SENT
+      fetchedRecords.head.status shouldBe DeliveryStatus.SENT
       fetchedRecords.head.isInstanceOf[SentOutboundSoapMessage] shouldBe true
-      returnedSoapMessage.status shouldBe SendingStatus.SENT
+      returnedSoapMessage.status shouldBe DeliveryStatus.SENT
       returnedSoapMessage.isInstanceOf[SentOutboundSoapMessage] shouldBe true
     }
   }
+
+  "updateConfirmationStatus" should {
+    val expectedConfirmationMessageBody = "<xml>foobar</xml>"
+    "update a message when a CoE is received" in {
+      await(repo.persist(sentMessage))
+      await(repo.updateConfirmationStatus(sentMessage.globalId, DeliveryStatus.COE, expectedConfirmationMessageBody))
+
+      val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe DeliveryStatus.COE
+      fetchedRecords.head.asInstanceOf[CoeSoapMessage].coeMessage shouldBe expectedConfirmationMessageBody
+    }
+
+    "update a message when a CoD is received" in {
+      await(repo.persist(sentMessage))
+      await(repo.updateConfirmationStatus(sentMessage.globalId, DeliveryStatus.COD, expectedConfirmationMessageBody))
+
+      val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe DeliveryStatus.COD
+      fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe expectedConfirmationMessageBody
+    }
+
+    "update a message with an invalid delivery status" in {
+      await(repo.persist(sentMessage))
+      val exception: MatchError = intercept[MatchError] {
+        await(repo.updateConfirmationStatus(sentMessage.globalId, DeliveryStatus.SENT, expectedConfirmationMessageBody))
+      }
+
+      exception.getMessage() should include("SENT")
+    }
+  }
+
 }

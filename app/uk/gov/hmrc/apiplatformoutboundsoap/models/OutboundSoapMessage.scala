@@ -28,7 +28,7 @@ sealed trait OutboundSoapMessage {
   val messageId: Option[String]
   val soapMessage: String
   val destinationUrl: String
-  val status: SendingStatus
+  val status: DeliveryStatus
   val createDateTime: DateTime
   val notificationUrl: Option[String]
   val ccnHttpStatus: Int
@@ -36,14 +36,18 @@ sealed trait OutboundSoapMessage {
 
 object OutboundSoapMessage {
 
-  def typeToStatus (fullyQualifiedName: String): SendingStatus = {
+  def typeToStatus(fullyQualifiedName: String): DeliveryStatus = {
 
     if (fullyQualifiedName == classTag[SentOutboundSoapMessage].runtimeClass.getCanonicalName) {
-      SendingStatus.SENT
+      DeliveryStatus.SENT
     } else if (fullyQualifiedName == classTag[FailedOutboundSoapMessage].runtimeClass.getCanonicalName) {
-      SendingStatus.FAILED
+      DeliveryStatus.FAILED
     } else if (fullyQualifiedName == classTag[RetryingOutboundSoapMessage].runtimeClass.getCanonicalName) {
-      SendingStatus.RETRYING
+      DeliveryStatus.RETRYING
+    } else if (fullyQualifiedName == classTag[CoeSoapMessage].runtimeClass.getCanonicalName) {
+      DeliveryStatus.COE
+    } else if (fullyQualifiedName == classTag[CodSoapMessage].runtimeClass.getCanonicalName) {
+      DeliveryStatus.COD
     } else {
       throw new IllegalArgumentException
     }
@@ -57,7 +61,7 @@ case class SentOutboundSoapMessage(globalId: UUID,
                                    createDateTime: DateTime,
                                    ccnHttpStatus: Int,
                                    notificationUrl: Option[String] = None) extends OutboundSoapMessage {
-  override val status: SendingStatus = SendingStatus.SENT
+  override val status: DeliveryStatus = DeliveryStatus.SENT
 }
 
 case class FailedOutboundSoapMessage(globalId: UUID,
@@ -67,7 +71,29 @@ case class FailedOutboundSoapMessage(globalId: UUID,
                                      createDateTime: DateTime,
                                      ccnHttpStatus: Int,
                                      notificationUrl: Option[String] = None) extends OutboundSoapMessage {
-  override val status: SendingStatus = SendingStatus.FAILED
+  override val status: DeliveryStatus = DeliveryStatus.FAILED
+}
+
+case class CoeSoapMessage(globalId: UUID,
+                          messageId: Option[String],
+                          soapMessage: String,
+                          destinationUrl: String,
+                          createDateTime: DateTime,
+                          ccnHttpStatus: Int,
+                          notificationUrl: Option[String] = None,
+                          coeMessage: String) extends OutboundSoapMessage {
+  override val status: DeliveryStatus = DeliveryStatus.COE
+}
+
+case class CodSoapMessage(globalId: UUID,
+                          messageId: Option[String],
+                          soapMessage: String,
+                          destinationUrl: String,
+                          createDateTime: DateTime,
+                          ccnHttpStatus: Int,
+                          notificationUrl: Option[String] = None,
+                          codMessage: String) extends OutboundSoapMessage {
+  override val status: DeliveryStatus = DeliveryStatus.COD
 }
 
 case class RetryingOutboundSoapMessage(globalId: UUID,
@@ -78,21 +104,26 @@ case class RetryingOutboundSoapMessage(globalId: UUID,
                                        retryDateTime: DateTime,
                                        ccnHttpStatus: Int,
                                        notificationUrl: Option[String] = None) extends OutboundSoapMessage {
-  override val status: SendingStatus = SendingStatus.RETRYING
+  override val status: DeliveryStatus = DeliveryStatus.RETRYING
 
   def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl)
+
   def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl)
 }
 
-sealed trait SendingStatus extends EnumEntry
+sealed trait DeliveryStatus extends EnumEntry
 
-object SendingStatus extends Enum[SendingStatus] with PlayJsonEnum[SendingStatus] {
-  val values: immutable.IndexedSeq[SendingStatus] = findValues
+object DeliveryStatus extends Enum[DeliveryStatus] with PlayJsonEnum[DeliveryStatus] {
+  val values: immutable.IndexedSeq[DeliveryStatus] = findValues
 
-  case object SENT extends SendingStatus
+  case object SENT extends DeliveryStatus
 
-  case object FAILED extends SendingStatus
+  case object FAILED extends DeliveryStatus
 
-  case object RETRYING extends SendingStatus
+  case object RETRYING extends DeliveryStatus
+
+  case object COE extends DeliveryStatus
+
+  case object COD extends DeliveryStatus
 
 }
