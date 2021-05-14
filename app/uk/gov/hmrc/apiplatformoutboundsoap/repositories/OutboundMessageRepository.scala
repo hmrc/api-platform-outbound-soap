@@ -30,7 +30,8 @@ import reactivemongo.api.indexes.IndexType.Ascending
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, RetryingOutboundSoapMessage, DeliveryStatus}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus.ConfirmationStatus
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{DelStatus, DeliveryStatus, OutboundSoapMessage, RetryingOutboundSoapMessage, SendStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.outboundSoapMessageFormatter
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -63,7 +64,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
     import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.retryingSoapMessageFormatter
 
     collection
-      .find(Json.obj("status" -> DeliveryStatus.RETRYING.entryName,
+      .find(Json.obj("status" -> DeliveryStatus.SendingStatus.RETRYING.entryName,
         "retryDateTime" -> Json.obj("$lte" -> now(UTC))), Option.empty[JsObject])
       .sort(Json.obj("retryDateTime" -> 1))
       .cursor[RetryingOutboundSoapMessage](ReadPreference.primaryPreferred)
@@ -78,16 +79,16 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
       .map(_.result[RetryingOutboundSoapMessage])
   }
 
-  def updateSendingStatus(globalId: UUID, newStatus: DeliveryStatus): Future[Option[OutboundSoapMessage]] = {
+  def updateSendingStatus(globalId: UUID, newStatus: SendStatus): Future[Option[OutboundSoapMessage]] = {
     findAndUpdate(Json.obj("globalId" -> globalId),
       Json.obj("$set" -> Json.obj("status" -> newStatus.entryName)), fetchNewObject = true)
       .map(_.result[OutboundSoapMessage])
   }
 
-  def updateConfirmationStatus(globalId: UUID, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
+  def updateConfirmationStatus(globalId: UUID, newStatus: DelStatus , confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
    val field: String =  newStatus match {
-      case DeliveryStatus.COD => "codMessage"
-      case DeliveryStatus.COE => "coeMessage"
+     case DelStatus.COD => "codMessage"
+     case DelStatus.COE => "coeMessage"
     }
     findAndUpdate(Json.obj("globalId" -> globalId),
       Json.obj("$set" -> Json.obj("status" -> newStatus.entryName, field -> confirmationMsg )), fetchNewObject = true)

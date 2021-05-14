@@ -78,14 +78,14 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     outboundConnector.postMessage(SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { result =>
       if (is2xx(result)) {
         logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} succeeded")
-        outboundMessageRepository.updateSendingStatus(message.globalId, DeliveryStatus.SENT) map { updatedMessage =>
+        outboundMessageRepository.updateSendingStatus(message.globalId, SendStatus.SENT) map { updatedMessage =>
           updatedMessage.map(notificationCallbackConnector.sendNotification)
           ()
         }
       } else {
         if (message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)){
           logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} failed on last attempt")
-          outboundMessageRepository.updateSendingStatus(message.globalId, DeliveryStatus.FAILED).map { updatedMessage =>
+          outboundMessageRepository.updateSendingStatus(message.globalId, SendStatus.FAILED).map { updatedMessage =>
             updatedMessage.map(notificationCallbackConnector.sendNotification)
             ()
           }
@@ -102,11 +102,11 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     val messageId = message.addressing.flatMap(_.messageId)
     if (is2xx(result)) {
       logger.info(s"Message with global ID $globalId and message ID $messageId successfully sent")
-      SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl , now, result, message.notificationUrl)
+      SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl , now, result, message.notificationUrl, None, None)
     } else {
       logger.info(s"Message with global ID $globalId and message ID $messageId failed on first attempt")
       RetryingOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
-        now.plus(appConfig.retryInterval.toMillis), result, message.notificationUrl)
+        now.plus(appConfig.retryInterval.toMillis), result, message.notificationUrl, None, None)
     }
   }
 

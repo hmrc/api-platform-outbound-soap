@@ -28,7 +28,7 @@ import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, DeliveryStatus, SentOutboundSoapMessage}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{DeliveryStatus, MessageRequest, SendStatus, SentOutboundSoapMessage, StatusType}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.http.NotFoundException
 
@@ -51,7 +51,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
     val fakeRequest = FakeRequest("POST", "/message")
     val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>")
-    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, Some("123"), "envelope", "some url", DateTime.now(UTC), 200)
+    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, Some("123"), "envelope", "some url", DateTime.now(UTC), 200, None, None)
 
     "return the response returned by the outbound service" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
@@ -61,7 +61,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       status(result) shouldBe OK
       (contentAsJson(result) \ "globalId").as[UUID] shouldBe outboundSoapMessage.globalId
       (contentAsJson(result) \ "messageId").as[String] shouldBe outboundSoapMessage.messageId.get
-      (contentAsJson(result) \ "status").as[DeliveryStatus] shouldBe outboundSoapMessage.status
+      (contentAsJson(result) \ "status").as[SendStatus] shouldBe outboundSoapMessage.status
     }
 
     "send the message request to the outbound service" in new Setup {
