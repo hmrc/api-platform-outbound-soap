@@ -121,7 +121,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       val result: OutboundSoapMessage = await(underTest.sendMessage(messageRequest))
 
-      result.status shouldBe SendStatus.SENT
+      result.status shouldBe SendingStatus.SENT
       result.soapMessage shouldBe expectedSoapEnvelope()
       result.messageId shouldBe None
       result.globalId shouldBe expectedGlobalId
@@ -147,7 +147,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       val result: OutboundSoapMessage = await(underTest.sendMessage(messageRequest))
 
-      result.status shouldBe SendStatus.RETRYING
+      result.status shouldBe SendingStatus.RETRYING
       result.soapMessage shouldBe expectedSoapEnvelope()
       result.messageId shouldBe None
       result.globalId shouldBe expectedGlobalId
@@ -164,7 +164,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
         await(underTest.sendMessage(messageRequest))
 
-        messageCaptor.getValue.status shouldBe SendStatus.SENT
+        messageCaptor.getValue.status shouldBe SendingStatus.SENT
         messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope()
         messageCaptor.getValue.messageId shouldBe None
         messageCaptor.getValue.globalId shouldBe expectedGlobalId
@@ -185,7 +185,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
         await(underTest.sendMessage(messageRequest))
 
-        messageCaptor.getValue.status shouldBe SendStatus.RETRYING
+        messageCaptor.getValue.status shouldBe SendingStatus.RETRYING
         messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope()
         messageCaptor.getValue.messageId shouldBe None
         messageCaptor.getValue.globalId shouldBe expectedGlobalId
@@ -302,7 +302,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       await(underTest.retryMessages)
 
-      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, SendStatus.SENT)
+      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, SendingStatus.SENT)
     }
 
     "abort retrying messages if unexpected exception thrown" in new Setup {
@@ -320,7 +320,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       intercept[Exception](await(underTest.retryMessages))
 
-      verify(outboundMessageRepositoryMock, never).updateSendingStatus(anotherRetryingMessage.globalId, SendStatus.SENT)
+      verify(outboundMessageRepositoryMock, never).updateSendingStatus(anotherRetryingMessage.globalId, SendingStatus.SENT)
     }
 
     "retry a message and persist with retrying status when SOAP request returned error status" in new Setup {
@@ -354,7 +354,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       await(underTest.retryMessages)
 
-      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, SendStatus.FAILED)
+      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, SendingStatus.FAILED)
       verify(outboundMessageRepositoryMock, never).updateNextRetryTime(*, *)
     }
 
@@ -409,7 +409,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       await(underTest.retryMessages)
 
-      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, SendStatus.SENT)
+      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, SendingStatus.SENT)
 
     }
   }

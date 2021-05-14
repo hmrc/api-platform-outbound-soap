@@ -181,25 +181,25 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
   "updateStatus" should {
     "update the message to have a status of FAILED" in {
       await(repo.persist(retryingMessage))
-      val Some(returnedSoapMessage) = await(repo.updateSendingStatus(retryingMessage.globalId, SendStatus.FAILED))
+      val Some(returnedSoapMessage) = await(repo.updateSendingStatus(retryingMessage.globalId, SendingStatus.FAILED))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
-      fetchedRecords.head.status shouldBe SendStatus.FAILED
+      fetchedRecords.head.status shouldBe SendingStatus.FAILED
       fetchedRecords.head.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
-      returnedSoapMessage.status shouldBe SendStatus.FAILED
+      returnedSoapMessage.status shouldBe SendingStatus.FAILED
       returnedSoapMessage.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
     }
 
     "update the message to have a status of SENT" in {
       await(repo.persist(retryingMessage))
-      val Some(returnedSoapMessage) = await(repo.updateSendingStatus(retryingMessage.globalId, SendStatus.SENT))
+      val Some(returnedSoapMessage) = await(repo.updateSendingStatus(retryingMessage.globalId, SendingStatus.SENT))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
-      fetchedRecords.head.status shouldBe SendStatus.SENT
+      fetchedRecords.head.status shouldBe SendingStatus.SENT
       fetchedRecords.head.isInstanceOf[SentOutboundSoapMessage] shouldBe true
-      returnedSoapMessage.status shouldBe SendStatus.SENT
+      returnedSoapMessage.status shouldBe SendingStatus.SENT
       returnedSoapMessage.isInstanceOf[SentOutboundSoapMessage] shouldBe true
     }
   }
@@ -208,21 +208,21 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
     val expectedConfirmationMessageBody = "<xml>foobar</xml>"
     "update a message when a CoE is received" in {
       await(repo.persist(sentMessage))
-      await(repo.updateConfirmationStatus(sentMessage.globalId, DelStatus.COE, expectedConfirmationMessageBody))
+      await(repo.updateConfirmationStatus(sentMessage.globalId, DeliveryStatus.COE, expectedConfirmationMessageBody))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
-      fetchedRecords.head.status shouldBe DelStatus.COE
+      fetchedRecords.head.status shouldBe DeliveryStatus.COE
       fetchedRecords.head.asInstanceOf[CoeSoapMessage].coeMessage shouldBe Some(expectedConfirmationMessageBody)
     }
 
     "update a message when a CoD is received" in {
       await(repo.persist(sentMessage))
-      await(repo.updateConfirmationStatus(sentMessage.globalId, DelStatus.COD, expectedConfirmationMessageBody))
+      await(repo.updateConfirmationStatus(sentMessage.globalId, DeliveryStatus.COD, expectedConfirmationMessageBody))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
-      fetchedRecords.head.status shouldBe DelStatus.COD
+      fetchedRecords.head.status shouldBe DeliveryStatus.COD
       fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
     }
 
