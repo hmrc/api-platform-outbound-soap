@@ -27,7 +27,7 @@ object JsonFormats {
     (JsPath \ "wsdlUrl").read[String] and
     (JsPath \ "wsdlOperation").read[String] and
     (JsPath \ "messageBody").read[String] and
-    (JsPath \ "addressing").readNullable[Addressing] and
+    (JsPath \ "addressing").read[Addressing] and
     ((JsPath \ "confirmationOfDelivery").read[Boolean] or Reads.pure(false)) and
     (JsPath \ "notificationUrl").readNullable[String]
     )(MessageRequest.apply _)

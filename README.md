@@ -37,12 +37,12 @@ Send a SOAP message for the given operation
 | `messageBody` | The XML message to send in the SOAP envelope |
 | `confirmationOfDelivery` | An optional boolean specifying whether the sender wishes to receive a confirmation of delivery from the target SOAP service. Defaults to false if not provided in the request |
 | `notificationUrl` | An optional String property which, if provided, will be used to POST a status update when the message is successfully sent, or is marked as failed after retries have been exhausted. The body will be in the same form as [the response below this table](#response) |
-| `addressing` | Optional property to provide WS addressing data |
+| `addressing` | The property to provide WS addressing data |
 | `addressing.from` | This optional property provides the value for the `From` element in the SOAP header |
-| `addressing.to` | This optional property provides the value for the `To` element in the SOAP header |
-| `addressing.replyTo` | This optional property provides the value for the `ReplyTo` element in the SOAP header |
+| `addressing.to` | This required property provides the value for the `To` element in the SOAP header |
+| `addressing.replyTo` | This optional property provides the value for the `ReplyTo` element in the SOAP header. This will default to TBC if not set |
 | `addressing.faultTo` | This optional property provides the value for the `FaultTo` element in the SOAP header |
-| `addressing.messageId` | This optional property provides the value for the `MessageID` element in the SOAP header |
+| `addressing.messageId` | This required property provides the value for the `MessageID` element in the SOAP header |
 | `addressing.relatesTo` | This optional property provides the value for the `RelatesTo` element in the SOAP header |
 
 ### Response

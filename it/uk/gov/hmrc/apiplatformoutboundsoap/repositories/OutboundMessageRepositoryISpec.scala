@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
 import akka.stream.Materializer
@@ -37,9 +53,9 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
     prepare(repo)
   }
 
-  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
-  val sentMessage = SentOutboundSoapMessage(randomUUID, Some("MessageId-A2"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
-  val failedMessage = FailedOutboundSoapMessage(randomUUID, Some("MessageId-A3"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
+  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
+  val sentMessage = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
+  val failedMessage = FailedOutboundSoapMessage(randomUUID, "MessageId-A3", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
   "persist" should {
 
     "insert a retrying message when it does not exist" in {
@@ -116,7 +132,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
 
     "not retrieve retrying messages when they are not ready for retrying" in {
       val retryingMessageNotReadyForRetrying = RetryingOutboundSoapMessage(
-        randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC),
+        randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC),
         DateTime.now(UTC).plusHours(1), ccnHttpStatus)
 
       await(repo.persist(retryingMessageNotReadyForRetrying))
