@@ -208,7 +208,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
     val expectedConfirmationMessageBody = "<xml>foobar</xml>"
     "update a message when a CoE is received" in {
       await(repo.persist(sentMessage))
-      await(repo.updateConfirmationStatus(sentMessage.globalId, DeliveryStatus.COE, expectedConfirmationMessageBody))
+      await(repo.updateConfirmationStatus(sentMessage.globalId.toString, DeliveryStatus.COE, expectedConfirmationMessageBody))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
@@ -218,7 +218,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
 
     "update a message when a CoD is received" in {
       await(repo.persist(sentMessage))
-      await(repo.updateConfirmationStatus(sentMessage.globalId, DeliveryStatus.COD, expectedConfirmationMessageBody))
+      await(repo.updateConfirmationStatus(sentMessage.globalId.toString, DeliveryStatus.COD, expectedConfirmationMessageBody))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
