@@ -18,33 +18,24 @@ package uk.gov.hmrc.apiplatformoutboundsoap.services
 
 import akka.http.scaladsl.util.FastFuture.successful
 import akka.stream.Materializer
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 import play.api.{Logger, LoggerLike}
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.NotificationCallbackConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions}
 
-import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.xml.{NodeSeq, XML}
 
 @Singleton
 class InboundService @Inject()(outboundMessageRepository: OutboundMessageRepository,
-                               notificationCallbackConnector: NotificationCallbackConnector,
-                               appConfig: AppConfig)
+                               notificationCallbackConnector: NotificationCallbackConnector)
                               (implicit val ec: ExecutionContext, mat: Materializer)
   extends HttpErrorFunctions {
   val logger: LoggerLike = Logger
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
-
-  def now: DateTime = DateTime.now(UTC)
-
-  def randomUUID: UUID = UUID.randomUUID
 
   def processConfirmation(confirmationRequest: String, confirmationType: Option[String])(implicit hc: HeaderCarrier) = {
     val deliveryStatus =  confirmationType.map(c => c.toUpperCase) match {
