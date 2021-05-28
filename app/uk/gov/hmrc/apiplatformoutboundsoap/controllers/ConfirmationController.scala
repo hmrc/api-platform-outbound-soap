@@ -18,35 +18,34 @@ package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import play.api.libs.json._
 import play.api.mvc._
-import uk.gov.hmrc.apiplatformoutboundsoap.services.InboundService
+import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus
+import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.{Inject, Singleton}
-import javax.wsdl.WSDLException
 import scala.concurrent.ExecutionContext
+import scala.concurrent.Future.fromTry
+import scala.util.Try
 
 @Singleton
 class ConfirmationController @Inject()(cc: ControllerComponents,
-                                       inboundService: InboundService)
+                                       inboundService: ConfirmationService)
                                       (implicit ec: ExecutionContext)
   extends BackendController(cc) {
 
-  def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    withJsonBody[String] { confirmationRequest =>
-      inboundService.processConfirmation(confirmationRequest, request.headers.get("x-soap-action")) map {
-        _ => ()
-        Ok
-      }
-    }
+  def message: Action[String] = Action.async(parse.text) { implicit request =>
+    val confirmation = request.headers.get("x-soap-action")
+    fromTry(Try({
+      confirmation.map(c => DeliveryStatus.withNameInsensitive(c)).map(ds =>
+        request.map(conf => inboundService.processConfirmation(Some(request.body), ds)))
+      Ok
+    }).recover(recovery))
   }
-  //TODO: add recovery method
-  //        .recover(recovery)
-
 
   private def recovery: PartialFunction[Throwable, Result] = {
-    case e: WSDLException => BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, e.getMessage)))
+    case e: java.util.NoSuchElementException => BadRequest(e.getMessage)
     case e: NotFoundException => NotFound(Json.toJson(ErrorResponse(NOT_FOUND, e.message)))
   }
 }

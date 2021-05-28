@@ -18,6 +18,8 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.DateTime
+import uk.gov.hmrc.apiplatformoutboundsoap.utils.Require.validate
+
 
 import java.util.UUID
 import scala.collection.immutable

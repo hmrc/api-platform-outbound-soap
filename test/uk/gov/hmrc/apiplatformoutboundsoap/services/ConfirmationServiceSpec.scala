@@ -35,7 +35,7 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
-class InboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
+class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
 
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -51,7 +51,7 @@ class InboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSu
     val expectedCreateDateTime: DateTime = DateTime.now(UTC)
     val expectedGlobalId: UUID = UUID.randomUUID
 
-    val underTest: InboundService = new InboundService(outboundMessageRepository = outboundMessageRepositoryMock,
+    val underTest: ConfirmationService = new ConfirmationService(outboundMessageRepository = outboundMessageRepositoryMock,
       notificationCallbackConnector = notificationCallbackConnectorMock)
     }
       "processConfirmation" should {
@@ -79,14 +79,14 @@ class InboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSu
         "update a sent message with a CoD" in new Setup {
           when(outboundMessageRepositoryMock.updateConfirmationStatus("RELATES_TO_ID", DeliveryStatus.COD, confirmationRequest))
             .thenReturn(successful(Some(outboundSoapMessage)))
-          val updated = await(underTest.processConfirmation(confirmationRequest, Some("CoD")))
+          underTest.processConfirmation(Some(confirmationRequest), DeliveryStatus.COD)
           verify(outboundMessageRepositoryMock).updateConfirmationStatus("RELATES_TO_ID", DeliveryStatus.COD, confirmationRequest)
         }
 
         "update a sent message with a CoE" in new Setup {
           when(outboundMessageRepositoryMock.updateConfirmationStatus("RELATES_TO_ID", DeliveryStatus.COE, confirmationRequest))
             .thenReturn(successful(Some(outboundSoapMessage)))
-          val updated = await(underTest.processConfirmation(confirmationRequest, Some("CoE")))
+          underTest.processConfirmation(Some(confirmationRequest), DeliveryStatus.COE)
           verify(outboundMessageRepositoryMock).updateConfirmationStatus("RELATES_TO_ID", DeliveryStatus.COE, confirmationRequest)
         }
       }
