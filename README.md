@@ -59,7 +59,7 @@ HTTP Status: 200 (OK)
 | Name | Description |
 | --- | --- |
 | `globalId` | Unique identifier allocated to the request when it is received  |
-| `messageId` | This optional property, if present, is the value provided by the `addressing.messageId` property of the request|
+| `messageId` | The value provided by the `addressing.messageId` property of the request|
 | `status` | One of `SENT` if the response from the SOAP service was 2xx, `RETRYING` if an error response was received from the SOAP service, or `FAILED` if all retries have been exhausted|
 | `ccnHttpStatus` | The HTTP status code returned by the SOAP service|
 
