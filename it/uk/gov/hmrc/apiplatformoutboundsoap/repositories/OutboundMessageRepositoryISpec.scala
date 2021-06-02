@@ -53,9 +53,9 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
     prepare(repo)
   }
 
-  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
-  val sentMessage = SentOutboundSoapMessage(randomUUID, Some("MessageId-A2"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
-  val failedMessage = FailedOutboundSoapMessage(randomUUID, Some("MessageId-A3"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
+  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
+  val sentMessage = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
+  val failedMessage = FailedOutboundSoapMessage(randomUUID, "MessageId-A3", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
   "persist" should {
 
     "insert a retrying message when it does not exist" in {
@@ -132,7 +132,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
 
     "not retrieve retrying messages when they are not ready for retrying" in {
       val retryingMessageNotReadyForRetrying = RetryingOutboundSoapMessage(
-        randomUUID, Some("MessageId-A1"), "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC),
+        randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC),
         DateTime.now(UTC).plusHours(1), ccnHttpStatus)
 
       await(repo.persist(retryingMessageNotReadyForRetrying))

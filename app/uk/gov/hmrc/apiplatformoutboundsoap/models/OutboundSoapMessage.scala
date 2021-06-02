@@ -18,8 +18,6 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.DateTime
-import uk.gov.hmrc.apiplatformoutboundsoap.utils.Require.validate
-
 
 import java.util.UUID
 import scala.collection.immutable
@@ -27,7 +25,7 @@ import scala.reflect.classTag
 
 sealed trait OutboundSoapMessage {
   val globalId: UUID
-  val messageId: Option[String]
+  val messageId: String
   val soapMessage: String
   val destinationUrl: String
   val status: StatusType
@@ -58,8 +56,9 @@ object OutboundSoapMessage {
   }
 }
 
-case class  SentOutboundSoapMessage(globalId: UUID,
-                                   messageId: Option[String],
+
+case class SentOutboundSoapMessage(globalId: UUID,
+                                   messageId: String,
                                    soapMessage: String,
                                    destinationUrl: String,
                                    createDateTime: DateTime,
@@ -71,7 +70,7 @@ case class  SentOutboundSoapMessage(globalId: UUID,
 }
 
 case class FailedOutboundSoapMessage(globalId: UUID,
-                                     messageId: Option[String],
+                                     messageId: String,
                                      soapMessage: String,
                                      destinationUrl: String,
                                      createDateTime: DateTime,
@@ -83,7 +82,7 @@ case class FailedOutboundSoapMessage(globalId: UUID,
 }
 
 case class CoeSoapMessage(globalId: UUID,
-                          messageId: Option[String],
+                          messageId: String,
                           soapMessage: String,
                           destinationUrl: String,
                           createDateTime: DateTime,
@@ -95,7 +94,7 @@ case class CoeSoapMessage(globalId: UUID,
 }
 
 case class CodSoapMessage(globalId: UUID,
-                          messageId: Option[String],
+                          messageId: String,
                           soapMessage: String,
                           destinationUrl: String,
                           createDateTime: DateTime,
@@ -107,7 +106,7 @@ case class CodSoapMessage(globalId: UUID,
 }
 
 case class RetryingOutboundSoapMessage(globalId: UUID,
-                                       messageId: Option[String],
+                                       messageId: String,
                                        soapMessage: String,
                                        destinationUrl: String,
                                        createDateTime: DateTime,

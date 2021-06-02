@@ -46,7 +46,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
   trait Setup {
     val underTest: NotificationCallbackConnector = app.injector.instanceOf[NotificationCallbackConnector]
     val globalId: UUID = UUID.randomUUID()
-    val messageId: Option[String] = Some("some message id")
+    val messageId: String = "some message id"
     val now: DateTime = DateTime.now
     val httpStatus: Int = 200
     implicit val hc: HeaderCarrier = HeaderCarrier()
