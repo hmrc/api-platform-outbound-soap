@@ -23,7 +23,7 @@ object JsonFormats {
   val addressingReads: Reads[Addressing] = (
     (JsPath \ "from").readNullable[String] and
     (JsPath \ "to").read[String] and
-    (JsPath \ "replyTo").readNullable[String].orElse(Reads.pure(Some("TBC"))) and
+    (JsPath \ "replyTo").read[String].orElse(Reads.pure("TBC")) and
     (JsPath \ "faultTo").readNullable[String] and
     (JsPath \ "messageId").read[String] and
     (JsPath \ "relatesTo").readNullable[String]
