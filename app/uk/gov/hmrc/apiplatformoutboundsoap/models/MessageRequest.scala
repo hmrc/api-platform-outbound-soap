@@ -34,5 +34,4 @@ case class Addressing(from: Option[String] = None,
   validate(to.trim != "", "addressing.to being empty")
   validate(messageId.trim != "", "addressing.messageId being empty")
   validate(replyTo.trim != "", "addressing.replyTo being empty")
-//  replyTo.map(r => validate(r.trim != "", "addressing.replyTo being empty"))
 }
