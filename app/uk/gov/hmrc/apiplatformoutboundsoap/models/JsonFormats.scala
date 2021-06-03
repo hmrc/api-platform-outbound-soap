@@ -20,7 +20,15 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, OFormat, Reads}
 
 object JsonFormats {
-  implicit val addressingFormatter: OFormat[Addressing] = Json.format[Addressing]
+  val addressingReads: Reads[Addressing] = (
+    (JsPath \ "from").readNullable[String] and
+    (JsPath \ "to").read[String] and
+    (JsPath \ "replyTo").readNullable[String].orElse(Reads.pure(Some("TBC"))) and
+    (JsPath \ "faultTo").readNullable[String] and
+    (JsPath \ "messageId").read[String] and
+    (JsPath \ "relatesTo").readNullable[String]
+  ) (Addressing.apply _)
+  implicit val addressingFormatter: OFormat[Addressing] = OFormat(addressingReads, Json.writes[Addressing])
   implicit val soapMessageStatusFormatter: OFormat[SoapMessageStatus] = Json.format[SoapMessageStatus]
 
   val messageRequestReads: Reads[MessageRequest] = (
@@ -30,6 +38,6 @@ object JsonFormats {
     (JsPath \ "addressing").read[Addressing] and
     ((JsPath \ "confirmationOfDelivery").read[Boolean] or Reads.pure(false)) and
     (JsPath \ "notificationUrl").readNullable[String]
-    )(MessageRequest.apply _)
+  ) (MessageRequest.apply _)
   implicit val messageRequestFormatter: OFormat[MessageRequest] = OFormat(messageRequestReads, Json.writes[MessageRequest])
 }
