@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
+import uk.gov.hmrc.apiplatformoutboundsoap.utils.Require.validate
+
 case class  MessageRequest(wsdlUrl: String,
                           wsdlOperation: String,
                           messageBody: String,
@@ -25,7 +27,11 @@ case class  MessageRequest(wsdlUrl: String,
 
 case class Addressing(from: Option[String] = None,
                       to: String,
-                      replyTo: Option[String] = Some("TBC"),
+                      replyTo: Option[String] = None,
                       faultTo: Option[String] = None,
                       messageId: String,
-                      relatesTo: Option[String] = None)
+                      relatesTo: Option[String] = None){
+  validate(to.trim != "", "addressing.to being empty")
+  validate(messageId.trim != "", "addressing.messageId being empty")
+  replyTo.map(r => validate(r.trim != "", "addressing.replyTo being empty"))
+}
