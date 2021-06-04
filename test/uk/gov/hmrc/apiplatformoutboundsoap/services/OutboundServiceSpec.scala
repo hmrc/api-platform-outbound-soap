@@ -76,8 +76,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val messageId = "123"
     val to = "CCN2"
     val from = Some("HMRC")
-    val addressing = Addressing(from , to , Some("ReplyTo"), Some("FaultTo"), messageId, Some("RelatesTo"))
-    val addressingOnlyMandatoryFields = Addressing(to= to, replyTo = Some("ReplyTo"), messageId = messageId)
+    val addressing = Addressing(from , to , "ReplyTo", Some("FaultTo"), messageId, Some("RelatesTo"))
+    val addressingOnlyMandatoryFields = Addressing(to= to, replyTo = "ReplyTo", messageId = messageId)
     val messageRequestFullAddressing = MessageRequest(
       "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
       "IE4N03notifyERiskAnalysisHit",
@@ -327,7 +327,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
-        await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing= addressing.copy(replyTo = Some("")))))
+        await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing= addressing.copy(replyTo = ""))))
       }
 
       exception.getMessage should include("addressing.replyTo being empty")

@@ -27,11 +27,11 @@ case class  MessageRequest(wsdlUrl: String,
 
 case class Addressing(from: Option[String] = None,
                       to: String,
-                      replyTo: Option[String] = None,
+                      replyTo: String,
                       faultTo: Option[String] = None,
                       messageId: String,
                       relatesTo: Option[String] = None){
   validate(to.trim != "", "addressing.to being empty")
   validate(messageId.trim != "", "addressing.messageId being empty")
-  replyTo.map(r => validate(r.trim != "", "addressing.replyTo being empty"))
+  validate(replyTo.trim != "", "addressing.replyTo being empty")
 }

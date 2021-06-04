@@ -50,7 +50,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
 
   "message" should {
     val fakeRequest = FakeRequest("POST", "/message")
-    val addressing = Addressing(messageId = "987", to = "AddressedTo", replyTo = Some("ReplyTo"))
+    val addressing = Addressing(messageId = "987", to = "AddressedTo", replyTo = "ReplyTo")
     val addressingJson = Json.toJson(addressing)
     val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson)
