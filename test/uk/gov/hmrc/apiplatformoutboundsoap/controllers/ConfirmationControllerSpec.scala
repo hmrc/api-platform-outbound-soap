@@ -21,11 +21,12 @@ import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status.OK
 import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, Helpers}
+import uk.gov.hmrc.apiplatformoutboundsoap.controllers.actionBuilders.ValidateConfirmationTypeAction
 import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus
+import uk.gov.hmrc.apiplatformoutboundsoap.models.common.NoContentUpdateResult
 import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,7 +37,8 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
 
   trait Setup {
     val confirmationServiceMock: ConfirmationService = mock[ConfirmationService]
-    val underTest = new ConfirmationController(Helpers.stubControllerComponents(), confirmationServiceMock)
+    private val validateConfirmationTypeAction = app.injector.instanceOf[ValidateConfirmationTypeAction]
+    val underTest = new ConfirmationController(Helpers.stubControllerComponents(), confirmationServiceMock, validateConfirmationTypeAction)
   }
 
   "message" should {
@@ -100,10 +102,10 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
     "call the confirmation service with a CoD request" in new Setup {
       val confirmationRequestCaptor = ArgumentCaptor.forClass(classOf[Option[String]])
       val confirmationTypeCaptor = ArgumentCaptor.forClass(classOf[DeliveryStatus])
-      doNothing.when(confirmationServiceMock).processConfirmation(confirmationRequestCaptor.capture, confirmationTypeCaptor.capture)(*)
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(codMessage)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "cod"))
-      status(result) shouldBe OK
+      when(confirmationServiceMock.processConfirmation(confirmationRequestCaptor.capture, confirmationTypeCaptor.capture)(*))
+        .thenReturn(Future.successful(NoContentUpdateResult))
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(codMessage).withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "cod"))
+      status(result) shouldBe NO_CONTENT
       confirmationRequestCaptor.getValue shouldBe Some(codMessage)
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COD
     }
@@ -111,17 +113,23 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
     "call the confirmation service with a CoE request" in new Setup {
       val confirmationRequestCaptor = ArgumentCaptor.forClass(classOf[Option[String]])
       val confirmationTypeCaptor = ArgumentCaptor.forClass(classOf[DeliveryStatus])
-      doNothing.when(confirmationServiceMock).processConfirmation(confirmationRequestCaptor.capture, confirmationTypeCaptor.capture)(*)
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(coeMessage)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "coe"))
-      status(result) shouldBe OK
+      when(confirmationServiceMock.processConfirmation(confirmationRequestCaptor.capture, confirmationTypeCaptor.capture)(*))
+        .thenReturn(Future.successful(NoContentUpdateResult))
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(coeMessage).withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "coe"))
+      status(result) shouldBe NO_CONTENT
       confirmationRequestCaptor.getValue shouldBe Some(coeMessage)
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COE
     }
 
     "handle receiving a request with an invalid SOAP action" in new Setup {
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(coeMessage).withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "foobar"))
+      status(result) shouldBe BAD_REQUEST
+      verifyZeroInteractions(confirmationServiceMock)
+    }
+
+    "handle receiving a request with no x-soap-action header" in new Setup {
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(coeMessage)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "foobar"))
+        .withHeaders("ContentType" -> "text/plain"))
       status(result) shouldBe BAD_REQUEST
       verifyZeroInteractions(confirmationServiceMock)
     }

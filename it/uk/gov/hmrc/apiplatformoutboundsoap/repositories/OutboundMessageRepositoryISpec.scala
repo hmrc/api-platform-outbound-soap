@@ -226,6 +226,26 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
       fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
     }
 
+    "return empty Option when asked to update a message that doesn't exist" in {
+      val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
+      fetchedRecords.size shouldBe 0
+      val updated: Option[OutboundSoapMessage] = await(repo.updateConfirmationStatus(
+        "dummy id for not found", DeliveryStatus.COD, expectedConfirmationMessageBody))
+      updated.map(m => println(m))
+      updated.isEmpty shouldBe true
+    }
   }
 
+  "globalIdExists" should {
+    "return true when record exists" in {
+      await(repo.persist(sentMessage))
+      val found = await(repo.globalIdExists(sentMessage.globalId.toString))
+      found shouldBe true
+    }
+
+    "return false when record does not exist" in {
+      val found = await(repo.globalIdExists(sentMessage.globalId.toString))
+      found shouldBe false
+    }
+  }
 }

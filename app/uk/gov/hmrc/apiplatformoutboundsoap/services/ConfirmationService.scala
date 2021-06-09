@@ -20,37 +20,38 @@ import akka.stream.Materializer
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.NotificationCallbackConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{DeliveryStatus, OutboundSoapMessage}
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, NoContentUpdateResult, UpdateResult}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
-import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.{NodeSeq, XML}
+import scala.xml.XML
 
 @Singleton
 class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRepository,
                                     notificationCallbackConnector: NotificationCallbackConnector)
-                                   (implicit val ec: ExecutionContext, mat: Materializer)
-  extends HttpErrorFunctions {
+                                   (implicit val ec: ExecutionContext, mat: Materializer) {
   val logger: LoggerLike = Logger
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
 
+  def processConfirmation(confRqst: Option[String], delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
-def processConfirmation(confirmationRequest: Option[String], deliveryStatus: DeliveryStatus)(implicit hc: HeaderCarrier) = {
-    val node = findRelatesTo(confirmationRequest)
+    val msgIdStr = findRelatesTo(confRqst).getOrElse("")
+    val confRqstStr = confRqst.getOrElse("")
 
-    if (node.nonEmpty) {
-      confirmationRequest.map(cr => outboundMessageRepository.updateConfirmationStatus(node.get.text, deliveryStatus, cr)
-        map { foo => foo.map(notificationCallbackConnector.sendNotification) })
-      ()
-    } else {
-      logger.warn("RelatesTo not found so confirmation could not be processed")
-      //TODO return something to controller to enable it to return 400 to caller
+    def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
+      outboundMessageRepository.updateConfirmationStatus(id, status, body).map(_ => NoContentUpdateResult)
+    }
+
+    outboundMessageRepository.findById(msgIdStr).flatMap {
+      case None => Future.successful(MessageIdNotFoundResult)
+      case Some(_: OutboundSoapMessage) => doUpdate(msgIdStr, delStatus, confRqstStr)
     }
   }
 
-  private def findRelatesTo(confirmationMessage: Option[String]): Option[NodeSeq] = {
-    confirmationMessage.map(cf => XML.loadString(cf)).map(rt => rt \\ "RelatesTo")
+  private def findRelatesTo(confirmationMessage: Option[String]): Option[String] = {
+    confirmationMessage.map(cf => XML.loadString(cf)).map(rt => rt \\ "RelatesTo").map(n => n.text)
   }
 }

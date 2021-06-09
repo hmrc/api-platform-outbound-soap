@@ -21,7 +21,7 @@ import akka.stream.scaladsl.Source
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.akkastream.cursorProducer
 import reactivemongo.api.ReadPreference
@@ -31,10 +31,9 @@ import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{DeliveryStatus, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus}
-import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.outboundSoapMessageFormatter
+import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.{dateFormat, outboundSoapMessageFormatter}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.dateFormat
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
@@ -85,12 +84,29 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
   }
 
   def updateConfirmationStatus(globalId: String, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
-   val field: String =  newStatus match {
-     case DeliveryStatus.COD => "codMessage"
-     case DeliveryStatus.COE => "coeMessage"
+    val field: String = newStatus match {
+      case DeliveryStatus.COD => "codMessage"
+      case DeliveryStatus.COE => "coeMessage"
     }
     findAndUpdate(Json.obj("globalId" -> globalId),
-      Json.obj("$set" -> Json.obj("status" -> newStatus.entryName, field -> confirmationMsg )), fetchNewObject = true)
+      Json.obj("$set" -> Json.obj("status" -> newStatus.entryName, field -> confirmationMsg)), fetchNewObject = true)
       .map(_.result[OutboundSoapMessage])
+  }
+
+  def globalIdExists(globalId: String): Future[Boolean] = {
+    count(Json.obj("globalId" -> globalId)).map(cnt => cnt > 0)
+  }
+
+  def globalIdCount(globalId: String): Future[Int] = {
+    count(Json.obj("globalId" -> globalId))
+  }
+
+  def findById(globalId: String): Future[Option[OutboundSoapMessage]] = {
+    find("globalId" -> JsString(globalId)).map(_.headOption)
+      .recover {
+        case e: Exception =>
+          logger.warn(s"error finding message - ${e.getMessage}")
+          None
+      }
   }
 }
