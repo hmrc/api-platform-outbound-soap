@@ -27,9 +27,8 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.xml.NodeSeq
 
 @Singleton
 class ConfirmationController @Inject()(cc: ControllerComponents,
@@ -38,34 +37,37 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
                                       (implicit ec: ExecutionContext)
   extends BackendController(cc) {
 
-  def message: Action[String] = (Action andThen validateConfirmationTypeAction).async(parse.text) { implicit request =>
+  def message: Action[NodeSeq] = (Action andThen validateConfirmationTypeAction).async(parse.xml) { implicit request =>
     val confirmation = request.headers.get("x-soap-action").map(d => DeliveryStatus.withNameInsensitive(d))
-    val result = confirmationService.processConfirmation(Some(request.body), confirmation.get)
+    val xml: NodeSeq = request.body
+    (request.body \\ "RelatesTo" headOption)
+      .getOrElse {
+        BadRequest("Missing parameter [name]")
+      }
+    /*val result = confirmationService.processConfirmation(Some(request.body), confirmation.get)
     result map {
       case NoContentUpdateResult => NoContent
-       case _ => NotFound
-    }}
-
-  /*  val deliveryStatus: Option[DeliveryStatus] = confirmation.map(
-      c => DeliveryStatus.withNameInsensitive(c))
-    confirmation.map(c => DeliveryStatus.withNameInsensitive(c)).map(ds =>
-      confirmationService.processConfirmation(Some(request.body), ds)) map {
+      case _ => NotFound
+    }*/
+    val result2 = confirmationService.processConfirmation(xml, confirmation.get)
+    result2 map {
       case NoContentUpdateResult => NoContent
       case _ => NotFound
-    }*/
-  /* fromTry(Try({
-     confirmation.map(c => DeliveryStatus.withNameInsensitive(c)).map(ds =>
-       request.map(conf => confirmationService.processConfirmation(Some(request.body), ds)))
-     Ok
-   }).recover(recovery))*/
+    }
+    /*confirmation.map(ds =>  confirmationService.processConfirmation(Some(request.body), ds)) map {r =>
+      r map {
+         case NoContentUpdateResult => NoContent
+         case _ => NotFound
+       }}*/
 
-  /*def deleteByIntegrationId(integrationId: IntegrationId): Action[AnyContent] = Action.async { implicit request =>
-    integrationService.deleteByIntegrationId(integrationId).map {
-      case NoContentDeleteApiResult => NoContent
-      case _ => NotFound
-}
+        /*val result2: Object = if (confirmation.nonEmpty){
+          confirmationService.processConfirmation(Some(request.body), confirmation.get)
+        }else{None}
+      result2 map {
+        case NoContentUpdateResult => NoContent
+        case _ => NotFound
     }*/
-
+  }
 
   private def recovery: PartialFunction[Throwable, Result] = {
     case e: java.util.NoSuchElementException => BadRequest(e.getMessage)

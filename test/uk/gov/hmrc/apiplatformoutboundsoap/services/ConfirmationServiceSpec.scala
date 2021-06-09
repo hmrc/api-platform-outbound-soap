@@ -34,9 +34,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.Future.successful
-import scala.util.Success
 
 class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
 
@@ -59,7 +57,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
   }
 
   "processConfirmation" should {
-    val confirmationRequest =
+    val confirmationRequest =xml.XML.loadString(
       """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
         |<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ccn2="http://ccn2.ec.eu/CCN2.Service.Platform.Acknowledgement.Schema">
         |    <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
@@ -76,53 +74,36 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
         |            <ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp>
         |        </ccn2:CoD>
         |    </soap:Body>
-        |</soap:Envelope>""".stripMargin.replaceAll("\n", "")
-    val confirmationRequestWithNoRelatesTo =
-      """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-        |<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ccn2="http://ccn2.ec.eu/CCN2.Service.Platform.Acknowledgement.Schema">
-        |    <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
-        |        <wsa:Action>CCN2.Service.Platform.AcknowledgementService/CoD</wsa:Action>
-        |        <wsa:From>
-        |            <wsa:Address>[FROM]</wsa:Address>
-        |        </wsa:From>
-        |        <wsa:MessageID>[COD_MESSAGE_ID]</wsa:MessageID>
-        |        <wsa:To>[TO]</wsa:To>
-        |    </soap:Header>
-        |    <soap:Body>
-        |        <ccn2:CoD>
-        |            <ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp>
-        |        </ccn2:CoD>
-        |    </soap:Body>
-        |</soap:Envelope>""".stripMargin.replaceAll("\n", "")
-    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", DateTime.now(UTC), OK)
+        |</soap:Envelope>""".stripMargin.replaceAll("\n", ""))
 
+    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", DateTime.now(UTC), OK)
 
     "update a sent message with a CoD" in new Setup {
       when(outboundMessageRepositoryMock.findById("abcd1234"))
         .thenReturn(successful(Option(outboundSoapMessage)))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequest))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequest.text))
         .thenReturn(successful(Some(outboundSoapMessage)))
-      val result: UpdateResult = await(underTest.processConfirmation(Some(confirmationRequest), DeliveryStatus.COD))
+      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequest, DeliveryStatus.COD))
       result shouldBe NoContentUpdateResult
-      verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequest)
+      verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequest.text)
     }
 
     "update a sent message with a CoE" in new Setup {
       when(outboundMessageRepositoryMock.findById("abcd1234"))
         .thenReturn(successful(Option(outboundSoapMessage)))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text))
         .thenReturn(successful(Some(outboundSoapMessage)))
-      val result: UpdateResult = await(underTest.processConfirmation(Some(confirmationRequest), DeliveryStatus.COE))
+      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequest, DeliveryStatus.COE))
       result shouldBe NoContentUpdateResult
-      verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest)
+      verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text)
     }
 
     "return failure for RelatesTo ID which cannot be found" in new Setup {
       when(outboundMessageRepositoryMock.findById("abcd1234"))
         .thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text))
         .thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
-      val result: UpdateResult  = await(underTest.processConfirmation(Some(confirmationRequest), DeliveryStatus.COE))
+      val result: UpdateResult  = await(underTest.processConfirmation(confirmationRequest, DeliveryStatus.COE))
       result shouldBe MessageIdNotFoundResult
     }
   }

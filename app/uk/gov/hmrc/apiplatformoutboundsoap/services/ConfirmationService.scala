@@ -27,7 +27,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.XML
+import scala.xml.NodeSeq.fromSeq
+import scala.xml.{NodeSeq, XML}
 
 @Singleton
 class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRepository,
@@ -36,22 +37,24 @@ class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRe
   val logger: LoggerLike = Logger
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
 
-  def processConfirmation(confRqst: Option[String], delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
+ def processConfirmation(confRqst: NodeSeq, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
-    val msgIdStr = findRelatesTo(confRqst).getOrElse("")
-    val confRqstStr = confRqst.getOrElse("")
+    val msgIdStr = findRelatesToXml(confRqst).getOrElse("")
 
     def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
-      outboundMessageRepository.updateConfirmationStatus(id, status, body).map(_ => NoContentUpdateResult)
+      outboundMessageRepository.updateConfirmationStatus(id, status, body) map { maybeOutboundSoapMessage =>
+        maybeOutboundSoapMessage.map(outboundSoapMessage => notificationCallbackConnector.sendNotification(outboundSoapMessage))} map {
+        case _ => NoContentUpdateResult
+      }
     }
 
     outboundMessageRepository.findById(msgIdStr).flatMap {
       case None => Future.successful(MessageIdNotFoundResult)
-      case Some(_: OutboundSoapMessage) => doUpdate(msgIdStr, delStatus, confRqstStr)
+      case Some(_: OutboundSoapMessage) => doUpdate(msgIdStr, delStatus, confRqst.text)
     }
-  }
+ }
 
-  private def findRelatesTo(confirmationMessage: Option[String]): Option[String] = {
-    confirmationMessage.map(cf => XML.loadString(cf)).map(rt => rt \\ "RelatesTo").map(n => n.text)
+  private def findRelatesToXml(confirmationMessage: NodeSeq): Option[String] = {
+    Some((confirmationMessage \\ "RelatesTo").text)
   }
 }
