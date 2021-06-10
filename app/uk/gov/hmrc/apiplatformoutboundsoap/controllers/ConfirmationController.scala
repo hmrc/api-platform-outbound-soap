@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
+import play.api.Logging
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.apiplatformoutboundsoap.controllers.actionBuilders.ValidateConfirmationTypeAction
@@ -28,45 +29,27 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.NodeSeq
+import scala.xml.{Node, NodeSeq}
 
 @Singleton
 class ConfirmationController @Inject()(cc: ControllerComponents,
                                        confirmationService: ConfirmationService,
                                       validateConfirmationTypeAction: ValidateConfirmationTypeAction)
                                       (implicit ec: ExecutionContext)
-  extends BackendController(cc) {
+  extends BackendController(cc) with Logging{
 
   def message: Action[NodeSeq] = (Action andThen validateConfirmationTypeAction).async(parse.xml) { implicit request =>
     val confirmation = request.headers.get("x-soap-action").map(d => DeliveryStatus.withNameInsensitive(d))
     val xml: NodeSeq = request.body
-    (request.body \\ "RelatesTo" headOption)
-      .getOrElse {
-        BadRequest("Missing parameter [name]")
-      }
-    /*val result = confirmationService.processConfirmation(Some(request.body), confirmation.get)
-    result map {
-      case NoContentUpdateResult => NoContent
-      case _ => NotFound
-    }*/
-    val result2 = confirmationService.processConfirmation(xml, confirmation.get)
-    result2 map {
-      case NoContentUpdateResult => NoContent
-      case _ => NotFound
-    }
-    /*confirmation.map(ds =>  confirmationService.processConfirmation(Some(request.body), ds)) map {r =>
-      r map {
-         case NoContentUpdateResult => NoContent
-         case _ => NotFound
-       }}*/
+    val id: Option[Node] = (xml \\ "RelatesTo" headOption)
 
-        /*val result2: Object = if (confirmation.nonEmpty){
-          confirmationService.processConfirmation(Some(request.body), confirmation.get)
-        }else{None}
-      result2 map {
+    id.map(_ => {
+      confirmationService.processConfirmation(xml, confirmation.get) map {
         case NoContentUpdateResult => NoContent
         case _ => NotFound
-    }*/
+      }
+    }).getOrElse(Future.successful(BadRequest))
+
   }
 
   private def recovery: PartialFunction[Throwable, Result] = {

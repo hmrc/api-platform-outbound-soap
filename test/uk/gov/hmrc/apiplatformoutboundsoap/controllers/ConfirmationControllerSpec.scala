@@ -17,7 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import akka.stream.Materializer
-import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
+import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar, serialisableEquality}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -53,6 +53,23 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
         |            <wsa:Address>[FROM]</wsa:Address>
         |        </wsa:From>
         |        <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/ack">[ORIGINAL_MESSAGE_ID]</wsa:RelatesTo>
+        |        <wsa:MessageID>[COD_MESSAGE_ID]</wsa:MessageID>
+        |        <wsa:To>[TO]</wsa:To>
+        |    </soap:Header>
+        |    <soap:Body>
+        |        <ccn2:CoD>
+        |            <ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp>
+        |        </ccn2:CoD>
+        |    </soap:Body>
+        |</soap:Envelope>""".stripMargin.replaceAll("\n", "")
+ val codMessageWithNoRelatesTo =
+      """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        |<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ccn2="http://ccn2.ec.eu/CCN2.Service.Platform.Acknowledgement.Schema">
+        |    <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
+        |        <wsa:Action>CCN2.Service.Platform.AcknowledgementService/CoD</wsa:Action>
+        |        <wsa:From>
+        |            <wsa:Address>[FROM]</wsa:Address>
+        |        </wsa:From>
         |        <wsa:MessageID>[COD_MESSAGE_ID]</wsa:MessageID>
         |        <wsa:To>[TO]</wsa:To>
         |    </soap:Header>
@@ -110,6 +127,14 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       status(result) shouldBe NO_CONTENT
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COD
+    }
+
+    "handle an XML request with no RelatesTo element" in new Setup {
+      val requestBodyXml: Elem = XML.loadString(codMessageWithNoRelatesTo)
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
+        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "cod"))
+      status(result) shouldBe BAD_REQUEST
+      verifyZeroInteractions(confirmationServiceMock)
     }
 
     "call the confirmation service with a CoE request" in new Setup {

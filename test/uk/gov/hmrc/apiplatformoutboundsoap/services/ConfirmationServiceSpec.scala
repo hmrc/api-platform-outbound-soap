@@ -106,5 +106,14 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
       val result: UpdateResult  = await(underTest.processConfirmation(confirmationRequest, DeliveryStatus.COE))
       result shouldBe MessageIdNotFoundResult
     }
+
+   "send update to notification URL" in new Setup {
+      when(outboundMessageRepositoryMock.findById("abcd1234"))
+        .thenReturn(successful(Option(outboundSoapMessage)))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text))
+       .thenReturn(successful(Option(outboundSoapMessage)))
+      await(underTest.processConfirmation(confirmationRequest, DeliveryStatus.COE))
+      verify(notificationCallbackConnectorMock).sendNotification(refEq(outboundSoapMessage))(*)
+    }
   }
 }
