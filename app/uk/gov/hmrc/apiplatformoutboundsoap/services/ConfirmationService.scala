@@ -27,13 +27,12 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.NodeSeq.fromSeq
-import scala.xml.{NodeSeq, XML}
+import scala.xml.NodeSeq
 
 @Singleton
 class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRepository,
                                     notificationCallbackConnector: NotificationCallbackConnector)
-                                   (implicit val ec: ExecutionContext, mat: Materializer) {
+                                   (implicit val ec: ExecutionContext) {
   val logger: LoggerLike = Logger
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
 

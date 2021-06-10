@@ -17,7 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import akka.stream.Materializer
-import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar, serialisableEquality}
+import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
