@@ -16,9 +16,6 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import akka.stream.Materializer
-import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
-import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.NotificationCallbackConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, NoContentUpdateResult, UpdateResult}

@@ -39,21 +39,35 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
   extends BackendController(cc) with Logging{
 
   def message: Action[NodeSeq] = (Action andThen validateConfirmationTypeAction).async(parse.xml) { implicit request =>
-    val confirmation = request.headers.get("x-soap-action").map(d => DeliveryStatus.withNameInsensitive(d))
+    val confirmationType: Option[DeliveryStatus] = request.headers.get("x-soap-action").map(d => DeliveryStatus.withNameInsensitive(d))
     val xml: NodeSeq = request.body
     val id: Option[Node] = (xml \\ "RelatesTo" headOption)
 
-    id.map(i => {
-      confirmationService.processConfirmation(xml, i, confirmation.get) map {
-        case NoContentUpdateResult => NoContent
-        case _ => NotFound
+      def callService(deliveryStatus: DeliveryStatus): Future[Result] = {
+        id.map(i => {
+          confirmationService.processConfirmation(xml, i, deliveryStatus) map {
+            case NoContentUpdateResult => NoContent
+            case _ => {
+              logger.warn(s"No message found with global ID [${i.text}]")
+              NotFound
+            }
+          }
+        }).getOrElse({
+          logger.warn(s"RelatesTo not found in confirmation message [${xml.text}]")
+          Future.successful(BadRequest)
+        })
       }
-    }).getOrElse(Future.successful(BadRequest))
 
-  }
-
-  private def recovery: PartialFunction[Throwable, Result] = {
-    case e: java.util.NoSuchElementException => BadRequest(e.getMessage)
-    case e: NotFoundException => NotFound(Json.toJson(ErrorResponse(NOT_FOUND, e.message)))
+    confirmationType match {
+      case Some(DeliveryStatus.COE) => confirmationType.map(ct => callService(ct)).getOrElse({
+        logger.error(s"Unexpected error updating message with id [${id}] following receipt of ${xml.text}")
+        Future.successful(InternalServerError)
+      })
+      case Some(DeliveryStatus.COD) => confirmationType.map(ct => callService(ct)).getOrElse({
+        logger.error(s"Unexpected error updating message with id [${id}] following receipt of ${xml.text}")
+        Future.successful(InternalServerError)
+      })
+      case None => Future.successful(BadRequest)
+    }
   }
 }
