@@ -21,7 +21,6 @@ import play.api.libs.json.{JsPath, Json, OFormat, Reads}
 
 object JsonFormats {
   implicit val addressingFormatter: OFormat[Addressing] = Json.format[Addressing]
-  implicit val confirmationFormatter: OFormat[Confirmation] = Json.format[Confirmation]
   implicit val soapMessageStatusFormatter: OFormat[SoapMessageStatus] = Json.format[SoapMessageStatus]
 
   val messageRequestReads: Reads[MessageRequest] = (

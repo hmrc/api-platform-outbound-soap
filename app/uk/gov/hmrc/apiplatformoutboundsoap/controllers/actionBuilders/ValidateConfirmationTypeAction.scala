@@ -44,5 +44,4 @@ class ValidateConfirmationTypeAction @Inject()()(implicit ec: ExecutionContext)
       Some(BadRequest)
     }
   }
-
 }

@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-import java.util.UUID
-
 case class MessageRequest(wsdlUrl: String,
                           wsdlOperation: String,
                           messageBody: String,
@@ -31,7 +29,3 @@ case class Addressing(from: Option[String] = None,
                       faultTo: Option[String] = None,
                       messageId: String,
                       relatesTo: Option[String] = None)
-
-case class Confirmation(globalId: UUID,
-                        confirmationType: DeliveryStatus,
-                        messageBody: String)
