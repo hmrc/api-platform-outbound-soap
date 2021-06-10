@@ -26,7 +26,7 @@ import play.api.test.Helpers._
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.apiplatformoutboundsoap.controllers.actionBuilders.ValidateConfirmationTypeAction
 import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus
-import uk.gov.hmrc.apiplatformoutboundsoap.models.common.NoContentUpdateResult
+import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, NoContentUpdateResult}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -155,6 +155,15 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       msgIdCaptor.getValue shouldBe msgIdCoe
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COE
+    }
+
+    "call the confirmation service with RelatesTo id that is unknown" in new Setup {
+      val requestBodyXml: Elem = XML.loadString(coeMessage)
+      when(confirmationServiceMock.processConfirmation(*,*,*)(*))
+        .thenReturn(Future.successful(MessageIdNotFoundResult))
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
+        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "coe"))
+      status(result) shouldBe NOT_FOUND
     }
 
     "handle receiving a request with an invalid SOAP action" in new Setup {
