@@ -27,18 +27,15 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.NodeSeq
+import scala.xml.{Node, NodeSeq}
 
 @Singleton
 class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRepository,
                                     notificationCallbackConnector: NotificationCallbackConnector)
                                    (implicit val ec: ExecutionContext) {
-  val logger: LoggerLike = Logger
-  val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
+ def processConfirmation(confRqst: NodeSeq, msgId: Node, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
- def processConfirmation(confRqst: NodeSeq, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
-
-    val msgIdStr = findRelatesToXml(confRqst).getOrElse("")
+    val msgIdStr = msgId.text
 
     def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
       outboundMessageRepository.updateConfirmationStatus(id, status, body) map { maybeOutboundSoapMessage =>
@@ -52,8 +49,4 @@ class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRe
       case Some(_: OutboundSoapMessage) => doUpdate(msgIdStr, delStatus, confRqst.text)
     }
  }
-
-  private def findRelatesToXml(confirmationMessage: NodeSeq): Option[String] = {
-    Some((confirmationMessage \\ "RelatesTo").text)
-  }
 }

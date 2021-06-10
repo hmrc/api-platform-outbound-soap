@@ -35,6 +35,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
+import scala.xml.Node
 
 class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
 
@@ -77,13 +78,14 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
         |</soap:Envelope>""".stripMargin.replaceAll("\n", ""))
 
     val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", DateTime.now(UTC), OK)
+    val msgId: Node = <RelatesTo>abcd1234</RelatesTo>
 
     "update a sent message with a CoD" in new Setup {
       when(outboundMessageRepositoryMock.findById("abcd1234"))
         .thenReturn(successful(Option(outboundSoapMessage)))
       when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequest.text))
         .thenReturn(successful(Some(outboundSoapMessage)))
-      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequest, DeliveryStatus.COD))
+      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequest, msgId, DeliveryStatus.COD))
       result shouldBe NoContentUpdateResult
       verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequest.text)
     }
@@ -93,7 +95,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
         .thenReturn(successful(Option(outboundSoapMessage)))
       when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text))
         .thenReturn(successful(Some(outboundSoapMessage)))
-      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequest, DeliveryStatus.COE))
+      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequest, msgId, DeliveryStatus.COE))
       result shouldBe NoContentUpdateResult
       verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text)
     }
@@ -103,7 +105,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
         .thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
       when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text))
         .thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
-      val result: UpdateResult  = await(underTest.processConfirmation(confirmationRequest, DeliveryStatus.COE))
+      val result: UpdateResult  = await(underTest.processConfirmation(confirmationRequest, msgId, DeliveryStatus.COE))
       result shouldBe MessageIdNotFoundResult
     }
 
@@ -112,7 +114,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
         .thenReturn(successful(Option(outboundSoapMessage)))
       when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text))
        .thenReturn(successful(Option(outboundSoapMessage)))
-      await(underTest.processConfirmation(confirmationRequest, DeliveryStatus.COE))
+      await(underTest.processConfirmation(confirmationRequest, msgId, DeliveryStatus.COE))
       verify(notificationCallbackConnectorMock).sendNotification(refEq(outboundSoapMessage))(*)
     }
   }

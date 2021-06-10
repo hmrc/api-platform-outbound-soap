@@ -43,8 +43,8 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
     val xml: NodeSeq = request.body
     val id: Option[Node] = (xml \\ "RelatesTo" headOption)
 
-    id.map(_ => {
-      confirmationService.processConfirmation(xml, confirmation.get) map {
+    id.map(i => {
+      confirmationService.processConfirmation(xml, i, confirmation.get) map {
         case NoContentUpdateResult => NoContent
         case _ => NotFound
       }

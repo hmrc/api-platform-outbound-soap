@@ -31,7 +31,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.xml.{Elem, NodeSeq, XML}
+import scala.xml.{Elem, Node, NodeSeq, XML}
 
 class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
@@ -52,7 +52,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
         |        <wsa:From>
         |            <wsa:Address>[FROM]</wsa:Address>
         |        </wsa:From>
-        |        <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/ack">[ORIGINAL_MESSAGE_ID]</wsa:RelatesTo>
+        |        <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/ack">1234abcd</wsa:RelatesTo>
         |        <wsa:MessageID>[COD_MESSAGE_ID]</wsa:MessageID>
         |        <wsa:To>[TO]</wsa:To>
         |    </soap:Header>
@@ -62,7 +62,8 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
         |        </ccn2:CoD>
         |    </soap:Body>
         |</soap:Envelope>""".stripMargin.replaceAll("\n", "")
- val codMessageWithNoRelatesTo =
+
+    val codMessageWithNoRelatesTo =
       """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
         |<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ccn2="http://ccn2.ec.eu/CCN2.Service.Platform.Acknowledgement.Schema">
         |    <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
@@ -88,7 +89,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
         |        <wsa:From>
         |            <wsa:Address>[FROM]</wsa:Address>
         |        </wsa:From>
-        |        <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/err">[ORIGINAL_MESSAGE_ID]</wsa:RelatesTo>
+        |        <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/err">zyxw9876</wsa:RelatesTo>
         |        <wsa:MessageID>[COE_MESSAGE_ID]</wsa:MessageID>
         |        <wsa:To>[TO]</wsa:To>
         |    </soap:Header>
@@ -115,17 +116,21 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
         |      </ccn2:CoE>
         |   </soap:Body>
         |</soap:Envelope>""".stripMargin.replaceAll("\n", "")
+    val msgIdCod: Node = <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/ack">1234abcd</wsa:RelatesTo>
+    val msgIdCoe: Node = <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/err">zyxw9876</wsa:RelatesTo>
 
     "call the confirmation service with a CoD request" in new Setup {
       val confirmationXmlRequestCaptor = ArgumentCaptor.forClass(classOf[NodeSeq])
+      val msgIdCaptor = ArgumentCaptor.forClass(classOf[Node])
       val confirmationTypeCaptor = ArgumentCaptor.forClass(classOf[DeliveryStatus])
       val requestBodyXml: Elem = XML.loadString(codMessage)
-       when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, confirmationTypeCaptor.capture)(*))
+       when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(*))
         .thenReturn(Future.successful(NoContentUpdateResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
         .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "cod"))
       status(result) shouldBe NO_CONTENT
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
+      msgIdCaptor.getValue shouldBe msgIdCod
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COD
     }
 
@@ -139,14 +144,16 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
 
     "call the confirmation service with a CoE request" in new Setup {
       val confirmationXmlRequestCaptor = ArgumentCaptor.forClass(classOf[NodeSeq])
+      val msgIdCaptor = ArgumentCaptor.forClass(classOf[Node])
       val confirmationTypeCaptor = ArgumentCaptor.forClass(classOf[DeliveryStatus])
       val requestBodyXml: Elem = XML.loadString(coeMessage)
-      when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, confirmationTypeCaptor.capture)(*))
+      when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(*))
         .thenReturn(Future.successful(NoContentUpdateResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
         .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "coe"))
       status(result) shouldBe NO_CONTENT
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
+      msgIdCaptor.getValue shouldBe msgIdCoe
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COE
     }
 
