@@ -93,14 +93,6 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
       .map(_.result[OutboundSoapMessage])
   }
 
-  def globalIdExists(globalId: String): Future[Boolean] = {
-    count(Json.obj("globalId" -> globalId)).map(cnt => cnt > 0)
-  }
-
-  def globalIdCount(globalId: String): Future[Int] = {
-    count(Json.obj("globalId" -> globalId))
-  }
-
   def findById(globalId: String): Future[Option[OutboundSoapMessage]] = {
     find("globalId" -> JsString(globalId)).map(_.headOption)
       .recover {

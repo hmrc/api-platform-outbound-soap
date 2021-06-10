@@ -17,19 +17,17 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import play.api.Logging
-import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.apiplatformoutboundsoap.controllers.actionBuilders.ValidateConfirmationTypeAction
 import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus
 import uk.gov.hmrc.apiplatformoutboundsoap.models.common._
 import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
-import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.{Node, NodeSeq}
+import scala.language.postfixOps
 
 @Singleton
 class ConfirmationController @Inject()(cc: ControllerComponents,
@@ -67,7 +65,7 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
         logger.error(s"Unexpected error updating message with id [${id}] following receipt of ${xml.text}")
         Future.successful(InternalServerError)
       })
-      case None => Future.successful(BadRequest)
+      case _ => Future.successful(BadRequest)
     }
   }
 }
