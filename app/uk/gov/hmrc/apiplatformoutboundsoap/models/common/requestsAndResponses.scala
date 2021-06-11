@@ -14,19 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.apiplatformoutboundsoap.models
+package uk.gov.hmrc.apiplatformoutboundsoap.models.common
 
-import java.util.UUID
+sealed trait UpdateResult
 
-case class SoapMessageStatus(globalId: UUID, messageId: String, status:  StatusType, ccnHttpStatus: Int)
+case object MessageIdNotFoundResult extends UpdateResult
 
-object SoapMessageStatus{
-  def fromOutboundSoapMessage(outboundSoapMessage: OutboundSoapMessage): SoapMessageStatus ={
-    SoapMessageStatus(
-      outboundSoapMessage.globalId,
-      outboundSoapMessage.messageId,
-      outboundSoapMessage.status,
-      outboundSoapMessage.ccnHttpStatus
-    )
-  }
-}
+case object NoContentUpdateResult extends UpdateResult
+
+
+

@@ -31,7 +31,7 @@ import reactivemongo.api.ReadPreference
 import reactivemongo.bson.BSONLong
 import reactivemongo.core.errors.DatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{FailedOutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, SentOutboundSoapMessage}
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.mongo.RepositoryPreparation
 
 import java.util.UUID.randomUUID
@@ -181,7 +181,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
   "updateStatus" should {
     "update the message to have a status of FAILED" in {
       await(repo.persist(retryingMessage))
-      val Some(returnedSoapMessage) = await(repo.updateStatus(retryingMessage.globalId, SendingStatus.FAILED))
+      val Some(returnedSoapMessage) = await(repo.updateSendingStatus(retryingMessage.globalId, SendingStatus.FAILED))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
@@ -193,7 +193,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
 
     "update the message to have a status of SENT" in {
       await(repo.persist(retryingMessage))
-      val Some(returnedSoapMessage) = await(repo.updateStatus(retryingMessage.globalId, SendingStatus.SENT))
+      val Some(returnedSoapMessage) = await(repo.updateSendingStatus(retryingMessage.globalId, SendingStatus.SENT))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
@@ -201,6 +201,50 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
       fetchedRecords.head.isInstanceOf[SentOutboundSoapMessage] shouldBe true
       returnedSoapMessage.status shouldBe SendingStatus.SENT
       returnedSoapMessage.isInstanceOf[SentOutboundSoapMessage] shouldBe true
+    }
+  }
+
+  "updateConfirmationStatus" should {
+    val expectedConfirmationMessageBody = "<xml>foobar</xml>"
+    "update a message when a CoE is received" in {
+      await(repo.persist(sentMessage))
+      await(repo.updateConfirmationStatus(sentMessage.globalId.toString, DeliveryStatus.COE, expectedConfirmationMessageBody))
+
+      val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe DeliveryStatus.COE
+      fetchedRecords.head.asInstanceOf[CoeSoapMessage].coeMessage shouldBe Some(expectedConfirmationMessageBody)
+    }
+
+    "update a message when a CoD is received" in {
+      await(repo.persist(sentMessage))
+      await(repo.updateConfirmationStatus(sentMessage.globalId.toString, DeliveryStatus.COD, expectedConfirmationMessageBody))
+
+      val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe DeliveryStatus.COD
+      fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
+    }
+
+    "return empty Option when asked to update a message that doesn't exist" in {
+      val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
+      fetchedRecords.size shouldBe 0
+      val updated: Option[OutboundSoapMessage] = await(repo.updateConfirmationStatus(
+        "dummy id for not found", DeliveryStatus.COD, expectedConfirmationMessageBody))
+      updated.isEmpty shouldBe true
+    }
+  }
+
+  "findById" should {
+    "return message when ID exists" in {
+      await(repo.persist(sentMessage))
+      val found: Option[OutboundSoapMessage] = await(repo.findById(sentMessage.globalId.toString))
+      found shouldBe Some(sentMessage)
+    }
+
+   "return nothing when ID does not exist" in {
+      val found: Option[OutboundSoapMessage] = await(repo.findById(sentMessage.globalId.toString))
+      found shouldBe None
     }
   }
 }

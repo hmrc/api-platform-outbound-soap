@@ -80,14 +80,14 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     outboundConnector.postMessage(SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { result =>
       if (is2xx(result)) {
         logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} succeeded")
-        outboundMessageRepository.updateStatus(message.globalId, SendingStatus.SENT) map { updatedMessage =>
+        outboundMessageRepository.updateSendingStatus(message.globalId, SendingStatus.SENT) map { updatedMessage =>
           updatedMessage.map(notificationCallbackConnector.sendNotification)
           ()
         }
       } else {
         if (message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)) {
           logger.info(s"Retrying message with global ID ${message.globalId} and message ID ${message.messageId} failed on last attempt")
-          outboundMessageRepository.updateStatus(message.globalId, SendingStatus.FAILED).map { updatedMessage =>
+          outboundMessageRepository.updateSendingStatus(message.globalId, SendingStatus.FAILED).map { updatedMessage =>
             updatedMessage.map(notificationCallbackConnector.sendNotification)
             ()
           }
@@ -108,7 +108,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     } else {
       logger.info(s"Message with global ID $globalId and message ID $messageId failed on first attempt")
       RetryingOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
-        now.plus(appConfig.retryInterval.toMillis), result, message.notificationUrl)
+        now.plus(appConfig.retryInterval.toMillis), result, message.notificationUrl, None, None)
     }
   }
 
