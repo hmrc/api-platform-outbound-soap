@@ -17,7 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
 import play.api.http.HeaderNames.CONTENT_TYPE
-import play.api.{Logger, LoggerLike}
+import play.api.{Configuration, Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HttpClient, _}
@@ -26,10 +26,15 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class OutboundConnector @Inject()(httpClient: HttpClient)
-                                 (implicit ec: ExecutionContext) extends HttpErrorFunctions {
+class OutboundConnector @Inject()(
+               config: Configuration,
+               defaultHttpClient: HttpClient,
+              proxiedHttpClient: ProxiedHttpClient)
+             (implicit ec: ExecutionContext) extends HttpErrorFunctions {
 
   val logger: LoggerLike = Logger
+  val useProxy: Boolean = useProxyForEnv()
+  lazy val httpClient: HttpClient = if (useProxy) proxiedHttpClient else defaultHttpClient
 
   def postMessage(soapRequest: SoapRequest): Future[Int] = {
     implicit val hc: HeaderCarrier =  HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
@@ -40,5 +45,10 @@ class OutboundConnector @Inject()(httpClient: HttpClient)
       }
       response.status
     }
+  }
+
+
+  def useProxyForEnv(): Boolean = {
+    config.getOptional[Boolean]("proxy.proxyRequiredForThisEnvironment").getOrElse(false)
   }
 }

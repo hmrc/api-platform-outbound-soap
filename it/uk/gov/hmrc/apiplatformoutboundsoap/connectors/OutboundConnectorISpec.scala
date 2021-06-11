@@ -40,6 +40,7 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
     val underTest: OutboundConnector = app.injector.instanceOf[OutboundConnector]
   }
 
+
   "postMessage" should {
     val message = SoapRequest("<Envelope><Body>foobar</Body></Envelope>", wireMockBaseUrlAsString)
 
