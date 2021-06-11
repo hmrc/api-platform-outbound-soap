@@ -31,7 +31,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.xml.{Elem, Node, NodeSeq, XML}
+import scala.xml.{Elem, NodeSeq, XML}
 
 class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
@@ -116,12 +116,12 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
         |      </ccn2:CoE>
         |   </soap:Body>
         |</soap:Envelope>""".stripMargin.replaceAll("\n", "")
-    val msgIdCod: Node = <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/ack">1234abcd</wsa:RelatesTo>
-    val msgIdCoe: Node = <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/err">zyxw9876</wsa:RelatesTo>
+    val msgIdCod: String = "1234abcd"
+    val msgIdCoe: String = "zyxw9876"
 
     "call the confirmation service with a CoD request" in new Setup {
       val confirmationXmlRequestCaptor = ArgumentCaptor.forClass(classOf[NodeSeq])
-      val msgIdCaptor = ArgumentCaptor.forClass(classOf[Node])
+      val msgIdCaptor = ArgumentCaptor.forClass(classOf[String])
       val confirmationTypeCaptor = ArgumentCaptor.forClass(classOf[DeliveryStatus])
       val requestBodyXml: Elem = XML.loadString(codMessage)
        when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(*))
@@ -144,7 +144,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
 
     "call the confirmation service with a CoE request" in new Setup {
       val confirmationXmlRequestCaptor = ArgumentCaptor.forClass(classOf[NodeSeq])
-      val msgIdCaptor = ArgumentCaptor.forClass(classOf[Node])
+      val msgIdCaptor = ArgumentCaptor.forClass(classOf[String])
       val confirmationTypeCaptor = ArgumentCaptor.forClass(classOf[DeliveryStatus])
       val requestBodyXml: Elem = XML.loadString(coeMessage)
       when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(*))

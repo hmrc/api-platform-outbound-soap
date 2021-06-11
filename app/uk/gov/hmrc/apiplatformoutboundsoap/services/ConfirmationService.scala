@@ -24,15 +24,14 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.{Node, NodeSeq}
+import scala.xml.NodeSeq
 
 @Singleton
 class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRepository,
                                     notificationCallbackConnector: NotificationCallbackConnector)
                                    (implicit val ec: ExecutionContext) {
- def processConfirmation(confRqst: NodeSeq, msgId: Node, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
+ def processConfirmation(confRqst: NodeSeq, msgId: String, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
-    val msgIdStr = msgId.text
 
     def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
       outboundMessageRepository.updateConfirmationStatus(id, status, body) map { maybeOutboundSoapMessage =>
@@ -41,9 +40,9 @@ class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRe
       }
     }
 
-    outboundMessageRepository.findById(msgIdStr).flatMap {
+    outboundMessageRepository.findById(msgId).flatMap {
       case None => Future.successful(MessageIdNotFoundResult)
-      case Some(_: OutboundSoapMessage) => doUpdate(msgIdStr, delStatus, confRqst.text)
+      case Some(_: OutboundSoapMessage) => doUpdate(msgId, delStatus, confRqst.text)
     }
  }
 }

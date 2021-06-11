@@ -37,35 +37,26 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
   extends BackendController(cc) with Logging{
 
   def message: Action[NodeSeq] = (Action andThen validateConfirmationTypeAction).async(parse.xml) { implicit request =>
-    val confirmationType: Option[DeliveryStatus] = request.headers.get("x-soap-action").map(d => DeliveryStatus.withNameInsensitive(d))
     val xml: NodeSeq = request.body
-    val id: Option[Node] = (xml \\ "RelatesTo" headOption)
 
-      def callService(deliveryStatus: DeliveryStatus): Future[Result] = {
-        id.map(i => {
-          confirmationService.processConfirmation(xml, i, deliveryStatus) map {
-            case NoContentUpdateResult => NoContent
-            case _ => {
-              logger.warn(s"No message found with global ID [${i.text}]")
-              NotFound
-            }
-          }
-        }).getOrElse({
-          logger.warn(s"RelatesTo not found in confirmation message [${xml.text}]")
-          Future.successful(BadRequest)
-        })
+    def callService(deliveryStatus: DeliveryStatus, id: String): Future[Result] = {
+      confirmationService.processConfirmation(xml, id, deliveryStatus) map {
+        case NoContentUpdateResult => NoContent
+        case _ =>
+          logger.warn(s"No message found with global ID [$id]. Request is ${xml}")
+          NotFound
       }
+    }
 
-    confirmationType match {
-      case Some(DeliveryStatus.COE) => confirmationType.map(ct => callService(ct)).getOrElse({
-        logger.error(s"Unexpected error updating message with id [${id}] following receipt of ${xml.text}")
-        Future.successful(InternalServerError)
-      })
-      case Some(DeliveryStatus.COD) => confirmationType.map(ct => callService(ct)).getOrElse({
-        logger.error(s"Unexpected error updating message with id [${id}] following receipt of ${xml.text}")
-        Future.successful(InternalServerError)
-      })
-      case _ => Future.successful(BadRequest)
+    val confirmationType: Option[DeliveryStatus] = request.headers.get("x-soap-action").map(d => DeliveryStatus.withNameInsensitive(d))
+
+    val id: Option[Node] = (xml \\ "RelatesTo" headOption)
+    (confirmationType, id) match {
+      case (Some(DeliveryStatus.COE), Some(id)) =>  callService(DeliveryStatus.COE, id.text)
+      case (Some(DeliveryStatus.COD), Some(id)) =>  callService(DeliveryStatus.COD, id.text)
+      case _ =>
+        logger.warn(s"Unable to update message with RelatesTo of [${id}] and x-soap-action value of [${confirmationType}]. Request is ${xml}")
+        Future.successful(BadRequest)
     }
   }
 }

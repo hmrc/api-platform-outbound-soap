@@ -35,7 +35,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
-import scala.xml.Node
 
 class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
 
@@ -78,7 +77,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
         |</soap:Envelope>""".stripMargin.replaceAll("\n", ""))
 
     val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", DateTime.now(UTC), OK)
-    val msgId: Node = <RelatesTo>abcd1234</RelatesTo>
+    val msgId: String = "abcd1234"
 
     "update a sent message with a CoD" in new Setup {
       when(outboundMessageRepositoryMock.findById("abcd1234"))
