@@ -35,8 +35,8 @@ class ValidateConfirmationTypeAction @Inject()()(implicit ec: ExecutionContext)
   }
 
   private def validateEnum(deliveryStatus: Option[String]): Option[Status] = {
-    val validConfirmationTypeValues = Seq("COD", "COE")
-    val deliveryStatusPrepared: String = deliveryStatus.map(d => d.trim.toUpperCase).getOrElse("")
+    val validConfirmationTypeValues = Seq("CCN2.Service.Platform.AcknowledgementService/CoD", "CCN2.Service.Platform.AcknowledgementService/CoE")
+    val deliveryStatusPrepared: String = deliveryStatus.map(d => d.trim).getOrElse("")
     if (validConfirmationTypeValues.contains(deliveryStatusPrepared)) {
       None
     } else {

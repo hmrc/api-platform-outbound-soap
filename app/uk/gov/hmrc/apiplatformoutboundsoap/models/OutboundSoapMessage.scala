@@ -130,14 +130,14 @@ object StatusType extends Enum[StatusType] with PlayJsonEnum[StatusType]{
   val values = findValues
 }
 
-sealed abstract class DeliveryStatus extends StatusType
+sealed abstract class DeliveryStatus(override val entryName: String) extends StatusType
 
 object DeliveryStatus extends Enum[DeliveryStatus] with PlayJsonEnum[DeliveryStatus] {
   val values: immutable.IndexedSeq[DeliveryStatus] = findValues
 
-  case object COE extends DeliveryStatus
+  case object COE extends DeliveryStatus("CCN2.Service.Platform.AcknowledgementService/CoE")
 
-  case object COD extends DeliveryStatus
+  case object COD extends DeliveryStatus("CCN2.Service.Platform.AcknowledgementService/CoD")
 }
 
 sealed abstract class SendingStatus extends StatusType
