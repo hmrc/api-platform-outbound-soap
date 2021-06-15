@@ -63,6 +63,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val expectedCreateDateTime: DateTime = DateTime.now(UTC)
     val expectedGlobalId: UUID = UUID.randomUUID
     when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
+    when(appConfigMock.ccn2Host).thenReturn("example.com")
+    when(appConfigMock.ccn2Port).thenReturn(1234)
 
     val underTest: OutboundService = new OutboundService(outboundConnectorMock, wsSecurityServiceMock,
       outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock, cacheSpy) {
@@ -86,6 +88,16 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       confirmationOfDelivery = false,
       Some("http://somenotification.url")
     )
+
+    val messageRequestUrlResolver = MessageRequest(
+      "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_URLResolver.wsdl",
+      "IE4N03notifyERiskAnalysisHit",
+      """<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>""",
+      addressing = addressing,
+      confirmationOfDelivery = false,
+      Some("http://somenotification.url")
+    )
+
     val messageRequestMinimalAddressing = messageRequestFullAddressing
       .copy(addressing = addressingOnlyMandatoryFields)
     val expectedStatus: Int = OK
@@ -170,7 +182,6 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         when(outboundConnectorMock.postMessage(*)).thenReturn(successful(httpCode))
         val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
         when(outboundMessageRepositoryMock.persist(messageCaptor.capture())(*)).thenReturn(successful(()))
-
         await(underTest.sendMessage(messageRequestFullAddressing))
 
         messageCaptor.getValue.status shouldBe SendingStatus.SENT
@@ -179,7 +190,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         messageCaptor.getValue.globalId shouldBe expectedGlobalId
         messageCaptor.getValue.createDateTime shouldBe expectedCreateDateTime
         messageCaptor.getValue.notificationUrl shouldBe messageRequestFullAddressing.notificationUrl
-        messageCaptor.getValue.destinationUrl shouldBe "http://example.com/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
+        messageCaptor.getValue.destinationUrl shouldBe "http://example.com:1234/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
       }
     }
 
@@ -202,7 +213,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         messageCaptor.getValue.asInstanceOf[RetryingOutboundSoapMessage].retryDateTime shouldBe
           expectedCreateDateTime.plus(expectedInterval.toMillis)
         messageCaptor.getValue.notificationUrl shouldBe messageRequestFullAddressing.notificationUrl
-        messageCaptor.getValue.destinationUrl shouldBe "http://example.com/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
+        messageCaptor.getValue.destinationUrl shouldBe "http://example.com:1234/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
       }
     }
 
@@ -215,6 +226,17 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       await(underTest.sendMessage(messageRequestFullAddressing))
 
       getXmlDiff(messageCaptor.getValue.soapEnvelope, expectedSoapEnvelope()).build().hasDifferences shouldBe false
+      messageCaptor.getValue.destinationUrl shouldBe "http://example.com:1234/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
+    }
+
+    "resolve destination url when sending the SOAP envelope returned from the security service to the connector" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
+      when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
+      val messageCaptor: ArgumentCaptor[SoapRequest] = ArgumentCaptor.forClass(classOf[SoapRequest])
+      when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
+
+      await(underTest.sendMessage(messageRequestUrlResolver))
+
       messageCaptor.getValue.destinationUrl shouldBe "http://example.com/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
     }
 

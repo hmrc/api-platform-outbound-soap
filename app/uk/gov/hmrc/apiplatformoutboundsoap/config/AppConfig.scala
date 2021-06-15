@@ -30,6 +30,8 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
   val graphiteHost: String = config.get[String]("microservice.metrics.graphite.host")
 
+  val ccn2Host: String = config.get[String]("ccn2Host")
+  val ccn2Port: Int = config.get[Int]("ccn2Port")
   val ccn2Username: String = config.get[String]("ccn2Username")
   val ccn2Password: String = config.get[String]("ccn2Password")
   val cryptoKeystoreLocation: String = config.get[String]("cryptoKeystoreLocation")
