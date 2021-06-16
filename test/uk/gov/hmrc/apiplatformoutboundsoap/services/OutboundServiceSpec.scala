@@ -229,7 +229,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       messageCaptor.getValue.destinationUrl shouldBe "http://example.com:1234/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
     }
 
-    "resolve destination url when sending the SOAP envelope returned from the security service to the connector" in new Setup {
+    "resolve destination url not having port when sending the SOAP envelope returned from the security service to the connector" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundMessageRepositoryMock.persist(*)(*)).thenReturn(successful(()))
       val messageCaptor: ArgumentCaptor[SoapRequest] = ArgumentCaptor.forClass(classOf[SoapRequest])
