@@ -127,7 +127,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
        when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(*))
         .thenReturn(Future.successful(NoContentUpdateResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "cod"))
+        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoD"))
       status(result) shouldBe NO_CONTENT
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       msgIdCaptor.getValue shouldBe msgIdCod
@@ -137,7 +137,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
     "handle an XML request with no RelatesTo element" in new Setup {
       val requestBodyXml: Elem = XML.loadString(codMessageWithNoRelatesTo)
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "cod"))
+        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoD"))
       status(result) shouldBe BAD_REQUEST
       verifyZeroInteractions(confirmationServiceMock)
     }
@@ -150,7 +150,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(*))
         .thenReturn(Future.successful(NoContentUpdateResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "coe"))
+        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoE"))
       status(result) shouldBe NO_CONTENT
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       msgIdCaptor.getValue shouldBe msgIdCoe
@@ -162,7 +162,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       when(confirmationServiceMock.processConfirmation(*,*,*)(*))
         .thenReturn(Future.successful(MessageIdNotFoundResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "coe"))
+        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoE"))
       status(result) shouldBe NOT_FOUND
     }
 
