@@ -43,9 +43,9 @@
   </wsdl:binding>
   <wsdl:service name="CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS">
     <wsdl:port name="RiskAnalysisOrchestrationBAS" binding="RiskAnalysisOrchestrationBASSoapBinding">
-      <soap12:address location="http://{ccn2Host}:{ccn2Port}/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS" />
+      <soap12:address location="http://{ccn2Host}/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS" />
       <wsa:EndpointReference>
-        <wsa:Address>http://{ccn2Host}:{ccn2Port}/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS</wsa:Address>
+        <wsa:Address>http://{ccn2Host}/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS</wsa:Address>
         <wsa:Metadata>
           <ccn2:ServiceID>CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS</ccn2:ServiceID>
           <ccn2:ServiceName>CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS</ccn2:ServiceName>
