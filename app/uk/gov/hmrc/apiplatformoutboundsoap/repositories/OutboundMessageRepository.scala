@@ -84,6 +84,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
   }
 
   def updateConfirmationStatus(globalId: String, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
+    logger.info(s"conf message is ${confirmationMsg}")
     val field: String = newStatus match {
       case DeliveryStatus.COD => "codMessage"
       case DeliveryStatus.COE => "coeMessage"

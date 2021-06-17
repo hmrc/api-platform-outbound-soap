@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
+import play.api.Logging
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.NotificationCallbackConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, NoContentUpdateResult, UpdateResult}
@@ -29,11 +30,10 @@ import scala.xml.NodeSeq
 @Singleton
 class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRepository,
                                     notificationCallbackConnector: NotificationCallbackConnector)
-                                   (implicit val ec: ExecutionContext) {
+                                 (implicit val ec: ExecutionContext) extends Logging  {
  def processConfirmation(confRqst: NodeSeq, msgId: String, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
-
-    def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
+   def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
       outboundMessageRepository.updateConfirmationStatus(id, status, body) map { maybeOutboundSoapMessage =>
         maybeOutboundSoapMessage.map(outboundSoapMessage => notificationCallbackConnector.sendNotification(outboundSoapMessage))} map {
         case _ => NoContentUpdateResult
@@ -42,7 +42,7 @@ class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRe
 
     outboundMessageRepository.findById(msgId).flatMap {
       case None => Future.successful(MessageIdNotFoundResult)
-      case Some(_: OutboundSoapMessage) => doUpdate(msgId, delStatus, confRqst.text)
+      case Some(_: OutboundSoapMessage) => doUpdate(msgId, delStatus, confRqst.toString())
     }
  }
 }

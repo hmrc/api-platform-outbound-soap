@@ -48,7 +48,7 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
       }
     }
 
-    val confirmationType: Option[DeliveryStatus] = request.headers.get("x-soap-action").map(d => DeliveryStatus.withNameInsensitive(d))
+    val confirmationType: Option[DeliveryStatus] = request.headers.get("x-soap-action").map(d => DeliveryStatus.fromAction(d))
 
     val id: Option[Node] = (xml \\ "RelatesTo" headOption)
     (confirmationType, id) match {
