@@ -98,6 +98,15 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       Some("http://somenotification.url")
     )
 
+    val messageRequestEmptyBody = MessageRequest(
+      "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
+      "IsAlive",
+      "",
+      addressing = addressing,
+      confirmationOfDelivery = false,
+      Some("http://somenotification.url")
+    )
+
     val messageRequestMinimalAddressing = messageRequestFullAddressing
       .copy(addressing = addressingOnlyMandatoryFields)
     val expectedStatus: Int = OK
@@ -132,6 +141,25 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
          |<nsGHXkF:IE4N03notifyERiskAnalysisHitReqMsg xmlns:nsGHXkF="http://xmlns.ec.eu/BusinessActivityService/ICS/IRiskAnalysisOrchestrationBAS/V1">
          |<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>
          |</nsGHXkF:IE4N03notifyERiskAnalysisHitReqMsg>
+         |</soapenv:Body>
+         |</soapenv:Envelope>""".stripMargin.replaceAll("\n", "")
+
+    def expectedSoapEnvelopeWithEmptyBodyRequest(extraHeaders: String = ""): String =
+      s"""<?xml version='1.0' encoding='utf-8'?>
+         |<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope">
+         |<soapenv:Header>
+         |<wsa:Action xmlns:wsa="http://www.w3.org/2005/08/addressing">CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit</wsa:Action>
+         |<ccnm:MessageHeader xmlns:ccnm="http://ccn2.ec.eu/CCN2.Service.Platform.Common.Schema">
+         |<ccnm:Version>1.0</ccnm:Version>
+         |<ccnm:SendingDateAndTime>2020-04-30T12:15:58.000Z</ccnm:SendingDateAndTime>
+         |<ccnm:MessageType>CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit</ccnm:MessageType>
+         |<ccnm:RequestCoD>false</ccnm:RequestCoD>
+         |</ccnm:MessageHeader>
+         |$extraHeaders
+         |</soapenv:Header>
+         |<soapenv:Body>
+         |<nszPw9y:isAliveReqMsg xmlns:nszPw9y="http://xmlns.ec.eu/BusinessMessages/TATAFng/Monitoring/V1">
+         |</nszPw9y:isAliveReqMsg>
          |</soapenv:Body>
          |</soapenv:Envelope>""".stripMargin.replaceAll("\n", "")
 
@@ -236,8 +264,21 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
 
       await(underTest.sendMessage(messageRequestUrlResolver))
-
       messageCaptor.getValue.destinationUrl shouldBe "http://example.com/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
+    }
+
+    "send the SOAP envelope with empty body returned from the security service to the connector" in new Setup {
+        when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelopeWithEmptyBodyRequest())
+        when(outboundConnectorMock.postMessage(*)).thenReturn(successful(200))
+        val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
+        when(outboundMessageRepositoryMock.persist(messageCaptor.capture())(*)).thenReturn(successful(()))
+        await(underTest.sendMessage(messageRequestEmptyBody))
+
+        messageCaptor.getValue.status shouldBe SendingStatus.SENT
+        messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelopeWithEmptyBodyRequest()
+        messageCaptor.getValue.messageId shouldBe messageId
+        messageCaptor.getValue.globalId shouldBe expectedGlobalId
+
     }
 
     "send the expected SOAP envelope to the security service which adds username token" in new Setup {
