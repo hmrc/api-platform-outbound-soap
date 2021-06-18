@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import play.api.Logging
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.NotificationCallbackConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, NoContentUpdateResult, UpdateResult}
@@ -30,7 +29,7 @@ import scala.xml.NodeSeq
 @Singleton
 class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRepository,
                                     notificationCallbackConnector: NotificationCallbackConnector)
-                                 (implicit val ec: ExecutionContext) extends Logging  {
+                                 (implicit val ec: ExecutionContext) {
  def processConfirmation(confRqst: NodeSeq, msgId: String, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
    def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
