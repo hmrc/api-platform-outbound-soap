@@ -44,7 +44,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
 
   "message" should {
     val fakeRequest = FakeRequest("POST", "/acknowledgement")
-    val codMessage =
+    val codMessage: String =
       """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
         |<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ccn2="http://ccn2.ec.eu/CCN2.Service.Platform.Acknowledgement.Schema">
         |    <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
@@ -127,17 +127,19 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
        when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(*))
         .thenReturn(Future.successful(NoContentUpdateResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoD"))
+        .withHeaders("ContentType" -> "text/xml", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoD"))
       status(result) shouldBe NO_CONTENT
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       msgIdCaptor.getValue shouldBe msgIdCod
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COD
+      verify(confirmationServiceMock).processConfirmation(refEq(requestBodyXml), refEq(msgIdCod), refEq(DeliveryStatus.COD))(*)
+
     }
 
     "handle an XML request with no RelatesTo element" in new Setup {
       val requestBodyXml: Elem = XML.loadString(codMessageWithNoRelatesTo)
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoD"))
+        .withHeaders("ContentType" -> "text/xml", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoD"))
       status(result) shouldBe BAD_REQUEST
       verifyZeroInteractions(confirmationServiceMock)
     }
@@ -150,11 +152,12 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(*))
         .thenReturn(Future.successful(NoContentUpdateResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoE"))
+        .withHeaders("ContentType" -> "text/xml", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoE"))
       status(result) shouldBe NO_CONTENT
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       msgIdCaptor.getValue shouldBe msgIdCoe
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COE
+      verify(confirmationServiceMock).processConfirmation(refEq(requestBodyXml), refEq(msgIdCoe), refEq(DeliveryStatus.COE))(*)
     }
 
     "call the confirmation service with RelatesTo id that is unknown" in new Setup {
@@ -162,20 +165,20 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       when(confirmationServiceMock.processConfirmation(*,*,*)(*))
         .thenReturn(Future.successful(MessageIdNotFoundResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoE"))
+        .withHeaders("ContentType" -> "text/xml", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoE"))
       status(result) shouldBe NOT_FOUND
     }
 
     "handle receiving a request with an invalid SOAP action" in new Setup {
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(XML.loadString(codMessage))
-        .withHeaders("ContentType" -> "text/plain", "x-soap-action" -> "foobar"))
+        .withHeaders("ContentType" -> "text/xml", "x-soap-action" -> "foobar"))
       status(result) shouldBe BAD_REQUEST
       verifyZeroInteractions(confirmationServiceMock)
     }
 
     "handle receiving a request with no x-soap-action header" in new Setup {
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(XML.loadString(codMessage))
-        .withHeaders("ContentType" -> "text/plain"))
+        .withHeaders("ContentType" -> "text/xml"))
       status(result) shouldBe BAD_REQUEST
       verifyZeroInteractions(confirmationServiceMock)
     }

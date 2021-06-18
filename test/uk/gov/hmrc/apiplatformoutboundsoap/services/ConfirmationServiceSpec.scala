@@ -35,6 +35,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
+import scala.xml.Elem
 
 class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
 
@@ -57,7 +58,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
   }
 
   "processConfirmation" should {
-    val confirmationRequest =xml.XML.loadString(
+    val confirmationRequestCod: Elem =xml.XML.loadString(
       """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
         |<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ccn2="http://ccn2.ec.eu/CCN2.Service.Platform.Acknowledgement.Schema">
         |    <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
@@ -80,40 +81,33 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
     val msgId: String = "abcd1234"
 
     "update a sent message with a CoD" in new Setup {
-      when(outboundMessageRepositoryMock.findById("abcd1234"))
-        .thenReturn(successful(Option(outboundSoapMessage)))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequest.text))
-        .thenReturn(successful(Some(outboundSoapMessage)))
-      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequest, msgId, DeliveryStatus.COD))
+      when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Some(outboundSoapMessage)))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Some(outboundSoapMessage)))
+      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COD))
       result shouldBe NoContentUpdateResult
-      verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequest.text)
+      verify(outboundMessageRepositoryMock).findById("abcd1234")
+      verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequestCod.toString())
     }
 
     "update a sent message with a CoE" in new Setup {
-      when(outboundMessageRepositoryMock.findById("abcd1234"))
-        .thenReturn(successful(Option(outboundSoapMessage)))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text))
-        .thenReturn(successful(Some(outboundSoapMessage)))
-      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequest, msgId, DeliveryStatus.COE))
+      when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Some(outboundSoapMessage)))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Some(outboundSoapMessage)))
+      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COE))
       result shouldBe NoContentUpdateResult
-      verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text)
+      verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequestCod.toString())
     }
 
     "return failure for RelatesTo ID which cannot be found" in new Setup {
-      when(outboundMessageRepositoryMock.findById("abcd1234"))
-        .thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text))
-        .thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
-      val result: UpdateResult  = await(underTest.processConfirmation(confirmationRequest, msgId, DeliveryStatus.COE))
+      when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
+      val result: UpdateResult  = await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COE))
       result shouldBe MessageIdNotFoundResult
     }
 
    "send update to notification URL" in new Setup {
-      when(outboundMessageRepositoryMock.findById("abcd1234"))
-        .thenReturn(successful(Option(outboundSoapMessage)))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequest.text))
-       .thenReturn(successful(Option(outboundSoapMessage)))
-      await(underTest.processConfirmation(confirmationRequest, msgId, DeliveryStatus.COE))
+      when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Some(outboundSoapMessage)))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Option(outboundSoapMessage)))
+      await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COE))
       verify(notificationCallbackConnectorMock).sendNotification(refEq(outboundSoapMessage))(*)
     }
   }

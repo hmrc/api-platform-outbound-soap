@@ -53,7 +53,8 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
     prepare(repo)
   }
 
-  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
+  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url",
+    DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
   val sentMessage = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
   val failedMessage = FailedOutboundSoapMessage(randomUUID, "MessageId-A3", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
   "persist" should {
@@ -208,7 +209,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
     val expectedConfirmationMessageBody = "<xml>foobar</xml>"
     "update a message when a CoE is received" in {
       await(repo.persist(sentMessage))
-      await(repo.updateConfirmationStatus(sentMessage.globalId.toString, DeliveryStatus.COE, expectedConfirmationMessageBody))
+      await(repo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COE, expectedConfirmationMessageBody))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
@@ -218,7 +219,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
 
     "update a message when a CoD is received" in {
       await(repo.persist(sentMessage))
-      await(repo.updateConfirmationStatus(sentMessage.globalId.toString, DeliveryStatus.COD, expectedConfirmationMessageBody))
+      await(repo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COD, expectedConfirmationMessageBody))
 
       val fetchedRecords = await(repo.findAll(ReadPreference.primaryPreferred))
       fetchedRecords.size shouldBe 1
@@ -238,12 +239,12 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with Matchers with Repo
   "findById" should {
     "return message when ID exists" in {
       await(repo.persist(sentMessage))
-      val found: Option[OutboundSoapMessage] = await(repo.findById(sentMessage.globalId.toString))
+      val found: Option[OutboundSoapMessage] = await(repo.findById(sentMessage.messageId))
       found shouldBe Some(sentMessage)
     }
 
    "return nothing when ID does not exist" in {
-      val found: Option[OutboundSoapMessage] = await(repo.findById(sentMessage.globalId.toString))
+      val found: Option[OutboundSoapMessage] = await(repo.findById(sentMessage.messageId))
       found shouldBe None
     }
   }

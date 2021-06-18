@@ -32,8 +32,7 @@ class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRe
                                    (implicit val ec: ExecutionContext) {
  def processConfirmation(confRqst: NodeSeq, msgId: String, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
-
-    def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
+   def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
       outboundMessageRepository.updateConfirmationStatus(id, status, body) map { maybeOutboundSoapMessage =>
         maybeOutboundSoapMessage.map(outboundSoapMessage => notificationCallbackConnector.sendNotification(outboundSoapMessage))} map {
         case _ => NoContentUpdateResult
@@ -42,7 +41,7 @@ class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRe
 
     outboundMessageRepository.findById(msgId).flatMap {
       case None => Future.successful(MessageIdNotFoundResult)
-      case Some(_: OutboundSoapMessage) => doUpdate(msgId, delStatus, confRqst.text)
+      case Some(_: OutboundSoapMessage) => doUpdate(msgId, delStatus, confRqst.toString())
     }
  }
 }

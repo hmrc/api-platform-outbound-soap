@@ -72,6 +72,98 @@ HTTP Status: 200 (OK)
 | invalid WSDL | `400` |
 | operation not found in the WSDL | `404` |
 
+## `POST /acknowledgement`
+Allows CCN2 system to asynchronously send an acknowledgment in reply to a message sent to them. Upon receipt of such a message, this service will update the message referred to in 
+the RelatesTo field with its new status - either COD or COE - and will append the acknowledgment message, in its entirety, to the 
+original request. 
+
+### Request headers
+| Name | Description |
+| --- | --- |
+| `Content-Type` | `text/xml` |
+| `x-soap-action` | `CCN2.Service.Platform.AcknowledgementService/CoD` |
+
+### Confirmation of delivery request
+```
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ccn2="http://ccn2.ec.eu/CCN2.Service.Platform.Acknowledgement.Schema">
+    <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
+        <wsa:Action>CCN2.Service.Platform.AcknowledgementService/CoD</wsa:Action>
+        <wsa:From>
+            <wsa:Address>[FROM]</wsa:Address>
+        </wsa:From>
+        <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/ack">[ORIGINAL_MESSAGE_ID]</wsa:RelatesTo>
+        <wsa:MessageID>[COD_MESSAGE_ID]</wsa:MessageID>
+        <wsa:To>[TO]</wsa:To>
+    </soap:Header>
+    <soap:Body>
+        <ccn2:CoD>
+            <ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp>
+        </ccn2:CoD>
+    </soap:Body>
+</soap:Envelope>
+```
+| Name | Description |
+| --- | --- |
+| `Action` | Can only be `CCN2.Service.Platform.AcknowledgementService/CoD` |
+| `From` | This property identifies the logical address of the sender of the message |
+| `RelatesTo` | Contains a `RelationshipType` which will always be `http://ccn2.ec.eu/addressing/ack` and an ID which is the value provided in the addressing.messageId property of the original request |
+| `MessageId` | This property uniquely identifies the message within the CCN2 Platform |
+| `To` | This property identifies the logical address of the intended receiver of the message |
+| `Body.CoD.EventTimestamp` | A timestamp indicating when the error was recorded |
+
+### Confirmation of exception request
+### Request headers
+| Name | Description |
+| --- | --- |
+| `Content-Type` | `text/xml` |
+| `x-soap-action` | `CCN2.Service.Platform.AcknowledgementService/CoE` |
+```
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ccn2="http://ccn2.ec.eu/CCN2.Service.Platform.Acknowledgement.Schema">
+    <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
+        <wsa:Action>CCN2.Service.Platform.AcknowledgementService/CoE</wsa:Action>
+        <wsa:From>
+            <wsa:Address>[FROM]</wsa:Address>
+        </wsa:From>
+        <wsa:RelatesTo RelationshipType="http://ccn2.ec.eu/addressing/err">[ORIGINAL_MESSAGE_ID]</wsa:RelatesTo>
+        <wsa:MessageID>[COE_MESSAGE_ID]</wsa:MessageID>
+        <wsa:To>[TO]</wsa:To>
+    </soap:Header>
+    <soap:Body>
+      <ccn2:CoE>
+         <ccn2:Severity>?</ccn2:Severity>
+         <ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp>
+         <!--Optional:-->
+         <ccn2:Payload>
+            <soap:Fault>
+               <soap:Code>
+                  <soap:Value>?</soap:Value>
+               </soap:Code>
+               <soap:Reason>
+                  <soap:Text xml:lang="?">?</soap:Text>
+               </soap:Reason>
+               <soap:Node>?</soap:Node>
+               <soap:Role>?</soap:Role>
+               <soap:Detail>
+               </soap:Detail>
+            </soap:Fault>
+            <ccn2:Message>?</ccn2:Message>
+         </ccn2:Payload>
+      </ccn2:CoE>
+   </soap:Body>
+</soap:Envelope>
+```
+| Name | Description |
+| --- | --- |
+| `Action` | Can only be `CCN2.Service.Platform.AcknowledgementService/CoE` |
+| `From` | This property identifies the logical address of the sender of the message |
+| `RelatesTo` | Contains a `RelationshipType` which will always be `http://ccn2.ec.eu/addressing/err` and an ID which is the value provided in the addressing.messageId property of the original request |
+| `MessageId` | This property uniquely identifies the message within the CCN2 Platform |
+| `To` | This property identifies the logical address of the intended receiver of the message |
+| `Body.CoE.Severity` | One of Critical, Emergency, Error, Warning, Info in descending order of impact |
+| `Body.CoE.EventTimestamp` | A timestamp indicating when the error was recorded |
+| `Body.CoE.Payload` | A structure containing a standard SOAP1.2 Fault element |
 ### License
 
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
