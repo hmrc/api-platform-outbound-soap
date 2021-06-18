@@ -83,19 +83,19 @@ class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent
       .map(_.result[OutboundSoapMessage])
   }
 
-  def updateConfirmationStatus(globalId: String, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
+  def updateConfirmationStatus(messageId: String, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
     logger.info(s"conf message is ${confirmationMsg}")
     val field: String = newStatus match {
       case DeliveryStatus.COD => "codMessage"
       case DeliveryStatus.COE => "coeMessage"
     }
-    findAndUpdate(Json.obj("globalId" -> globalId),
+    findAndUpdate(Json.obj("messageId" -> messageId),
       Json.obj("$set" -> Json.obj("status" -> newStatus.entryName, field -> confirmationMsg)), fetchNewObject = true)
       .map(_.result[OutboundSoapMessage])
   }
 
-  def findById(globalId: String): Future[Option[OutboundSoapMessage]] = {
-    find("globalId" -> JsString(globalId)).map(_.headOption)
+  def findById(messageId: String): Future[Option[OutboundSoapMessage]] = {
+    find("messageId" -> JsString(messageId)).map(_.headOption)
       .recover {
         case e: Exception =>
           logger.warn(s"error finding message - ${e.getMessage}")
