@@ -192,7 +192,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   private def addBody(message: MessageRequest, operation: Operation, envelope: SOAPEnvelope): Unit = {
     val inputMessageName = operation.getInput.getMessage.getParts.asScala.values.head.asInstanceOf[Part].getElementName
     val payload = getOMFactory.createOMElement(inputMessageName)
-    payload.addChild(stringToOM(message.messageBody))
+    if (message.messageBody.nonEmpty) payload.addChild(stringToOM(message.messageBody))
     envelope.getBody.addChild(payload)
   }
 }
