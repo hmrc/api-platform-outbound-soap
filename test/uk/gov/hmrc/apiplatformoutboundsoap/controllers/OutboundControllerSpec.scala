@@ -80,7 +80,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       messageCaptor.getValue.confirmationOfDelivery shouldBe false
     }
 
-    "return bad request when the request json body is missing fields" in new Setup {
+    "return bad request when the request json body is missing wsdlUrl field" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(
@@ -88,6 +88,16 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/wsdlUrl,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
+    }
+
+    "return bad request when the request json body is missing messageBody field" in new Setup {
+      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
+
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(
+        Json.obj("wsdlUrl" -> "http://example.com/wsdl", "wsdlOperation" -> "theOp", "addressing" -> Json.toJson(addressing))))
+
+      status(result) shouldBe BAD_REQUEST
+      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/messageBody,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
     }
 
     "return bad request when the request json body addressing section is missing to field" in new Setup {
