@@ -29,7 +29,7 @@ import scala.xml.NodeSeq
 @Singleton
 class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRepository,
                                     notificationCallbackConnector: NotificationCallbackConnector)
-                                 (implicit val ec: ExecutionContext) {
+                                   (implicit val ec: ExecutionContext) {
  def processConfirmation(confRqst: NodeSeq, msgId: String, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
    def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
