@@ -16,11 +16,22 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
+import akka.NotUsed
 import akka.stream.Materializer
+import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.scaladsl.Source
+import org.bson.codecs.configuration.CodecRegistries
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
+import org.mongodb.scala.{MongoClient, MongoCollection}
+import org.mongodb.scala.ReadPreference.primaryPreferred
+import org.mongodb.scala.model.Filters.{and, equal, lte}
+import org.mongodb.scala.model.Indexes.ascending
+import org.mongodb.scala.model.Updates.set
+import org.mongodb.scala.model.{FindOneAndUpdateOptions, IndexModel, IndexOptions, ReturnDocument}
+import org.mongodb.scala.result.InsertOneResult
+import play.api.Logging
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.akkastream.cursorProducer
@@ -32,70 +43,88 @@ import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{DeliveryStatus, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.{dateFormat, outboundSoapMessageFormatter}
-import uk.gov.hmrc.mongo.ReactiveRepository
+import uk.gov.hmrc.mongo.{MongoComponent, ReactiveRepository}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class OutboundMessageRepository @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: AppConfig)
+class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appConfig: AppConfig)
                                          (implicit ec: ExecutionContext, m: Materializer)
-  extends ReactiveRepository[OutboundSoapMessage, BSONObjectID](
-    "messages",
-    mongoComponent.mongoConnector.db,
-    outboundSoapMessageFormatter,
-    ReactiveMongoFormats.objectIdFormats) {
+  extends PlayMongoRepository[OutboundSoapMessage](
+    collectionName = "messages",
+    mongoComponent = mongoComponent,
+    domainFormat = outboundSoapMessageFormatter,
+      indexes = Seq(IndexModel(ascending("globalId"), IndexOptions().name("globalIdIndex")
+      .background(true).unique(true)),
+      IndexModel(ascending("createDateTime"),
+        IndexOptions().name("ttlIndex").background(true)
+          .expireAfter(appConfig.retryMessagesTtl.toSeconds, TimeUnit.SECONDS)))) with Logging  {
 
-  override def indexes = Seq(
-    Index(key = List("globalId" -> Ascending), name = Some("globalIdIndex"), unique = true, background = true),
-    Index(key = List("createDateTime" -> Ascending),
-      name = Some("ttlIndex"), background = true, options = BSONDocument("expireAfterSeconds" -> BSONLong(appConfig.retryMessagesTtl.toSeconds)))
-  )
+  override lazy val collection: MongoCollection[OutboundSoapMessage] =
+    CollectionFactory
+      .collection(mongoComponent.database, collectionName, domainFormat)
+      .withCodecRegistry(
+        CodecRegistries.fromRegistries(
+          CodecRegistries.fromCodecs(
+            Codecs.playFormatCodec(domainFormat),
+            Codecs.playFormatCodec(MongoFormatter.retryingSoapMessageFormatter),
+            Codecs.playFormatCodec(MongoFormatter.failedSoapMessageFormatter),
+            Codecs.playFormatCodec(MongoFormatter.sentSoapMessageFormatter),
+            Codecs.playFormatCodec(MongoFormatter.codSoapMessageFormatter),
+            Codecs.playFormatCodec(DeliveryStatus.jsonFormat),
+            Codecs.playFormatCodec(SendingStatus.jsonFormat),
+            Codecs.playFormatCodec(MongoFormatter.coeSoapMessageFormatter)
+          ),
+          MongoClient.DEFAULT_CODEC_REGISTRY
+        )
+      )
 
-  def persist(entity: OutboundSoapMessage)(implicit ec: ExecutionContext): Future[Unit] = {
-    insert(entity).map(_ => ())
+  def persist(entity: OutboundSoapMessage)(implicit executionContext: ExecutionContext): Future[InsertOneResult] = {
+    collection.insertOne(entity).toFuture()
   }
 
-  def retrieveMessagesForRetry: Source[RetryingOutboundSoapMessage, Future[Any]] = {
-    import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.retryingSoapMessageFormatter
-
-    collection
-      .find(Json.obj("status" -> SendingStatus.RETRYING.entryName,
-        "retryDateTime" -> Json.obj("$lte" -> now(UTC))), Option.empty[JsObject])
-      .sort(Json.obj("retryDateTime" -> 1))
-      .cursor[RetryingOutboundSoapMessage](ReadPreference.primaryPreferred)
-      .documentSource()
+  def retrieveMessagesForRetry: Source[RetryingOutboundSoapMessage, NotUsed] = {
+    MongoSource(collection.withReadPreference(primaryPreferred)
+      .find(filter = and(equal("status", SendingStatus.RETRYING.entryName),
+        and(lte("retryDateTime", now(UTC))))).map(_.asInstanceOf[RetryingOutboundSoapMessage]))
   }
 
   def updateNextRetryTime(globalId: UUID, newRetryDateTime: DateTime): Future[Option[RetryingOutboundSoapMessage]] = {
-    import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.retryingSoapMessageFormatter
-
-    findAndUpdate(Json.obj("globalId" -> globalId),
-      Json.obj("$set" -> Json.obj("retryDateTime" -> newRetryDateTime)), fetchNewObject = true)
-      .map(_.result[RetryingOutboundSoapMessage])
+    collection.withReadPreference(primaryPreferred)
+      .findOneAndUpdate(filter = equal("globalId", globalId),
+        update = set("retryDateTime", newRetryDateTime),
+        options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+      ).map(_.asInstanceOf[RetryingOutboundSoapMessage]).headOption()
   }
 
   def updateSendingStatus(globalId: UUID, newStatus: SendingStatus): Future[Option[OutboundSoapMessage]] = {
-    findAndUpdate(Json.obj("globalId" -> globalId),
-      Json.obj("$set" -> Json.obj("status" -> newStatus.entryName)), fetchNewObject = true)
-      .map(_.result[OutboundSoapMessage])
+    collection.withReadPreference(primaryPreferred)
+      .findOneAndUpdate(filter = equal("globalId", globalId),
+        update = set("status", newStatus.entryName),
+        options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+      ).toFutureOption()
   }
 
-  def updateConfirmationStatus(messageId: String, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
-    logger.info(s"conf message is ${confirmationMsg}")
+  def updateConfirmationStatus(globalId: String, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
     val field: String = newStatus match {
       case DeliveryStatus.COD => "codMessage"
       case DeliveryStatus.COE => "coeMessage"
     }
-    findAndUpdate(Json.obj("messageId" -> messageId),
-      Json.obj("$set" -> Json.obj("status" -> newStatus.entryName, field -> confirmationMsg)), fetchNewObject = true)
-      .map(_.result[OutboundSoapMessage])
+
+    collection.withReadPreference(primaryPreferred)
+      .findOneAndUpdate(filter = equal("globalId", globalId),
+        update = Seq(set("status", newStatus.entryName), set(field, confirmationMsg)),
+        options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER))
+      .toFutureOption()
   }
 
-  def findById(messageId: String): Future[Option[OutboundSoapMessage]] = {
-    find("messageId" -> JsString(messageId)).map(_.headOption)
+  def findById(globalId: String): Future[Option[OutboundSoapMessage]] = {
+    collection.find(filter = equal("globalId", globalId)).headOption()
       .recover {
         case e: Exception =>
           logger.warn(s"error finding message - ${e.getMessage}")
