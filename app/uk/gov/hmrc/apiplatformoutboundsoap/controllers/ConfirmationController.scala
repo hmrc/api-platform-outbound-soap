@@ -40,8 +40,8 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
     val xml: NodeSeq = request.body
 
     def callService(deliveryStatus: DeliveryStatus, id: String): Future[Result] = {
-      if(id.nonEmpty) {
-        confirmationService.processConfirmation(xml, id, deliveryStatus) map {
+      if(id.trim.nonEmpty) {
+        confirmationService.processConfirmation(xml, id.trim, deliveryStatus) map {
           case NoContentUpdateResult => NoContent
           case _ =>
             logger.warn(s"No message found with global ID [$id]. Request is ${xml}")
