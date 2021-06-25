@@ -73,7 +73,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
         )
       )
 
-  def persist(entity: OutboundSoapMessage)(implicit executionContext: ExecutionContext): Future[InsertOneResult] = {
+  def persist(entity: OutboundSoapMessage): Future[InsertOneResult] = {
     collection.insertOne(entity).toFuture()
   }
 
