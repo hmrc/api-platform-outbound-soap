@@ -32,19 +32,10 @@ import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{FindOneAndUpdateOptions, IndexModel, IndexOptions, ReturnDocument}
 import org.mongodb.scala.result.InsertOneResult
 import play.api.Logging
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.akkastream.cursorProducer
-import reactivemongo.api.ReadPreference
-import reactivemongo.api.indexes.Index
-import reactivemongo.api.indexes.IndexType.Ascending
-import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{DeliveryStatus, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus}
-import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.{dateFormat, outboundSoapMessageFormatter}
-import uk.gov.hmrc.mongo.{MongoComponent, ReactiveRepository}
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.outboundSoapMessageFormatter
+import uk.gov.hmrc.mongo.{MongoComponent}
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 
 import java.util.UUID
@@ -76,8 +67,6 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
             Codecs.playFormatCodec(MongoFormatter.failedSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.sentSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.codSoapMessageFormatter),
-            Codecs.playFormatCodec(DeliveryStatus.jsonFormat),
-            Codecs.playFormatCodec(SendingStatus.jsonFormat),
             Codecs.playFormatCodec(MongoFormatter.coeSoapMessageFormatter)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
