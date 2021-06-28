@@ -228,7 +228,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       val expectedConfirmationMessageBody = "<xml>foobar</xml>"
       "update a message when a CoE is received" in {
         await(serviceRepo.persist(sentMessage))
-        await(serviceRepo.updateConfirmationStatus(sentMessage.globalId.toString, DeliveryStatus.COE, expectedConfirmationMessageBody))
+        await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COE, expectedConfirmationMessageBody))
 
         val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
         fetchedRecords.size shouldBe 1
@@ -238,7 +238,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
 
       "update a message when a CoD is received" in {
         await(serviceRepo.persist(sentMessage))
-        await(serviceRepo.updateConfirmationStatus(sentMessage.globalId.toString, DeliveryStatus.COD, expectedConfirmationMessageBody))
+        await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COD, expectedConfirmationMessageBody))
 
         val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
 

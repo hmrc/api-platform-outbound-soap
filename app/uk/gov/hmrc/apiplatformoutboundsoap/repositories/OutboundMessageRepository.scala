@@ -61,9 +61,6 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
       .collection(mongoComponent.database, collectionName, domainFormat)
       .withCodecRegistry(
         fromRegistries(
-         /* fromProviders(
-            new UuidCodecProvider(UuidRepresentation.STANDARD)
-        ),*/
           fromCodecs(
             Codecs.playFormatCodec(domainFormat),
             Codecs.playFormatCodec(MongoFormatter.retryingSoapMessageFormatter),
@@ -108,14 +105,14 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
       ).toFutureOption()
   }
 
-  def updateConfirmationStatus(globalId: String, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
+  def updateConfirmationStatus(messageId: String, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
     val field: String = newStatus match {
       case DeliveryStatus.COD => "codMessage"
       case DeliveryStatus.COE => "coeMessage"
     }
 
     collection.withReadPreference(primaryPreferred)
-      .findOneAndUpdate(filter = equal("globalId", Codecs.toBson(UUID.fromString(globalId))),
+      .findOneAndUpdate(filter = equal("messageId", Codecs.toBson(messageId)),
         update = combine(set("status", Codecs.toBson(newStatus.entryName)), set(field, confirmationMsg)),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER))
       .toFutureOption()
