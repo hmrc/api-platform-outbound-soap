@@ -17,7 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
 import play.api.libs.json.{JsObject, JsPath, Json, JsonConfiguration, JsonNaming, OFormat, OWrites, Reads}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{CodSoapMessage, CoeSoapMessage, DeliveryStatus, FailedOutboundSoapMessage, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, SentOutboundSoapMessage, StatusType}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{CodSoapMessage, CoeSoapMessage, DeliveryStatus, FailedOutboundSoapMessage, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, SentOutboundSoapMessage}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 private[repositories] object MongoFormatter {
 

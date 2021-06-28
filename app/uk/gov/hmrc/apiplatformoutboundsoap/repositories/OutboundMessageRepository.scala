@@ -17,7 +17,6 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
 import akka.NotUsed
-import akka.stream.Materializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.scaladsl.Source
 import org.bson.codecs.configuration.CodecRegistries._
@@ -45,7 +44,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appConfig: AppConfig)
-                                         (implicit ec: ExecutionContext, m: Materializer)
+                                         (implicit ec: ExecutionContext)
   extends PlayMongoRepository[OutboundSoapMessage](
     collectionName = "messages",
     mongoComponent = mongoComponent,
@@ -112,7 +111,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
     }
 
     collection.withReadPreference(primaryPreferred)
-      .findOneAndUpdate(filter = equal("messageId", Codecs.toBson(messageId)),
+      .findOneAndUpdate(filter = equal("messageId", messageId),
         update = combine(set("status", Codecs.toBson(newStatus.entryName)), set(field, confirmationMsg)),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER))
       .toFutureOption()
