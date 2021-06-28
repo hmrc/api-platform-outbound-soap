@@ -52,7 +52,7 @@ object OutboundSoapMessage {
     } else if (fullyQualifiedName == classTag[CodSoapMessage].runtimeClass.getCanonicalName) {
       DeliveryStatus.COD
     } else {
-      throw new IllegalArgumentException
+      throw new IllegalArgumentException(s"${fullyQualifiedName} is not a valid class")
     }
   }
 }
@@ -143,9 +143,9 @@ object DeliveryStatus extends Enum[DeliveryStatus] with PlayJsonEnum[DeliverySta
   }
   val values: immutable.IndexedSeq[DeliveryStatus] = findValues
 
-  case object COE extends DeliveryStatus("COD")
+  case object COE extends DeliveryStatus("COE")
 
-  case object COD extends DeliveryStatus("COE")
+  case object COD extends DeliveryStatus("COD")
 }
 
 sealed abstract class SendingStatus(override val entryName: String) extends StatusType
