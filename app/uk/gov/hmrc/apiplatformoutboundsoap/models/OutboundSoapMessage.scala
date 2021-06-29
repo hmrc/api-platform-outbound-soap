@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-import enumeratum.EnumEntry.Uppercase
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.DateTime
 
@@ -125,7 +124,7 @@ case class RetryingOutboundSoapMessage(globalId: UUID,
     notificationUrl, codMessage, coeMessage)
 }
 
-sealed abstract class StatusType extends EnumEntry with Uppercase
+sealed abstract class StatusType extends EnumEntry
 
 object StatusType extends Enum[StatusType] with PlayJsonEnum[StatusType]{
   val values: immutable.IndexedSeq[StatusType] = findValues

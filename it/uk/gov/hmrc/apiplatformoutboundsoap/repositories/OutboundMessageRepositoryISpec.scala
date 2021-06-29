@@ -140,125 +140,125 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
     }
   }
 
-    "retrieveMessagesForRetry" should {
-      "retrieve retrying messages and ignore sent messages" in {
-        await(serviceRepo.persist(retryingMessage))
-        await(serviceRepo.persist(sentMessage))
+  "retrieveMessagesForRetry" should {
+    "retrieve retrying messages and ignore sent messages" in {
+      await(serviceRepo.persist(retryingMessage))
+      await(serviceRepo.persist(sentMessage))
 
-        val fetchedRecords = await(serviceRepo.retrieveMessagesForRetry.runWith(Sink.seq[RetryingOutboundSoapMessage]))
-        fetchedRecords.size shouldBe 1
-        fetchedRecords.head shouldBe retryingMessage
-      }
-
-      "not retrieve retrying messages when they are not ready for retrying" in {
-        val retryingMessageNotReadyForRetrying = RetryingOutboundSoapMessage(
-          randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC),
-          DateTime.now(UTC).plusHours(1), ccnHttpStatus)
-
-        await(serviceRepo.persist(retryingMessageNotReadyForRetrying))
-        await(serviceRepo.persist(sentMessage))
-
-        val fetchedRecords = await(serviceRepo.retrieveMessagesForRetry.runWith(Sink.seq[RetryingOutboundSoapMessage]))
-        fetchedRecords.size shouldBe 0
-      }
-
-      "retrieve retrying messages with retryDate in ascending order" in {
-        val retryingMessageOldRetryDatetime = retryingMessage.copy(globalId = randomUUID, retryDateTime = retryingMessage.retryDateTime.minusHours(1))
-        val retryingMessageEvenOlderRetryDatetime = retryingMessage.copy(globalId = randomUUID, retryDateTime = retryingMessage.retryDateTime.minusHours(2))
-        await(serviceRepo.persist(retryingMessageEvenOlderRetryDatetime))
-        await(serviceRepo.persist(retryingMessage))
-        await(serviceRepo.persist(retryingMessageOldRetryDatetime))
-
-        val fetchedRecords = await(serviceRepo.retrieveMessagesForRetry.runWith(Sink.seq[RetryingOutboundSoapMessage]))
-        fetchedRecords.size shouldBe 3
-        fetchedRecords.head shouldBe retryingMessageEvenOlderRetryDatetime
-        fetchedRecords(1) shouldBe retryingMessageOldRetryDatetime
-        fetchedRecords(2) shouldBe retryingMessage
-      }
+      val fetchedRecords = await(serviceRepo.retrieveMessagesForRetry.runWith(Sink.seq[RetryingOutboundSoapMessage]))
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head shouldBe retryingMessage
     }
 
-    "updateNextRetryTime" should {
-      "update the retryDateTime on a record given its globalID" in {
-        await(serviceRepo.persist(retryingMessage))
-        val newRetryDateTime = retryingMessage.retryDateTime.minusHours(2)
-        await(serviceRepo.updateNextRetryTime(retryingMessage.globalId, newRetryDateTime))
+    "not retrieve retrying messages when they are not ready for retrying" in {
+      val retryingMessageNotReadyForRetrying = RetryingOutboundSoapMessage(
+        randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC),
+        DateTime.now(UTC).plusHours(1), ccnHttpStatus)
 
-        val fetchedRecords = await(serviceRepo.retrieveMessagesForRetry.runWith(Sink.seq[RetryingOutboundSoapMessage]))
-        fetchedRecords.size shouldBe 1
-        fetchedRecords.head.retryDateTime shouldBe newRetryDateTime
+      await(serviceRepo.persist(retryingMessageNotReadyForRetrying))
+      await(serviceRepo.persist(sentMessage))
 
-      }
-
-      "updated message is returned from the database after updating retryDateTime" in {
-        await(serviceRepo.persist(retryingMessage))
-        val newRetryDateTime = retryingMessage.retryDateTime.minusHours(2)
-        val Some(updatedMessage) = await(serviceRepo.updateNextRetryTime(retryingMessage.globalId, newRetryDateTime))
-
-        updatedMessage.retryDateTime shouldBe newRetryDateTime
-      }
+      val fetchedRecords = await(serviceRepo.retrieveMessagesForRetry.runWith(Sink.seq[RetryingOutboundSoapMessage]))
+      fetchedRecords.size shouldBe 0
     }
 
-    "updateStatus" should {
-      "update the message to have a status of FAILED" in {
-        await(serviceRepo.persist(retryingMessage))
-        val Some(returnedSoapMessage) = await(serviceRepo.updateSendingStatus(retryingMessage.globalId, SendingStatus.FAILED))
+    "retrieve retrying messages with retryDate in ascending order" in {
+      val retryingMessageOldRetryDatetime = retryingMessage.copy(globalId = randomUUID, retryDateTime = retryingMessage.retryDateTime.minusHours(1))
+      val retryingMessageEvenOlderRetryDatetime = retryingMessage.copy(globalId = randomUUID, retryDateTime = retryingMessage.retryDateTime.minusHours(2))
+      await(serviceRepo.persist(retryingMessageEvenOlderRetryDatetime))
+      await(serviceRepo.persist(retryingMessage))
+      await(serviceRepo.persist(retryingMessageOldRetryDatetime))
 
-        val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
-        fetchedRecords.size shouldBe 1
-        fetchedRecords.head.status shouldBe SendingStatus.FAILED
-        fetchedRecords.head.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
-        returnedSoapMessage.status shouldBe SendingStatus.FAILED
-        returnedSoapMessage.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
-      }
-
-      "update the message to have a status of SENT" in {
-        await(serviceRepo.persist(retryingMessage))
-        val Some(returnedSoapMessage) = await(serviceRepo.updateSendingStatus(retryingMessage.globalId, SendingStatus.SENT))
-
-        val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
-        fetchedRecords.size shouldBe 1
-        fetchedRecords.head.status shouldBe SendingStatus.SENT
-        fetchedRecords.head.isInstanceOf[SentOutboundSoapMessage] shouldBe true
-        returnedSoapMessage.status shouldBe SendingStatus.SENT
-        returnedSoapMessage.isInstanceOf[SentOutboundSoapMessage] shouldBe true
-      }
-    }
-
-    "updateConfirmationStatus" should {
-      val expectedConfirmationMessageBody = "<xml>foobar</xml>"
-      "update a message when a CoE is received" in {
-        await(serviceRepo.persist(sentMessage))
-        await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COE, expectedConfirmationMessageBody))
-
-        val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
-        fetchedRecords.size shouldBe 1
-        fetchedRecords.head.status shouldBe DeliveryStatus.COE
-        fetchedRecords.head.asInstanceOf[CoeSoapMessage].coeMessage shouldBe Some(expectedConfirmationMessageBody)
-      }
-
-      "update a message when a CoD is received" in {
-        await(serviceRepo.persist(sentMessage))
-        await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COD, expectedConfirmationMessageBody))
-
-        val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
-
-        fetchedRecords.size shouldBe 1
-        fetchedRecords.head.status shouldBe DeliveryStatus.COD
-        fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
-      }
-    }
-
-    "findById" should {
-      "return message when ID exists" in {
-        await(serviceRepo.persist(sentMessage))
-        val found: Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
-        found shouldBe Some(sentMessage)
-      }
-
-      "return nothing when ID does not exist" in {
-        val found: Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
-        found shouldBe None
-      }
+      val fetchedRecords = await(serviceRepo.retrieveMessagesForRetry.runWith(Sink.seq[RetryingOutboundSoapMessage]))
+      fetchedRecords.size shouldBe 3
+      fetchedRecords.head shouldBe retryingMessageEvenOlderRetryDatetime
+      fetchedRecords(1) shouldBe retryingMessageOldRetryDatetime
+      fetchedRecords(2) shouldBe retryingMessage
     }
   }
+
+  "updateNextRetryTime" should {
+    "update the retryDateTime on a record given its globalID" in {
+      await(serviceRepo.persist(retryingMessage))
+      val newRetryDateTime = retryingMessage.retryDateTime.minusHours(2)
+      await(serviceRepo.updateNextRetryTime(retryingMessage.globalId, newRetryDateTime))
+
+      val fetchedRecords = await(serviceRepo.retrieveMessagesForRetry.runWith(Sink.seq[RetryingOutboundSoapMessage]))
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.retryDateTime shouldBe newRetryDateTime
+
+    }
+
+    "updated message is returned from the database after updating retryDateTime" in {
+      await(serviceRepo.persist(retryingMessage))
+      val newRetryDateTime = retryingMessage.retryDateTime.minusHours(2)
+      val Some(updatedMessage) = await(serviceRepo.updateNextRetryTime(retryingMessage.globalId, newRetryDateTime))
+
+      updatedMessage.retryDateTime shouldBe newRetryDateTime
+    }
+  }
+
+  "updateStatus" should {
+    "update the message to have a status of FAILED" in {
+      await(serviceRepo.persist(retryingMessage))
+      val Some(returnedSoapMessage) = await(serviceRepo.updateSendingStatus(retryingMessage.globalId, SendingStatus.FAILED))
+
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe SendingStatus.FAILED
+      fetchedRecords.head.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
+      returnedSoapMessage.status shouldBe SendingStatus.FAILED
+      returnedSoapMessage.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
+    }
+
+    "update the message to have a status of SENT" in {
+      await(serviceRepo.persist(retryingMessage))
+      val Some(returnedSoapMessage) = await(serviceRepo.updateSendingStatus(retryingMessage.globalId, SendingStatus.SENT))
+
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe SendingStatus.SENT
+      fetchedRecords.head.isInstanceOf[SentOutboundSoapMessage] shouldBe true
+      returnedSoapMessage.status shouldBe SendingStatus.SENT
+      returnedSoapMessage.isInstanceOf[SentOutboundSoapMessage] shouldBe true
+    }
+  }
+
+  "updateConfirmationStatus" should {
+    val expectedConfirmationMessageBody = "<xml>foobar</xml>"
+    "update a message when a CoE is received" in {
+      await(serviceRepo.persist(sentMessage))
+      await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COE, expectedConfirmationMessageBody))
+
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe DeliveryStatus.COE
+      fetchedRecords.head.asInstanceOf[CoeSoapMessage].coeMessage shouldBe Some(expectedConfirmationMessageBody)
+    }
+
+    "update a message when a CoD is received" in {
+      await(serviceRepo.persist(sentMessage))
+      await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COD, expectedConfirmationMessageBody))
+
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe DeliveryStatus.COD
+      fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
+    }
+  }
+
+  "findById" should {
+    "return message when ID exists" in {
+      await(serviceRepo.persist(sentMessage))
+      val found: Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
+      found shouldBe Some(sentMessage)
+    }
+
+    "return nothing when ID does not exist" in {
+      val found: Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
+      found shouldBe None
+    }
+  }
+}
 

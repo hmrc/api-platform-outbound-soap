@@ -49,11 +49,12 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
     collectionName = "messages",
     mongoComponent = mongoComponent,
     domainFormat = outboundSoapMessageFormatter,
-      indexes = Seq(IndexModel(ascending("globalId"), IndexOptions().name("globalIdIndex")
-      .background(true).unique(true)),
-      IndexModel(ascending("createDateTime"),
-        IndexOptions().name("ttlIndex").background(true)
-          .expireAfter(appConfig.retryMessagesTtl.toSeconds, TimeUnit.SECONDS)))) with Logging  {
+    indexes = Seq(IndexModel(ascending("globalId"),
+                    IndexOptions().name("globalIdIndex").background(true).unique(true)),
+                  IndexModel(ascending("createDateTime"),
+                    IndexOptions().name("ttlIndex").background(true)
+                      .expireAfter(appConfig.retryMessagesTtl.toSeconds, TimeUnit.SECONDS))))
+    with Logging  {
 
   override lazy val collection: MongoCollection[OutboundSoapMessage] =
     CollectionFactory
