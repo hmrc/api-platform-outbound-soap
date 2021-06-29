@@ -249,9 +249,15 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
   }
 
   "findById" should {
-    "return message when ID exists" in {
+    "return message when messageID matches" in {
       await(serviceRepo.persist(sentMessage))
       val found: Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
+      found shouldBe Some(sentMessage)
+    }
+
+    "return message when globalID matches" in {
+      await(serviceRepo.persist(sentMessage))
+      val found: Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.globalId.toString))
       found shouldBe Some(sentMessage)
     }
 
