@@ -51,7 +51,7 @@ object OutboundSoapMessage {
     } else if (fullyQualifiedName == classTag[CodSoapMessage].runtimeClass.getCanonicalName) {
       DeliveryStatus.COD
     } else {
-      throw new IllegalArgumentException
+      throw new IllegalArgumentException(s"${fullyQualifiedName} is not a valid class")
     }
   }
 }
@@ -127,10 +127,10 @@ case class RetryingOutboundSoapMessage(globalId: UUID,
 sealed abstract class StatusType extends EnumEntry
 
 object StatusType extends Enum[StatusType] with PlayJsonEnum[StatusType]{
-  val values = findValues
+  val values: immutable.IndexedSeq[StatusType] = findValues
 }
 
-sealed abstract class DeliveryStatus extends StatusType
+sealed abstract class DeliveryStatus(override val entryName: String) extends StatusType
 
 object DeliveryStatus extends Enum[DeliveryStatus] with PlayJsonEnum[DeliveryStatus] {
   def fromAction(action: String): DeliveryStatus = {
@@ -142,19 +142,19 @@ object DeliveryStatus extends Enum[DeliveryStatus] with PlayJsonEnum[DeliverySta
   }
   val values: immutable.IndexedSeq[DeliveryStatus] = findValues
 
-  case object COE extends DeliveryStatus
+  case object COE extends DeliveryStatus("COE")
 
-  case object COD extends DeliveryStatus
+  case object COD extends DeliveryStatus("COD")
 }
 
-sealed abstract class SendingStatus extends StatusType
+sealed abstract class SendingStatus(override val entryName: String) extends StatusType
 
 object SendingStatus extends Enum[SendingStatus] with PlayJsonEnum[SendingStatus] {
   val values: immutable.IndexedSeq[SendingStatus] = findValues
 
-  case object SENT extends SendingStatus
+  case object SENT extends SendingStatus("SENT")
 
-  case object FAILED extends SendingStatus
+  case object FAILED extends SendingStatus("FAILED")
 
-  case object RETRYING extends SendingStatus
+  case object RETRYING extends SendingStatus("RETRYING")
 }
