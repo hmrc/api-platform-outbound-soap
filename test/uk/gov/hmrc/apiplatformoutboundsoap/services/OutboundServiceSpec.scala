@@ -115,21 +115,21 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val expectedStatus: Int = OK
 
     val allAddressingHeaders =
-      """<wsa:From xmlns:wsa="http://www.w3.org/2005/08/addressing">HMRC</wsa:From>
-        |<wsa:To xmlns:wsa="http://www.w3.org/2005/08/addressing">CCN2</wsa:To>
-        |<wsa:ReplyTo xmlns:wsa="http://www.w3.org/2005/08/addressing">ReplyTo</wsa:ReplyTo>
-        |<wsa:FaultTo xmlns:wsa="http://www.w3.org/2005/08/addressing">FaultTo</wsa:FaultTo>
-        |<wsa:MessageID xmlns:wsa="http://www.w3.org/2005/08/addressing">123</wsa:MessageID>
-        |<wsa:RelatesTo xmlns:wsa="http://www.w3.org/2005/08/addressing">RelatesTo</wsa:RelatesTo>""".stripMargin.replaceAll("\n", "")
+      """<wsa:From><wsa:Address>HMRC</wsa:Address></wsa:From>
+        |<wsa:To>CCN2</wsa:To>
+        |<wsa:ReplyTo><wsa:Address>ReplyTo</wsa:Address></wsa:ReplyTo>
+        |<wsa:FaultTo><wsa:Address>FaultTo</wsa:Address></wsa:FaultTo>
+        |<wsa:MessageID>123</wsa:MessageID>
+        |<wsa:RelatesTo>RelatesTo</wsa:RelatesTo>""".stripMargin.replaceAll("\n", "")
 
     val mandatoryAddressingHeaders =
-      """<wsa:To xmlns:wsa="http://www.w3.org/2005/08/addressing">CCN2</wsa:To>
-        |<wsa:ReplyTo xmlns:wsa="http://www.w3.org/2005/08/addressing">ReplyTo</wsa:ReplyTo>
-        |<wsa:MessageID xmlns:wsa="http://www.w3.org/2005/08/addressing">123</wsa:MessageID>""".stripMargin.replaceAll("\n", "")
+      """<wsa:To>CCN2</wsa:To>
+        |<wsa:ReplyTo><wsa:Address>ReplyTo</wsa:Address></wsa:ReplyTo>
+        |<wsa:MessageID>123</wsa:MessageID>""".stripMargin.replaceAll("\n", "")
 
     def expectedSoapEnvelope(extraHeaders: String = ""): String =
       s"""<?xml version='1.0' encoding='utf-8'?>
-         |<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope">
+         |<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:wsa="http://www.w3.org/2005/08/addressing">
          |<soapenv:Header>
          |<wsa:Action xmlns:wsa="http://www.w3.org/2005/08/addressing">CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS/IE4N03notifyERiskAnalysisHit</wsa:Action>
          |<ccnm:MessageHeader xmlns:ccnm="http://ccn2.ec.eu/CCN2.Service.Platform.Common.Schema">
@@ -291,8 +291,6 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
-      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().getDifferences.forEach(d => println(d))
-
       getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
@@ -304,7 +302,6 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
-      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().getDifferences.forEach(d => println(d))
 
       getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().hasDifferences shouldBe false
     }
