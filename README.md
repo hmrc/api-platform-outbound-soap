@@ -112,6 +112,9 @@ original request.
 | `To` | This property identifies the logical address of the intended receiver of the message |
 | `Body.CoD.EventTimestamp` | A timestamp indicating when the error was recorded |
 
+### Response
+HTTP Status: 202 (ACCEPTED) with an empty body
+
 ### Confirmation of exception request
 ### Request headers
 | Name | Description |
@@ -164,6 +167,19 @@ original request.
 | `Body.CoE.Severity` | One of Critical, Emergency, Error, Warning, Info in descending order of impact |
 | `Body.CoE.EventTimestamp` | A timestamp indicating when the error was recorded |
 | `Body.CoE.Payload` | A structure containing a standard SOAP1.2 Fault element |
-### License
 
+### Response (both request types)
+HTTP Status: 202 (ACCEPTED) with an empty body
+
+### Error scenarios (both request types)
+| Scenario | HTTP Status |
+| --- | --- |
+| request body cannot be parsed as XML | `400` |
+| `RelatesTo` element missing from request body | `400` |
+| `RelatesTo` element is blank or contains only whitespace in request body | `400` |
+| `x-soap-action` header missing | `400` |
+| `x-soap-action` header is blank or contains only whitespace | `400` |
+| message ID supplied in `RelatesTo` element in request body does not match that of any message stored in the database | `404` |
+
+### License
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").

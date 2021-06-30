@@ -130,7 +130,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
         .thenReturn(Future.successful(NoContentUpdateResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
         .withHeaders("ContentType" -> "text/xml", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoD"))
-      status(result) shouldBe NO_CONTENT
+      status(result) shouldBe ACCEPTED
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       msgIdCaptor.getValue shouldBe msgIdCod
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COD
@@ -165,7 +165,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
         .thenReturn(Future.successful(NoContentUpdateResult))
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(requestBodyXml)
         .withHeaders("ContentType" -> "text/xml", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoE"))
-      status(result) shouldBe NO_CONTENT
+      status(result) shouldBe ACCEPTED
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       msgIdCaptor.getValue shouldBe msgIdCoe
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COE
