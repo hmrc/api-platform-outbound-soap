@@ -80,9 +80,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
   "sendMessage" should {
     val messageId = "123"
     val to = "CCN2"
-    val from = Some("HMRC")
-    val addressing = Addressing(from , to , "ReplyTo", Some("FaultTo"), messageId, Some("RelatesTo"))
-    val addressingOnlyMandatoryFields = Addressing(to= to, replyTo = "ReplyTo", messageId = messageId)
+    val from = "HMRC"
+    val addressing = Addressing(from , to , "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
     val messageRequestFullAddressing = MessageRequest(
       "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
       "IE4N03notifyERiskAnalysisHit",
@@ -110,8 +109,6 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       Some("http://somenotification.url")
     )
 
-    val messageRequestMinimalAddressing = messageRequestFullAddressing
-      .copy(addressing = addressingOnlyMandatoryFields)
     val expectedStatus: Int = OK
 
     val allAddressingHeaders =
@@ -290,7 +287,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
-      await(underTest.sendMessage(messageRequestMinimalAddressing))
+      await(underTest.sendMessage(messageRequestFullAddressing))
       getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
@@ -301,7 +298,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
-      await(underTest.sendMessage(messageRequestMinimalAddressing))
+      await(underTest.sendMessage(messageRequestFullAddressing))
 
       getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().hasDifferences shouldBe false
     }
@@ -313,7 +310,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(persistCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
-      await(underTest.sendMessage(messageRequestMinimalAddressing))
+      await(underTest.sendMessage(messageRequestFullAddressing))
       persistCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope(mandatoryAddressingHeaders)
       getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().hasDifferences shouldBe false
     }
@@ -324,7 +321,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
-      await(underTest.sendMessage(messageRequestMinimalAddressing))
+      await(underTest.sendMessage(messageRequestFullAddressing))
 
       messageCaptor.getValue.messageId shouldBe messageId
     }
@@ -336,7 +333,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
-      await(underTest.sendMessage(messageRequestMinimalAddressing))
+      await(underTest.sendMessage(messageRequestFullAddressing))
 
       messageCaptor.getValue.messageId shouldBe messageId
     }

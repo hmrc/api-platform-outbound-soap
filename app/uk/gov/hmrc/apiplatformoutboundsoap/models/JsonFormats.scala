@@ -21,10 +21,10 @@ import play.api.libs.json.{JsPath, Json, OFormat, Reads}
 
 object JsonFormats {
   val addressingReads: Reads[Addressing] = (
-    (JsPath \ "from").readNullable[String] and
+    (JsPath \ "from").read[String].orElse(Reads.pure("TBC")) and
     (JsPath \ "to").read[String] and
     (JsPath \ "replyTo").read[String].orElse(Reads.pure("TBC")) and
-    (JsPath \ "faultTo").readNullable[String] and
+    (JsPath \ "faultTo").read[String].orElse(Reads.pure("TBC")) and
     (JsPath \ "messageId").read[String] and
     (JsPath \ "relatesTo").readNullable[String]
   ) (Addressing.apply _)
