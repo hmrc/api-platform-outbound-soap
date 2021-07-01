@@ -28,7 +28,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
-import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, NoContentUpdateResult, UpdateResult}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, UpdateSuccessResult, UpdateResult}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -84,7 +84,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
       when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Some(outboundSoapMessage)))
       when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Some(outboundSoapMessage)))
       val result: UpdateResult = await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COD))
-      result shouldBe NoContentUpdateResult
+      result shouldBe UpdateSuccessResult
       verify(outboundMessageRepositoryMock).findById("abcd1234")
       verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COD, confirmationRequestCod.toString())
     }
@@ -93,7 +93,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
       when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Some(outboundSoapMessage)))
       when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Some(outboundSoapMessage)))
       val result: UpdateResult = await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COE))
-      result shouldBe NoContentUpdateResult
+      result shouldBe UpdateSuccessResult
       verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequestCod.toString())
     }
 
