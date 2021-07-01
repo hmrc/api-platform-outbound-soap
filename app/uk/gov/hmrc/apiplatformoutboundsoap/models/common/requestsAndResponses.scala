@@ -20,7 +20,7 @@ sealed trait UpdateResult
 
 case object MessageIdNotFoundResult extends UpdateResult
 
-case object NoContentUpdateResult extends UpdateResult
+case object UpdateSuccessResult extends UpdateResult
 
 
 

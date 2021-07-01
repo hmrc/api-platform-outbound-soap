@@ -42,7 +42,7 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
     def callService(deliveryStatus: DeliveryStatus, id: String): Future[Result] = {
       if(id.trim.nonEmpty) {
         confirmationService.processConfirmation(xml, id.trim, deliveryStatus) map {
-          case NoContentUpdateResult => Accepted
+          case UpdateSuccessResult => Accepted
           case _ =>
             logger.warn(s"No message found with global ID [$id]. Request is ${xml}")
             NotFound
