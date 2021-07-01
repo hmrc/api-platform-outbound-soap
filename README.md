@@ -168,7 +168,7 @@ HTTP Status: 202 (ACCEPTED) with an empty body
 | `Body.CoE.EventTimestamp` | A timestamp indicating when the error was recorded |
 | `Body.CoE.Payload` | A structure containing a standard SOAP1.2 Fault element |
 
-### Response (both request types)
+### Response
 HTTP Status: 202 (ACCEPTED) with an empty body
 
 ### Error scenarios (both request types)
