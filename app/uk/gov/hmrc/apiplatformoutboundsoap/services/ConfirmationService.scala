@@ -18,7 +18,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.services
 
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.NotificationCallbackConnector
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
-import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, NoContentUpdateResult, UpdateResult}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, UpdateSuccessResult, UpdateResult}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -32,10 +32,10 @@ class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRe
                                    (implicit val ec: ExecutionContext) {
  def processConfirmation(confRqst: NodeSeq, msgId: String, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
-   def doUpdate(id: String, status: DeliveryStatus, body: String): Future[NoContentUpdateResult.type] = {
+   def doUpdate(id: String, status: DeliveryStatus, body: String): Future[UpdateSuccessResult.type] = {
       outboundMessageRepository.updateConfirmationStatus(id, status, body) map { maybeOutboundSoapMessage =>
         maybeOutboundSoapMessage.map(outboundSoapMessage => notificationCallbackConnector.sendNotification(outboundSoapMessage))} map {
-        case _ => NoContentUpdateResult
+        case _ => UpdateSuccessResult
       }
     }
 
