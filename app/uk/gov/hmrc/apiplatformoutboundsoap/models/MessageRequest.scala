@@ -33,7 +33,5 @@ case class Addressing(from: String,
                       relatesTo: Option[String] = None){
   validate(to.trim != "", "addressing.to being empty")
   validate(messageId.trim != "", "addressing.messageId being empty")
-  validate(replyTo.trim != "", "addressing.replyTo being empty")
   validate(from.trim != "", "addressing.from being empty")
-  validate(faultTo.trim != "", "addressing.faultTo being empty")
 }

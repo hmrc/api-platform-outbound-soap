@@ -20,6 +20,7 @@ import akka.stream.Materializer
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -39,7 +40,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 
-class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
+class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar with BeforeAndAfterEach {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
 
   trait Setup {
@@ -47,7 +48,6 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
 
     val underTest = new OutboundController(Helpers.stubControllerComponents(), outboundServiceMock)
   }
-
   "message" should {
     val fakeRequest = FakeRequest("POST", "/message")
     val addressing = Addressing(messageId = "987", to = "AddressedTo", replyTo = "ReplyTo", faultTo = "FaultTo", from = "from")
@@ -80,30 +80,18 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       messageCaptor.getValue.confirmationOfDelivery shouldBe false
     }
 
-    "return OK response with defaults when the request json body addressing section has missing from, replyTo, faultTo addressing fields" in new Setup {
+    "return OK response with defaults when the request json body addressing section has missing replyTo, faultTo addressing fields" in new Setup {
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
       when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
         "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
-          Json.obj("messageId" -> "some msg id", "to" -> "who it is to"))))
+          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from"))))
 
       status(result) shouldBe OK
-      messageCaptor.getValue.addressing.from shouldBe "TBC"
-      messageCaptor.getValue.addressing.replyTo shouldBe "TBC"
-      messageCaptor.getValue.addressing.faultTo shouldBe "TBC"
-    }
-
-    "return bad request when the request json body addressing section has empty ReplyTo field" in new Setup {
-      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
-
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
-          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "replyTo" -> " "))))
-
-      status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe
-        "Could not parse body due to addressing.replyTo being empty"
+      messageCaptor.getValue.addressing.from shouldBe "from"
+      messageCaptor.getValue.addressing.replyTo shouldBe ""
+      messageCaptor.getValue.addressing.faultTo shouldBe ""
     }
 
     "return bad request when the request json body addressing section has empty from field" in new Setup {
@@ -116,18 +104,6 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe
         "Could not parse body due to addressing.from being empty"
-    }
-
-    "return bad request when the request json body addressing section has empty faultTo field" in new Setup {
-      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
-
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
-          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "faultTo" -> " "))))
-
-      status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe
-        "Could not parse body due to addressing.faultTo being empty"
     }
 
     "return bad request when the request json body is missing wsdlUrl field" in new Setup {

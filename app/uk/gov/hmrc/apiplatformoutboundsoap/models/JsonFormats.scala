@@ -16,15 +16,23 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
+import com.typesafe.config.{Config, ConfigFactory}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, OFormat, Reads}
 
-object JsonFormats {
+object JsonFormats  {
+  val config: Config = ConfigFactory.load()
+  private def getParam(path: String): String = if (config.hasPath(path)) config.getString(path) else ""
+
+  private val addressingFrom = getParam("addressing.from")
+  private val addressingReplyTo = getParam("addressing.replyTo")
+  private val addressingFaultTo = getParam("addressing.faultTo")
+
   val addressingReads: Reads[Addressing] = (
-    (JsPath \ "from").read[String].orElse(Reads.pure("TBC")) and
+    (JsPath \ "from").read[String].orElse(Reads.pure(addressingFrom)) and
     (JsPath \ "to").read[String] and
-    (JsPath \ "replyTo").read[String].orElse(Reads.pure("TBC")) and
-    (JsPath \ "faultTo").read[String].orElse(Reads.pure("TBC")) and
+    (JsPath \ "replyTo").read[String].orElse(Reads.pure(addressingReplyTo)) and
+    (JsPath \ "faultTo").read[String].orElse(Reads.pure(addressingFaultTo)) and
     (JsPath \ "messageId").read[String] and
     (JsPath \ "relatesTo").readNullable[String]
   ) (Addressing.apply _)
