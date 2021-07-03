@@ -51,4 +51,5 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val addressingFrom: String = config.getOptional[String]("addressing.from").getOrElse("")
   val addressingReplyTo: String = config.getOptional[String]("addressing.replyTo").getOrElse("")
   val addressingFaultTo: String = config.getOptional[String]("addressing.faultTo").getOrElse("")
+  val confirmationOfDelivery: Boolean = config.getOptional[Boolean]("confirmationOfDelivery").getOrElse(false)
 }
