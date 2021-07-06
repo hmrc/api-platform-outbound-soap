@@ -21,7 +21,6 @@ import uk.gov.hmrc.apiplatformoutboundsoap.GlobalContext
 
 class InjectionModule extends AbstractModule {
   override def configure() = {
-    // ...
 
     // Eager initialize Context singleton
     bind(classOf[GlobalContext]).asEagerSingleton()

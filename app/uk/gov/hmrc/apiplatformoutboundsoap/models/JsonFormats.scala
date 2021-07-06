@@ -25,7 +25,7 @@ object JsonFormats  {
   import uk.gov.hmrc.apiplatformoutboundsoap.GlobalContext.injector
   val appConfig: AppConfig = injector.instanceOf[AppConfig]
 
-  def addressingReads: Reads[Addressing] = (
+  val addressingReads: Reads[Addressing] = (
     (JsPath \ "from").read[String].orElse(Reads.pure(appConfig.addressingFrom)) and
     (JsPath \ "to").read[String] and
     (JsPath \ "replyTo").read[String].orElse(Reads.pure(appConfig.addressingReplyTo)) and
