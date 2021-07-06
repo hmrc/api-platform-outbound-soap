@@ -41,7 +41,7 @@ object JsonFormats  {
     (JsPath \ "wsdlOperation").read[String] and
     (JsPath \ "messageBody").read[String] and
     (JsPath \ "addressing").read[Addressing] and
-    ((JsPath \ "confirmationOfDelivery").read[Boolean].orElse(Reads.pure(appConfig.confirmationOfDelivery)) or Reads.pure(false)) and
+    (JsPath \ "confirmationOfDelivery").read[Boolean].orElse(Reads.pure(appConfig.confirmationOfDelivery)) and
     (JsPath \ "notificationUrl").readNullable[String]
   ) (MessageRequest.apply _)
   implicit val messageRequestFormatter: OFormat[MessageRequest] = OFormat(messageRequestReads, Json.writes[MessageRequest])
