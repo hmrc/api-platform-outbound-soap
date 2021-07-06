@@ -181,5 +181,29 @@ HTTP Status: 202 (ACCEPTED) with an empty body
 | `x-soap-action` header is blank or contains only whitespace | `400` |
 | message ID supplied in `RelatesTo` element in request body does not match that of any message stored in the database | `404` |
 
+## `GET /retrieve/:messageId`
+Allows retrieval of the message which has either a `messageId` or a `globalId` matching that in the `id` path parameter
+
+###Response
+HTTP Status: 200 (OK) with a body similar to the following:
+
+```
+{
+    "globalId" : "35a08a4d-fffc-4bb4-9549-6477eaa0aba1",
+    "messageId" : "MessageId-A4",
+    "soapMessage" : "<IE4N03>payload</IE4N03>",
+    "destinationUrl" : "some url",
+    "createDateTime" : ISODate("2021-07-06T15:49:43.568Z"),
+    "ccnHttpStatus" : 200,
+    "coeMessage" : "<soap:Envelope><soap:Header><wsa:Action>CCN2.Service.Platform.AcknowledgementService/CoE</wsa:Action> </soap:Header> <soap:Body> <ccn2:CoE> <ccn2:Severity>?</ccn2:Severity><ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp></ccn2:CoE></soap:Body></soap:Envelope>",
+    "status" : "COE"
+}
+```
+### Error scenarios
+| Scenario | HTTP Status |
+| --- | --- |
+| `messageId` path parameter is empty or whitespace | `400` |
+| `messageId` path parameter refers to an ID that cannot be found | `404` |
+
 ### License
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").

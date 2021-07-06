@@ -16,28 +16,44 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
+import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Json, OFormat, Reads}
+import play.api.libs.json._
 
 object JsonFormats {
   val addressingReads: Reads[Addressing] = (
     (JsPath \ "from").readNullable[String] and
-    (JsPath \ "to").read[String] and
-    (JsPath \ "replyTo").read[String].orElse(Reads.pure("TBC")) and
-    (JsPath \ "faultTo").readNullable[String] and
-    (JsPath \ "messageId").read[String] and
-    (JsPath \ "relatesTo").readNullable[String]
-  ) (Addressing.apply _)
+      (JsPath \ "to").read[String] and
+      (JsPath \ "replyTo").read[String].orElse(Reads.pure("TBC")) and
+      (JsPath \ "faultTo").readNullable[String] and
+      (JsPath \ "messageId").read[String] and
+      (JsPath \ "relatesTo").readNullable[String]
+    ) (Addressing.apply _)
+
+  implicit object DateTimeFormatter extends Format[DateTime] {
+    override def reads(json: JsValue): JsResult[DateTime] =
+      JodaReads.DefaultJodaDateTimeReads.reads(json)
+
+    override def writes(dt: DateTime): JsValue =
+      JodaWrites.JodaDateTimeWrites.writes(dt)
+  }
+
   implicit val addressingFormatter: OFormat[Addressing] = OFormat(addressingReads, Json.writes[Addressing])
   implicit val soapMessageStatusFormatter: OFormat[SoapMessageStatus] = Json.format[SoapMessageStatus]
+  implicit val outboundSoapMessageFormatter: OFormat[OutboundSoapMessage] = Json.format[OutboundSoapMessage]
+  implicit val retryingSoapMessageFormatter: OFormat[RetryingOutboundSoapMessage] = Json.format[RetryingOutboundSoapMessage]
+  implicit val failedSoapMessageFormatter: OFormat[FailedOutboundSoapMessage] = Json.format[FailedOutboundSoapMessage]
+  implicit val sentSoapMessageFormatter: OFormat[SentOutboundSoapMessage] = Json.format[SentOutboundSoapMessage]
+  implicit val codSoapMessageFormatter: OFormat[CodSoapMessage] = Json.format[CodSoapMessage]
+  implicit val coeSoapMessageFormatter: OFormat[CoeSoapMessage] = Json.format[CoeSoapMessage]
 
   val messageRequestReads: Reads[MessageRequest] = (
     (JsPath \ "wsdlUrl").read[String] and
-    (JsPath \ "wsdlOperation").read[String] and
-    (JsPath \ "messageBody").read[String] and
-    (JsPath \ "addressing").read[Addressing] and
-    ((JsPath \ "confirmationOfDelivery").read[Boolean] or Reads.pure(false)) and
-    (JsPath \ "notificationUrl").readNullable[String]
-  ) (MessageRequest.apply _)
+      (JsPath \ "wsdlOperation").read[String] and
+      (JsPath \ "messageBody").read[String] and
+      (JsPath \ "addressing").read[Addressing] and
+      ((JsPath \ "confirmationOfDelivery").read[Boolean] or Reads.pure(false)) and
+      (JsPath \ "notificationUrl").readNullable[String]
+    ) (MessageRequest.apply _)
   implicit val messageRequestFormatter: OFormat[MessageRequest] = OFormat(messageRequestReads, Json.writes[MessageRequest])
 }

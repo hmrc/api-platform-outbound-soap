@@ -47,7 +47,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
   val sentMessage = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
   implicit val materialiser: Materializer = app.injector.instanceOf[Materializer]
   val failedMessage = FailedOutboundSoapMessage(randomUUID, "MessageId-A3", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
-  val coeMessage = CoeSoapMessage(randomUUID, "MessageId-A4", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
+  val coeMessage = CoeSoapMessage(randomUUID, "MessageId-A4", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus, coeMessage = Some("<COEMessage><Fault>went wrong</Fault></COEMessage>"))
   val codMessage = CodSoapMessage(randomUUID, "MessageId-A5", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
 
   override def beforeEach(): Unit = {
@@ -251,14 +251,14 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
   "findById" should {
     "return message when messageID matches" in {
       await(serviceRepo.persist(sentMessage))
-      val found: Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
-      found shouldBe Some(sentMessage)
+      val Some(found): Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
+      found shouldBe sentMessage
     }
 
     "return message when globalID matches" in {
       await(serviceRepo.persist(sentMessage))
-      val found: Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.globalId.toString))
-      found shouldBe Some(sentMessage)
+      val Some(found): Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.globalId.toString))
+      found shouldBe sentMessage
     }
 
     "return nothing when ID does not exist" in {
