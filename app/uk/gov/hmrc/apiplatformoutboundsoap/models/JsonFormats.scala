@@ -18,13 +18,18 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, OFormat, Reads}
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
-object JsonFormats {
+object JsonFormats  {
+
+  import uk.gov.hmrc.apiplatformoutboundsoap.GlobalContext.injector
+  val appConfig: AppConfig = injector.instanceOf[AppConfig]
+
   val addressingReads: Reads[Addressing] = (
-    (JsPath \ "from").readNullable[String] and
+    (JsPath \ "from").read[String].orElse(Reads.pure(appConfig.addressingFrom)) and
     (JsPath \ "to").read[String] and
-    (JsPath \ "replyTo").read[String].orElse(Reads.pure("TBC")) and
-    (JsPath \ "faultTo").readNullable[String] and
+    (JsPath \ "replyTo").read[String].orElse(Reads.pure(appConfig.addressingReplyTo)) and
+    (JsPath \ "faultTo").read[String].orElse(Reads.pure(appConfig.addressingFaultTo)) and
     (JsPath \ "messageId").read[String] and
     (JsPath \ "relatesTo").readNullable[String]
   ) (Addressing.apply _)
@@ -36,8 +41,9 @@ object JsonFormats {
     (JsPath \ "wsdlOperation").read[String] and
     (JsPath \ "messageBody").read[String] and
     (JsPath \ "addressing").read[Addressing] and
-    ((JsPath \ "confirmationOfDelivery").read[Boolean] or Reads.pure(false)) and
+    (JsPath \ "confirmationOfDelivery").read[Boolean].orElse(Reads.pure(appConfig.confirmationOfDelivery)) and
     (JsPath \ "notificationUrl").readNullable[String]
   ) (MessageRequest.apply _)
   implicit val messageRequestFormatter: OFormat[MessageRequest] = OFormat(messageRequestReads, Json.writes[MessageRequest])
 }
+

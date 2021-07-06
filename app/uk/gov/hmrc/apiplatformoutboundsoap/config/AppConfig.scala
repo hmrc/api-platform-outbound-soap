@@ -48,4 +48,8 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
 
   val parallelism: Int = config.getOptional[Int]("retry.parallelism").getOrElse(5)
   val cacheDuration: Duration = Duration(config.getOptional[String]("cache.duration").getOrElse("1 day"))
+  val addressingFrom: String = config.getOptional[String]("addressing.from").getOrElse("")
+  val addressingReplyTo: String = config.getOptional[String]("addressing.replyTo").getOrElse("")
+  val addressingFaultTo: String = config.getOptional[String]("addressing.faultTo").getOrElse("")
+  val confirmationOfDelivery: Boolean = config.getOptional[Boolean]("confirmationOfDelivery").getOrElse(false)
 }
