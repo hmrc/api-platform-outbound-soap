@@ -48,4 +48,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
 
   val parallelism: Int = config.getOptional[Int]("retry.parallelism").getOrElse(5)
   val cacheDuration: Duration = Duration(config.getOptional[String]("cache.duration").getOrElse("1 day"))
+  val proxyRequiredForThisEnvironment = config.getOptional[Boolean]("proxy.proxyRequiredForThisEnvironment").getOrElse(false)
+
 }

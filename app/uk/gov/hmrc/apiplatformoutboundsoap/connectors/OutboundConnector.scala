@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
+import org.apache.http.HttpStatus
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.{Configuration, Logger, LoggerLike}
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HttpClient, _}
@@ -27,28 +29,38 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class OutboundConnector @Inject()(
-               config: Configuration,
-               defaultHttpClient: HttpClient,
-              proxiedHttpClient: ProxiedHttpClient)
-             (implicit ec: ExecutionContext) extends HttpErrorFunctions {
+                                   appConfig: AppConfig,
+                                   defaultHttpClient: HttpClient,
+                                   proxiedHttpClient: ProxiedHttpClient)
+                                 (implicit ec: ExecutionContext) extends HttpErrorFunctions {
 
   val logger: LoggerLike = Logger
   val useProxy: Boolean = useProxyForEnv()
   lazy val httpClient: HttpClient = if (useProxy) proxiedHttpClient else defaultHttpClient
 
   def postMessage(soapRequest: SoapRequest): Future[Int] = {
-    implicit val hc: HeaderCarrier =  HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
+    implicit val hc: HeaderCarrier = HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
 
-    httpClient.POSTString[HttpResponse](soapRequest.destinationUrl, soapRequest.soapEnvelope) map { response =>
-      if (!is2xx(response.status)) {
-        logger.warn(s"Attempted request to ${soapRequest.destinationUrl} responded with HTTP response code ${response.status}")
+    def requestLogMessage(statusCode: Int) = s"Attempted request to ${soapRequest.destinationUrl} responded with HTTP response code $statusCode"
+
+    postHttpRequest(soapRequest).map {
+      case Left(UpstreamErrorResponse(_, statusCode, _, _)) =>
+        logger.warn(requestLogMessage(statusCode))
+        statusCode
+      case Right(response: HttpResponse) => {
+        if (response.status != HttpStatus.SC_ACCEPTED) {
+          logger.warn(requestLogMessage(response.status))
+        }
+        response.status
       }
-      response.status
     }
   }
 
+  def postHttpRequest(soapRequest: SoapRequest)(implicit hc: HeaderCarrier) = {
+    httpClient.POSTString[Either[UpstreamErrorResponse, HttpResponse]](soapRequest.destinationUrl, soapRequest.soapEnvelope)
+  }
 
   def useProxyForEnv(): Boolean = {
-    config.getOptional[Boolean]("proxy.proxyRequiredForThisEnvironment").getOrElse(false)
+    appConfig.proxyRequiredForThisEnvironment
   }
 }
