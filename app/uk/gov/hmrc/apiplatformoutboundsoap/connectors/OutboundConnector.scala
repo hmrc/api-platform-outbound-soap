@@ -47,12 +47,11 @@ class OutboundConnector @Inject()(
       case Left(UpstreamErrorResponse(_, statusCode, _, _)) =>
         logger.warn(requestLogMessage(statusCode))
         statusCode
-      case Right(response: HttpResponse) => {
+      case Right(response: HttpResponse) =>
         if (response.status != HttpStatus.SC_ACCEPTED) {
           logger.warn(requestLogMessage(response.status))
         }
         response.status
-      }
     }
   }
 
