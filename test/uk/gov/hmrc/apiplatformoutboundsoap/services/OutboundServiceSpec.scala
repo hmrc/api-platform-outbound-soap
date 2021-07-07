@@ -68,6 +68,10 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
     when(appConfigMock.ccn2Host).thenReturn("example.com")
     when(appConfigMock.ccn2Port).thenReturn(1234)
+    when(appConfigMock.addressingFrom).thenReturn("HMRC")
+    when(appConfigMock.addressingReplyTo).thenReturn("ReplyTo")
+    when(appConfigMock.addressingFaultTo).thenReturn("FaultTo")
+
     when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
     val underTest: OutboundService = new OutboundService(outboundConnectorMock, wsSecurityServiceMock,
       outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock, cacheSpy) {
@@ -80,9 +84,10 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
   "sendMessage" should {
     val messageId = "123"
     val to = "CCN2"
-    val from = Some("HMRC")
-    val addressing = Addressing(from, to, "ReplyTo", Some("FaultTo"), messageId, Some("RelatesTo"))
-    val addressingOnlyMandatoryFields = Addressing(to = to, replyTo = "ReplyTo", messageId = messageId)
+    val from = "HMRC"
+    val addressing = Addressing(from , to , "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
+    // mixin refers to mandatory and default addressing fields
+    val addressingMixinFields = Addressing(from = from, to = to, replyTo = "ReplyTo", faultTo = "FaultTo", messageId = messageId)
     val messageRequestFullAddressing = MessageRequest(
       "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
       "IE4N03notifyERiskAnalysisHit",
@@ -111,7 +116,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     )
 
     val messageRequestMinimalAddressing = messageRequestFullAddressing
-      .copy(addressing = addressingOnlyMandatoryFields)
+      .copy(addressing = addressingMixinFields)
     val expectedStatus: Int = OK
 
     val allAddressingHeaders =
@@ -122,9 +127,11 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         |<wsa:MessageID>123</wsa:MessageID>
         |<wsa:RelatesTo>RelatesTo</wsa:RelatesTo>""".stripMargin.replaceAll("\n", "")
 
-    val mandatoryAddressingHeaders =
-      """<wsa:To>CCN2</wsa:To>
+    val mixinAddressingHeaders =
+      """<wsa:From><wsa:Address>HMRC</wsa:Address></wsa:From>
+        |<wsa:To>CCN2</wsa:To>
         |<wsa:ReplyTo><wsa:Address>ReplyTo</wsa:Address></wsa:ReplyTo>
+        |<wsa:FaultTo><wsa:Address>FaultTo</wsa:Address></wsa:FaultTo>
         |<wsa:MessageID>123</wsa:MessageID>""".stripMargin.replaceAll("\n", "")
 
     def expectedSoapEnvelope(extraHeaders: String = ""): String =
@@ -303,36 +310,36 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "send the expected SOAP envelope to the security service which adds username token" in new Setup {
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
-      when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mandatoryAddressingHeaders))
+      when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
-      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().hasDifferences shouldBe false
+      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mixinAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
     "send the expected SOAP envelope to the security service which adds signature" in new Setup {
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       when(appConfigMock.enableMessageSigning).thenReturn(true)
-      when(wsSecurityServiceMock.addSignature(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mandatoryAddressingHeaders))
+      when(wsSecurityServiceMock.addSignature(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
 
-      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().hasDifferences shouldBe false
+      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mixinAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
     "send the optional addressing headers if present in the request" in new Setup {
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       val persistCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
-      when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mandatoryAddressingHeaders))
+      when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(persistCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
-      persistCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope(mandatoryAddressingHeaders)
-      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mandatoryAddressingHeaders)).build().hasDifferences shouldBe false
+      persistCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope(mixinAddressingHeaders)
+      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mixinAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
     "persist message ID if present in the request for success" in new Setup {
@@ -402,15 +409,15 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       exception.getMessage should include("addressing.messageId being empty")
     }
 
-    "fail when the addressing.replyTo field is empty" in new Setup {
+  "fail when the addressing.from field is empty" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
-        await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing = addressing.copy(replyTo = ""))))
+        await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing= addressing.copy(from = ""))))
       }
 
-      exception.getMessage should include("addressing.replyTo being empty")
+      exception.getMessage should include("addressing.from being empty")
     }
   }
 
