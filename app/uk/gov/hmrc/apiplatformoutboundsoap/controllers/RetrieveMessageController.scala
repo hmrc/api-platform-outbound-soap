@@ -17,9 +17,8 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import play.api.Logging
-import play.api.libs.json.{JsObject, Json, OFormat, OWrites}
+import play.api.libs.json.Json
 import play.api.mvc._
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.apiplatformoutboundsoap.{ErrorCode, JsErrorResponse}
@@ -34,7 +33,7 @@ class RetrieveMessageController @Inject()(cc: ControllerComponents,
                                          (implicit ec: ExecutionContext)
   extends BackendController(cc) with Logging {
 
-  def message(id: String): Action[AnyContent] = (Action).async {
+  def message(id: String): Action[AnyContent] = Action.async {
     id.trim match {
       case "" => Future.successful(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "id should not be empty")))
       case _ => messageRepository.findById(id).flatMap(maybeOutboundSoapMessage =>
@@ -43,33 +42,9 @@ class RetrieveMessageController @Inject()(cc: ControllerComponents,
         } else {
           Future.successful(NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"id [${id}] could not be found")))
         }
-      )
+      ) recover {
+        case e: Exception => InternalServerError(JsErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR, "error querying database"))
+      }
     }
   }
-
-  implicit val outboundSoapMessageWrites: OWrites[OutboundSoapMessage] = new OWrites[OutboundSoapMessage] {
-    override def writes(soapMessage: OutboundSoapMessage): JsObject = soapMessage match {
-      case r @ RetryingOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _) =>
-        retryingSoapMessageFormatter.writes(r) ++ Json.obj(
-          "status" -> SendingStatus.RETRYING.entryName
-        )
-      case f @ FailedOutboundSoapMessage(_, _, _, _, _, _, _, _, _) =>
-        failedSoapMessageFormatter.writes(f) ++ Json.obj(
-          "status" -> SendingStatus.FAILED.entryName
-        )
-      case s @ SentOutboundSoapMessage(_, _, _, _, _, _, _, _, _) =>
-        sentSoapMessageFormatter.writes(s) ++ Json.obj(
-          "status" -> SendingStatus.SENT.entryName
-        )
-      case cod @ CodSoapMessage(_, _, _, _, _, _, _, _, _) =>
-        codSoapMessageFormatter.writes(cod) ++ Json.obj(
-          "status" -> DeliveryStatus.COD.entryName
-        )
-      case coe @ CoeSoapMessage(_, _, _, _, _, _, _, _, _) =>
-        coeSoapMessageFormatter.writes(coe) ++ Json.obj(
-          "status" -> DeliveryStatus.COE.entryName
-        )
-    }
-  }
-  implicit val outboundSoapMessageFormatter: OFormat[OutboundSoapMessage] = OFormat(Json.reads[OutboundSoapMessage], outboundSoapMessageWrites)
 }

@@ -23,6 +23,7 @@ object ErrorCode extends Enumeration {
   type ErrorCode = Value
   val NOT_FOUND = Value("NOT_FOUND")
   val BAD_REQUEST = Value("BAD_REQUEST")
+  val INTERNAL_SERVER_ERROR = Value("INTERNAL_SERVER_ERROR")
 }
 
 object JsErrorResponse {

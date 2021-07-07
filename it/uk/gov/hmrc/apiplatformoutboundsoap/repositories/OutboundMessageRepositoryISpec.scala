@@ -34,6 +34,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
 
+import java.util.UUID
 import java.util.UUID.randomUUID
 
 class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositorySupport[OutboundSoapMessage] with
@@ -44,7 +45,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
   val ccnHttpStatus: Int = 200
   val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url",
     DateTime.now(UTC), DateTime.now(UTC), ccnHttpStatus)
-  val sentMessage = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
+  val sentMessage = SentOutboundSoapMessage(randomUUID, "1234567890", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
   implicit val materialiser: Materializer = app.injector.instanceOf[Materializer]
   val failedMessage = FailedOutboundSoapMessage(randomUUID, "MessageId-A3", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus)
   val coeMessage = CoeSoapMessage(randomUUID, "MessageId-A4", "<IE4N03>payload</IE4N03>", "some url", DateTime.now(UTC), ccnHttpStatus, coeMessage = Some("<COEMessage><Fault>went wrong</Fault></COEMessage>"))

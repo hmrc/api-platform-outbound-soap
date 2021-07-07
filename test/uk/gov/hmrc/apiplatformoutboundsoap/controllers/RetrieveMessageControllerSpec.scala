@@ -27,6 +27,7 @@ import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 
+import java.io.IOException
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -43,11 +44,16 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
     import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.DateTimeFormatter
     val fakeRequest = FakeRequest("GET", "/retrieve")
     val ccn2HttpStatus = 200
-    val failedOutboundSoapMessage = FailedOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", DateTime.now, ccn2HttpStatus)
-    val sentOutboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", DateTime.now, ccn2HttpStatus)
-    val retryingOutboundSoapMessage = RetryingOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", DateTime.now, DateTime.now, ccn2HttpStatus)
-    val codSoapMessage = CodSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", DateTime.now, ccn2HttpStatus, codMessage = Some("<soap:Body><ccn2:CoD><ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp></ccn2:CoD></soap:Body>"))
-    val coeSoapMessage = CoeSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", DateTime.now, ccn2HttpStatus, coeMessage = Some("<coe><error>failed</error></coe>"))
+    val failedOutboundSoapMessage = FailedOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>",
+      "http://destinat.ion", DateTime.now, ccn2HttpStatus)
+    val sentOutboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>",
+      "http://destinat.ion", DateTime.now, ccn2HttpStatus)
+    val retryingOutboundSoapMessage = RetryingOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>",
+      "http://destinat.ion", DateTime.now, DateTime.now, ccn2HttpStatus)
+    val codSoapMessage = CodSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion",
+      DateTime.now, ccn2HttpStatus, codMessage = Some("<soap:Body><ccn2:CoD><ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp></ccn2:CoD></soap:Body>"))
+    val coeSoapMessage = CoeSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion",
+      DateTime.now, ccn2HttpStatus, coeMessage = Some("<coe><error>failed</error></coe>"))
 
     "return a failed message when supplied with an ID that exists" in new Setup {
       when(repositoryMock.findById(*)).thenReturn(Future.successful(Some(failedOutboundSoapMessage)))
@@ -106,7 +112,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe coeSoapMessage.destinationUrl
       (contentAsJson(result) \ "createDateTime").as[DateTime] shouldBe coeSoapMessage.createDateTime
       (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe coeSoapMessage.ccnHttpStatus
-      Some((contentAsJson(result) \ "coeMessage").as[String]) shouldBe Some(coeSoapMessage.coeMessage)
+      Some((contentAsJson(result) \ "coeMessage").as[String]) shouldBe coeSoapMessage.coeMessage
       (contentAsJson(result) \ "status").as[DeliveryStatus] shouldBe DeliveryStatus.COE
     }
     "return a CoD message when supplied with an ID that exists" in new Setup {
@@ -125,7 +131,6 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "status").as[DeliveryStatus] shouldBe DeliveryStatus.COD
     }
 
-
     "return a 404 response when supplied with an ID that does not exist" in new Setup {
       when(repositoryMock.findById(*)).thenReturn(Future.successful(None))
 
@@ -133,6 +138,15 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       status(result) shouldBe NOT_FOUND
       (contentAsJson(result) \ "code").as[String] shouldBe "NOT_FOUND"
       (contentAsJson(result) \ "message").as[String] shouldBe "id [1234] could not be found"
+    }
+
+    "return a 500 response when exception in find" in new Setup {
+      when(repositoryMock.findById(*)).thenReturn(Future.failed(new IOException("expected")))
+
+      val result = underTest.message("1234")(fakeRequest)
+      status(result) shouldBe INTERNAL_SERVER_ERROR
+      (contentAsJson(result) \ "code").as[String] shouldBe "INTERNAL_SERVER_ERROR"
+      (contentAsJson(result) \ "message").as[String] shouldBe "error querying database"
     }
 
     "return a 400 response when supplied with an ID that is whitespace" in new Setup {
