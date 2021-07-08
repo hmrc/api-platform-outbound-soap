@@ -16,17 +16,23 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
-import org.mockito.MockitoSugar
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.{Application, Configuration}
+import play.api.Application
+import play.api.http.Status.OK
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import play.api.test.Helpers.{INTERNAL_SERVER_ERROR, await, defaultAwaitTimeout}
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
+import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future.successful
 
 
-class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar {
+class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override lazy val app: Application = GuiceApplicationBuilder()
@@ -34,30 +40,51 @@ class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPe
     .build()
 
   trait Setup {
+    val appConfigMock: AppConfig = mock[AppConfig]
     val mockDefaultHttpClient: HttpClient = mock[HttpClient]
     val mockProxiedHttpClient: ProxiedHttpClient = mock[ProxiedHttpClient]
   }
 
   "OutboundConnector" should {
     "use proxy when configured" in new Setup {
-      val config: Configuration = app.configuration ++ Configuration("proxy.proxyRequiredForThisEnvironment" -> true)
-
-      val underTest = new OutboundConnector(config, mockDefaultHttpClient, mockProxiedHttpClient)
+      when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(true)
+      val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
       underTest.httpClient shouldBe mockProxiedHttpClient
     }
 
     "use default ws client when proxy is disabled" in new Setup {
-      val config: Configuration = app.configuration ++ Configuration("proxy.proxyRequiredForThisEnvironment" -> false)
-
-      val underTest = new OutboundConnector(config, mockDefaultHttpClient, mockProxiedHttpClient)
+      when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
+      val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
       underTest.httpClient shouldBe mockDefaultHttpClient
     }
 
     "use default ws client when proxy is not configured" in new Setup {
-      val config: Configuration = app.configuration
-      val underTest = new OutboundConnector(config, mockDefaultHttpClient, mockProxiedHttpClient)
+      val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
       underTest.httpClient shouldBe mockDefaultHttpClient
     }
 
+    "return valid status code if http post returns 2xx" in new Setup {
+      val soapRequestMock: SoapRequest = mock[SoapRequest]
+      when(soapRequestMock.soapEnvelope).thenReturn("<IE4N03>payload</IE4N03>")
+      when(soapRequestMock.destinationUrl).thenReturn("some url")
+      when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
+      when(mockDefaultHttpClient.POSTString[Either[UpstreamErrorResponse,HttpResponse]](*,*,*)(*,*,*)).thenReturn(successful(Right(HttpResponse(OK,""))))
+      val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
+      underTest.httpClient shouldBe mockDefaultHttpClient
+      val result: Int = await(underTest.postMessage(soapRequestMock))
+      result shouldBe OK
+    }
+
+    "return valid status code if http post returns 5xx" in new Setup {
+      val soapRequestMock: SoapRequest = mock[SoapRequest]
+      when(soapRequestMock.soapEnvelope).thenReturn("<IE4N03>payload</IE4N03>")
+      when(soapRequestMock.destinationUrl).thenReturn("some url")
+      when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
+      when(mockDefaultHttpClient.POSTString[Either[UpstreamErrorResponse,HttpResponse]](*,*,*)(*,*,*)).thenReturn(successful(Left(UpstreamErrorResponse("unexpected error", INTERNAL_SERVER_ERROR))))
+      val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
+      underTest.httpClient shouldBe mockDefaultHttpClient
+      val result: Int = await(underTest.postMessage(soapRequestMock))
+      result shouldBe INTERNAL_SERVER_ERROR
+    }
   }
 }
