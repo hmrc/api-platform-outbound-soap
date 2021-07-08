@@ -19,11 +19,14 @@ package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 import akka.stream.Materializer
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
+import org.mockito.scalatest.ResetMocksAfterEachTest
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.Application
 import play.api.http.Status.{BAD_REQUEST, OK}
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.Result
 import play.api.test.Helpers._
@@ -39,18 +42,23 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 
-class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
+class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite
+  with ArgumentMatchersSugar with ResetMocksAfterEachTest {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
 
-  trait Setup {
-    val outboundServiceMock: OutboundService = mock[OutboundService]
+  val outboundServiceMock: OutboundService = mock[OutboundService]
 
+  override lazy val app: Application = GuiceApplicationBuilder()
+    .configure("confirmationOfDelivery" -> true)
+    .build
+
+  trait Setup {
     val underTest = new OutboundController(Helpers.stubControllerComponents(), outboundServiceMock)
   }
 
   "message" should {
     val fakeRequest = FakeRequest("POST", "/message")
-    val addressing = Addressing(messageId = "987", to = "AddressedTo", replyTo = "ReplyTo")
+    val addressing = Addressing(messageId = "987", to = "AddressedTo", replyTo = "ReplyTo", faultTo = "FaultTo", from = "from")
     val addressingJson = Json.toJson(addressing)
     val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson)
@@ -77,7 +85,33 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       messageCaptor.getValue.wsdlOperation shouldBe "theOp"
       messageCaptor.getValue.messageBody shouldBe "<IE4N03>example</IE4N03>"
       messageCaptor.getValue.addressing shouldBe addressing
-      messageCaptor.getValue.confirmationOfDelivery shouldBe false
+      messageCaptor.getValue.confirmationOfDelivery shouldBe true
+    }
+
+    "return OK response with defaults when the request json body addressing section has missing replyTo, faultTo addressing fields" in new Setup {
+      val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
+      when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
+
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
+        "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
+          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from"))))
+
+      status(result) shouldBe OK
+      messageCaptor.getValue.addressing.from shouldBe "from"
+      messageCaptor.getValue.addressing.replyTo shouldBe ""
+      messageCaptor.getValue.addressing.faultTo shouldBe ""
+    }
+
+    "return bad request when the request json body addressing section has empty from field" in new Setup {
+      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
+
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
+        "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
+          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> " "))))
+
+      status(result) shouldBe BAD_REQUEST
+      contentAsString(result) shouldBe
+        "Could not parse body due to addressing.from being empty"
     }
 
     "return bad request when the request json body is missing wsdlUrl field" in new Setup {
@@ -112,18 +146,6 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
         "Invalid MessageRequest payload: List((/addressing/to,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
     }
 
-    "return bad request when the request json body addressing section has empty ReplyTo field" in new Setup {
-      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
-
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
-          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "replyTo" -> ""))))
-
-      status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe
-        "Could not parse body due to addressing.replyTo being empty"
-    }
-
     "return bad request when the request json body addressing section is missing message ID field" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
@@ -136,7 +158,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
         "Invalid MessageRequest payload: List((/addressing/messageId,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
     }
 
-    "default confirmation of delivery to false if not present" in new Setup {
+    "default confirmation of delivery to true if not present in request but its overridden in config" in new Setup {
       val expectedStatus: Int = OK
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
       when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
@@ -144,7 +166,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppP
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
       status(result) shouldBe expectedStatus
-      messageCaptor.getValue.confirmationOfDelivery shouldBe false
+      messageCaptor.getValue.confirmationOfDelivery shouldBe true
     }
 
     "confirmation of delivery field is true when true in the request" in new Setup {

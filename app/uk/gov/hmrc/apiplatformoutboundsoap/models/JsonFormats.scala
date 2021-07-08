@@ -19,16 +19,13 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import play.api.libs.json.{JsPath, Json, OFormat, Reads}
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
-object JsonFormats {
-  val addressingReads: Reads[Addressing] = (
-    (JsPath \ "from").readNullable[String] and
-      (JsPath \ "to").read[String] and
-      (JsPath \ "replyTo").read[String].orElse(Reads.pure("TBC")) and
-      (JsPath \ "faultTo").readNullable[String] and
-      (JsPath \ "messageId").read[String] and
-      (JsPath \ "relatesTo").readNullable[String]
-    ) (Addressing.apply _)
+object JsonFormats  {
+
+  import uk.gov.hmrc.apiplatformoutboundsoap.GlobalContext.injector
+  val appConfig: AppConfig = injector.instanceOf[AppConfig]
 
   implicit object DateTimeFormatter extends Format[DateTime] {
     override def reads(json: JsValue): JsResult[DateTime] =
@@ -37,6 +34,15 @@ object JsonFormats {
     override def writes(dt: DateTime): JsValue =
       JodaWrites.JodaDateTimeWrites.writes(dt)
   }
+
+  val addressingReads: Reads[Addressing] = (
+    (JsPath \ "from").read[String].orElse(Reads.pure(appConfig.addressingFrom)) and
+    (JsPath \ "to").read[String] and
+    (JsPath \ "replyTo").read[String].orElse(Reads.pure(appConfig.addressingReplyTo)) and
+    (JsPath \ "faultTo").read[String].orElse(Reads.pure(appConfig.addressingFaultTo)) and
+    (JsPath \ "messageId").read[String] and
+    (JsPath \ "relatesTo").readNullable[String]
+  ) (Addressing.apply _)
 
   implicit val addressingFormatter: OFormat[Addressing] = OFormat(addressingReads, Json.writes[Addressing])
   implicit val soapMessageStatusFormatter: OFormat[SoapMessageStatus] = Json.format[SoapMessageStatus]
@@ -48,12 +54,12 @@ object JsonFormats {
 
   val messageRequestReads: Reads[MessageRequest] = (
     (JsPath \ "wsdlUrl").read[String] and
-      (JsPath \ "wsdlOperation").read[String] and
-      (JsPath \ "messageBody").read[String] and
-      (JsPath \ "addressing").read[Addressing] and
-      ((JsPath \ "confirmationOfDelivery").read[Boolean] or Reads.pure(false)) and
-      (JsPath \ "notificationUrl").readNullable[String]
-    ) (MessageRequest.apply _)
+    (JsPath \ "wsdlOperation").read[String] and
+    (JsPath \ "messageBody").read[String] and
+    (JsPath \ "addressing").read[Addressing] and
+    (JsPath \ "confirmationOfDelivery").read[Boolean].orElse(Reads.pure(appConfig.confirmationOfDelivery)) and
+    (JsPath \ "notificationUrl").readNullable[String]
+  ) (MessageRequest.apply _)
   implicit val messageRequestFormatter: OFormat[MessageRequest] = OFormat(messageRequestReads, Json.writes[MessageRequest])
 
   implicit val outboundSoapMessageWrites: OWrites[OutboundSoapMessage] = new OWrites[OutboundSoapMessage] {
@@ -82,3 +88,4 @@ object JsonFormats {
   }
   implicit val outboundSoapMessageFormatter: OFormat[OutboundSoapMessage] = OFormat(Json.reads[OutboundSoapMessage], outboundSoapMessageWrites)
 }
+

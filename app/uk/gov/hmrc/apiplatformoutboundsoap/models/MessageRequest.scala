@@ -25,13 +25,13 @@ case class  MessageRequest(wsdlUrl: String,
                           confirmationOfDelivery: Boolean,
                           notificationUrl: Option[String] = None)
 
-case class Addressing(from: Option[String] = None,
+case class Addressing(from: String,
                       to: String,
                       replyTo: String,
-                      faultTo: Option[String] = None,
+                      faultTo: String,
                       messageId: String,
                       relatesTo: Option[String] = None){
   validate(to.trim != "", "addressing.to being empty")
   validate(messageId.trim != "", "addressing.messageId being empty")
-  validate(replyTo.trim != "", "addressing.replyTo being empty")
+  validate(from.trim != "", "addressing.from being empty")
 }
