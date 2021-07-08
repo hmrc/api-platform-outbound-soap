@@ -223,7 +223,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         messageCaptor.getValue.messageId shouldBe messageId
         messageCaptor.getValue.globalId shouldBe expectedGlobalId
         messageCaptor.getValue.createDateTime shouldBe expectedCreateDateTime
-        messageCaptor.getValue.asInstanceOf[SentOutboundSoapMessage].ccnHttpStatus shouldBe httpCode
+        messageCaptor.getValue.ccnHttpStatus shouldBe httpCode
         messageCaptor.getValue.notificationUrl shouldBe messageRequestFullAddressing.notificationUrl
         messageCaptor.getValue.destinationUrl shouldBe "http://example.com:1234/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
       }
@@ -243,7 +243,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         messageCaptor.getValue.messageId shouldBe messageId
         messageCaptor.getValue.globalId shouldBe expectedGlobalId
         messageCaptor.getValue.createDateTime shouldBe expectedCreateDateTime
-        messageCaptor.getValue.asInstanceOf[FailedOutboundSoapMessage].ccnHttpStatus shouldBe httpCode
+        messageCaptor.getValue.ccnHttpStatus shouldBe httpCode
         messageCaptor.getValue.notificationUrl shouldBe messageRequestFullAddressing.notificationUrl
         messageCaptor.getValue.destinationUrl shouldBe "http://example.com:1234/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
       }
