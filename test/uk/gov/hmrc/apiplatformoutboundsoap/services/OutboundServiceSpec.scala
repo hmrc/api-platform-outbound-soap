@@ -88,7 +88,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val addressing = Addressing(from , to , "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
     // mixin refers to mandatory and default addressing fields
     val addressingMixinFields = Addressing(from = from, to = to, replyTo = "ReplyTo", faultTo = "FaultTo", messageId = messageId)
-    val addressingWithEmptyOptionalFields = Addressing(from = from, to = to, replyTo = "", faultTo = "", messageId = messageId)
+    val addressingWithEmptyOptionalFields = Addressing(from = from, to = to, replyTo = " ", faultTo = "", messageId = messageId)
     val messageRequestFullAddressing = MessageRequest(
       "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
       "IE4N03notifyERiskAnalysisHit",
