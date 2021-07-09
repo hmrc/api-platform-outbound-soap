@@ -18,7 +18,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
-import org.mockito.captor.ArgCaptor
+import org.mockito.captor.{ArgCaptor, Captor}
 import org.mockito.scalatest.ResetMocksAfterEachTest
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
@@ -74,7 +74,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "send the message request to the outbound service" in new Setup {
-      val messageCaptor = ArgCaptor[MessageRequest]
+      val messageCaptor: Captor[MessageRequest] = ArgCaptor[MessageRequest]
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
       underTest.message()(fakeRequest.withBody(message))
