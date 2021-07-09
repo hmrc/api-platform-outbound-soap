@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
-import akka.stream.Materializer
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
+import org.mockito.captor.ArgCaptor
 import org.mockito.scalatest.ResetMocksAfterEachTest
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
@@ -30,7 +30,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.Result
 import play.api.test.Helpers._
-import play.api.test.{FakeRequest, Helpers}
+import play.api.test.{FakeRequest, StubControllerComponentsFactory}
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.addressingFormatter
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest, SendingStatus, SentOutboundSoapMessage}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
@@ -43,26 +43,24 @@ import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 
 class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite
-  with ArgumentMatchersSugar with ResetMocksAfterEachTest {
-  implicit val mat: Materializer = app.injector.instanceOf[Materializer]
-
-  val outboundServiceMock: OutboundService = mock[OutboundService]
+  with ArgumentMatchersSugar  with ResetMocksAfterEachTest with StubControllerComponentsFactory {
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .configure("confirmationOfDelivery" -> true)
     .build
 
   trait Setup {
-    val underTest = new OutboundController(Helpers.stubControllerComponents(), outboundServiceMock)
-  }
-
-  "message" should {
+    val outboundServiceMock: OutboundService = mock[OutboundService]
+    val underTest = new OutboundController(stubControllerComponents(), outboundServiceMock)
     val fakeRequest = FakeRequest("POST", "/message")
     val addressing = Addressing(messageId = "987", to = "AddressedTo", replyTo = "ReplyTo", faultTo = "FaultTo", from = "from")
     val addressingJson = Json.toJson(addressing)
     val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson)
     val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", DateTime.now(UTC), OK)
+  }
+
+  "message" should {
 
     "return the response returned by the outbound service" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
@@ -76,16 +74,12 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "send the message request to the outbound service" in new Setup {
-      val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-      when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
+      val messageCaptor = ArgCaptor[MessageRequest]
+      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
       underTest.message()(fakeRequest.withBody(message))
-
-      messageCaptor.getValue.wsdlUrl shouldBe "http://example.com/wsdl"
-      messageCaptor.getValue.wsdlOperation shouldBe "theOp"
-      messageCaptor.getValue.messageBody shouldBe "<IE4N03>example</IE4N03>"
-      messageCaptor.getValue.addressing shouldBe addressing
-      messageCaptor.getValue.confirmationOfDelivery shouldBe true
+      verify(outboundServiceMock).sendMessage(messageCaptor)
+      messageCaptor hasCaptured MessageRequest("http://example.com/wsdl", "theOp", "<IE4N03>example</IE4N03>", addressing, true)
     }
 
     "return OK response with defaults when the request json body addressing section has missing replyTo, faultTo addressing fields" in new Setup {
