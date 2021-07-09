@@ -178,10 +178,10 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   }
 
   private def addOptionalAddressingHeaders(message: MessageRequest, wsaNs: OMNamespace, envelope: SOAPEnvelope): Unit = {
-    addWithAddressElementChildToSoapHeader(message.addressing.from, WSA_FROM, wsaNs, envelope)
+    addWithAddressElementChildToSoapHeader(x => x == x , message.addressing.from, WSA_FROM, wsaNs, envelope)
     addToSoapHeader(message.addressing.to, WSA_TO, wsaNs, envelope)
-    addWithAddressElementChildToSoapHeader(message.addressing.replyTo, WSA_REPLY_TO, wsaNs, envelope)
-    addWithAddressElementChildToSoapHeader(message.addressing.faultTo, WSA_FAULT_TO, wsaNs, envelope)
+    addWithAddressElementChildToSoapHeader(x => x != "", message.addressing.replyTo, WSA_REPLY_TO, wsaNs, envelope)
+    addWithAddressElementChildToSoapHeader(x => x != "", message.addressing.faultTo, WSA_FAULT_TO, wsaNs, envelope)
     addToSoapHeader(message.addressing.messageId, WSA_MESSAGE_ID, wsaNs, envelope)
     message.addressing.relatesTo.foreach(addToSoapHeader(_, WSA_RELATES_TO, wsaNs, envelope))
   }
@@ -192,12 +192,15 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     envelope.getHeader.addChild(addressingElement)
   }
 
-  private def addWithAddressElementChildToSoapHeader(property: String, elementName: String, namespace: OMNamespace, envelope: SOAPEnvelope): Unit = {
-    val addressingElement: OMElement = getOMFactory.createOMElement(elementName, namespace)
-    val addressingElementInner: OMElement = getOMFactory.createOMElement("Address", namespace)
-    getOMFactory.createOMText(addressingElementInner, property)
-    addressingElement.addChild(addressingElementInner)
-    envelope.getHeader.addChild(addressingElement)
+  private def addWithAddressElementChildToSoapHeader(isRequired: String => Boolean, property: String, elementName: String,
+                                                     namespace: OMNamespace, envelope: SOAPEnvelope): Unit = {
+    if(isRequired(property)) {
+      val addressingElement: OMElement = getOMFactory.createOMElement(elementName, namespace)
+      val addressingElementInner: OMElement = getOMFactory.createOMElement("Address", namespace)
+      getOMFactory.createOMText(addressingElementInner, property)
+      addressingElement.addChild(addressingElementInner)
+      envelope.getHeader.addChild(addressingElement)
+    }
   }
 
   private def addBody(message: MessageRequest, operation: Operation, envelope: SOAPEnvelope): Unit = {

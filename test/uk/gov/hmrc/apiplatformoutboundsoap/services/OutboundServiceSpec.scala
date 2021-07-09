@@ -88,6 +88,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val addressing = Addressing(from , to , "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
     // mixin refers to mandatory and default addressing fields
     val addressingMixinFields = Addressing(from = from, to = to, replyTo = "ReplyTo", faultTo = "FaultTo", messageId = messageId)
+    val addressingWithEmptyOptionalFields = Addressing(from = from, to = to, replyTo = "", faultTo = "", messageId = messageId)
     val messageRequestFullAddressing = MessageRequest(
       "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
       "IE4N03notifyERiskAnalysisHit",
@@ -117,6 +118,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     val messageRequestMinimalAddressing = messageRequestFullAddressing
       .copy(addressing = addressingMixinFields)
+    val messageRequestAddressingWithEmptyOptionals = messageRequestFullAddressing
+      .copy(addressing = addressingWithEmptyOptionalFields)
     val expectedStatus: Int = OK
 
     val allAddressingHeaders =
@@ -133,6 +136,11 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         |<wsa:ReplyTo><wsa:Address>ReplyTo</wsa:Address></wsa:ReplyTo>
         |<wsa:FaultTo><wsa:Address>FaultTo</wsa:Address></wsa:FaultTo>
         |<wsa:MessageID>123</wsa:MessageID>""".stripMargin.replaceAll("\n", "")
+
+    val addressingHeadersWithoutOptionals =
+          """<wsa:From><wsa:Address>HMRC</wsa:Address></wsa:From>
+            |<wsa:To>CCN2</wsa:To>
+            |<wsa:MessageID>123</wsa:MessageID>""".stripMargin.replaceAll("\n", "")
 
     def expectedSoapEnvelope(extraHeaders: String = ""): String =
       s"""<?xml version='1.0' encoding='utf-8'?>
@@ -340,6 +348,18 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       await(underTest.sendMessage(messageRequestMinimalAddressing))
       persistCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope(mixinAddressingHeaders)
       getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mixinAddressingHeaders)).build().hasDifferences shouldBe false
+    }
+
+    "not send the optional addressing headers if they are empty in the request" in new Setup {
+      val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
+      val persistCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
+      when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(addressingHeadersWithoutOptionals))
+      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundMessageRepositoryMock.persist(persistCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
+
+      await(underTest.sendMessage(messageRequestAddressingWithEmptyOptionals))
+      persistCaptor.getValue.soapMessage shouldBe expectedSoapEnvelope(addressingHeadersWithoutOptionals)
+      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(addressingHeadersWithoutOptionals)).build().hasDifferences shouldBe false
     }
 
     "persist message ID if present in the request for success" in new Setup {
