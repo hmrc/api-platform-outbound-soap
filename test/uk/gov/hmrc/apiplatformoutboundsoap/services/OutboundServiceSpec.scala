@@ -92,7 +92,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       "IE4N03notifyERiskAnalysisHit",
       """<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>""",
       addressing = addressing,
-      confirmationOfDelivery = false,
+      confirmationOfDelivery = Some(false),
       Some("http://somenotification.url")
     )
 
@@ -101,7 +101,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       "IE4N03notifyERiskAnalysisHit",
       """<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>""",
       addressing = addressing,
-      confirmationOfDelivery = false,
+      confirmationOfDelivery = Some(false),
       Some("http://somenotification.url")
     )
 
@@ -110,7 +110,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       "IsAlive",
       "",
       addressing = addressing,
-      confirmationOfDelivery = false,
+      confirmationOfDelivery = Some(false),
       Some("http://somenotification.url")
     )
 
@@ -297,6 +297,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
+      getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mixinAddressingHeaders)).build().getDifferences.forEach(println)
       getXmlDiff(messageCaptor.getValue.toString, expectedSoapEnvelope(mixinAddressingHeaders)).build().hasDifferences shouldBe false
     }
 

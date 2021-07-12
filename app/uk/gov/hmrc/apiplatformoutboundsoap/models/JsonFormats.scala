@@ -52,15 +52,16 @@ object JsonFormats  {
   implicit val codSoapMessageFormatter: OFormat[CodSoapMessage] = Json.format[CodSoapMessage]
   implicit val coeSoapMessageFormatter: OFormat[CoeSoapMessage] = Json.format[CoeSoapMessage]
 
-  val messageRequestReads: Reads[MessageRequest] = (
-    (JsPath \ "wsdlUrl").read[String] and
-    (JsPath \ "wsdlOperation").read[String] and
-    (JsPath \ "messageBody").read[String] and
-    (JsPath \ "addressing").read[Addressing] and
-    (JsPath \ "confirmationOfDelivery").read[Boolean].orElse(Reads.pure(appConfig.confirmationOfDelivery)) and
-    (JsPath \ "notificationUrl").readNullable[String]
-  ) (MessageRequest.apply _)
-  implicit val messageRequestFormatter: OFormat[MessageRequest] = OFormat(messageRequestReads, Json.writes[MessageRequest])
+  implicit val messageRequestFormatter: OFormat[MessageRequest] = Json.format[MessageRequest]
+//  val messageRequestReads: Reads[MessageRequest] = (
+//    (JsPath \ "wsdlUrl").read[String] and
+//    (JsPath \ "wsdlOperation").read[String] and
+//    (JsPath \ "messageBody").read[String] and
+//    (JsPath \ "addressing").read[Addressing] and
+//    (JsPath \ "confirmationOfDelivery").read[Boolean].orElse(Reads.pure(appConfig.confirmationOfDelivery)) and
+//    (JsPath \ "notificationUrl").readNullable[String]
+//  ) (MessageRequest.apply _)
+//  implicit val messageRequestFormatter: OFormat[MessageRequest] = OFormat(messageRequestReads, Json.writes[MessageRequest])
 
   implicit val outboundSoapMessageWrites: OWrites[OutboundSoapMessage] = new OWrites[OutboundSoapMessage] {
     override def writes(soapMessage: OutboundSoapMessage): JsObject = soapMessage match {
