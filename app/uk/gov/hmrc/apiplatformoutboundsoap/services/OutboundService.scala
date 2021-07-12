@@ -178,7 +178,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   }
 
   private def addOptionalAddressingHeaders(message: MessageRequest, wsaNs: OMNamespace, envelope: SOAPEnvelope): Unit = {
-    addWithAddressElementChildToSoapHeader(x => x == x , message.addressing.from, WSA_FROM, wsaNs, envelope)
+    addWithAddressElementChildToSoapHeader(_ => true , message.addressing.from, WSA_FROM, wsaNs, envelope)
     addToSoapHeader(message.addressing.to, WSA_TO, wsaNs, envelope)
     addWithAddressElementChildToSoapHeader(x => x.trim != "", message.addressing.replyTo, WSA_REPLY_TO, wsaNs, envelope)
     addWithAddressElementChildToSoapHeader(x => x.trim != "", message.addressing.faultTo, WSA_FAULT_TO, wsaNs, envelope)
