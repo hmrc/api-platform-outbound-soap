@@ -52,4 +52,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val addressingReplyTo: String = config.getOptional[String]("addressing.replyTo").getOrElse("")
   val addressingFaultTo: String = config.getOptional[String]("addressing.faultTo").getOrElse("")
   val confirmationOfDelivery: Boolean = config.getOptional[Boolean]("confirmationOfDelivery").getOrElse(false)
+  val proxyRequiredForThisEnvironment = config.getOptional[Boolean]("proxy.proxyRequiredForThisEnvironment").getOrElse(false)
+
 }

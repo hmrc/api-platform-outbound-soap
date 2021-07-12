@@ -25,6 +25,7 @@ import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.http.Status.{BAD_REQUEST, OK}
 import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.Result
