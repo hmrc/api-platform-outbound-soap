@@ -25,7 +25,7 @@ import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.mongodb.scala.{MongoClient, MongoCollection}
 import org.mongodb.scala.ReadPreference.primaryPreferred
-import org.mongodb.scala.model.Filters.{and, equal, lte}
+import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.{combine, set}
 import org.mongodb.scala.model.{FindOneAndUpdateOptions, IndexModel, IndexOptions, ReturnDocument}
@@ -118,8 +118,8 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
       .toFutureOption()
   }
 
-  def findById(messageId: String): Future[Option[OutboundSoapMessage]] = {
-    collection.find(filter = equal("messageId", messageId)).headOption()
+  def findById(searchForId: String): Future[Option[OutboundSoapMessage]] = {
+    collection.find(filter = or(equal("messageId", searchForId), equal("globalId", searchForId))).headOption()
       .recover {
         case e: Exception =>
           logger.warn(s"error finding message - ${e.getMessage}")

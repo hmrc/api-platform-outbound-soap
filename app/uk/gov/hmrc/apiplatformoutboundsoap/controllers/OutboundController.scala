@@ -18,6 +18,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import play.api.libs.json._
 import play.api.mvc._
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.{messageRequestFormatter, soapMessageStatusFormatter}
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, SoapMessageStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
@@ -31,13 +32,18 @@ import scala.concurrent.ExecutionContext
 
 @Singleton
 class OutboundController @Inject()(cc: ControllerComponents,
+                                   appConfig: AppConfig,
                                    outboundService: OutboundService)
                                   (implicit ec: ExecutionContext)
   extends BackendController(cc) {
 
   def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
     withJsonBody[MessageRequest] { messageRequest =>
-      outboundService.sendMessage(messageRequest)
+      val codValue = messageRequest.confirmationOfDelivery match {
+        case Some(cod) => cod
+        case None =>  appConfig.confirmationOfDelivery
+      }
+      outboundService.sendMessage(messageRequest.copy(confirmationOfDelivery = Some(codValue)))
         .map(outboundSoapMessage => Ok(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(outboundSoapMessage))))
         .recover(recovery)
     }

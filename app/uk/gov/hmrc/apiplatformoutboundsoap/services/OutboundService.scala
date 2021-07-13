@@ -163,7 +163,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     addToMessageHeader("Version", "1.0")
     addToMessageHeader("SendingDateAndTime", DateTime.now().toString(dateTimeFormatter))
     findSoapAction(operation).foreach(addToMessageHeader("MessageType", _))
-    addToMessageHeader("RequestCoD", message.confirmationOfDelivery.toString)
+    addToMessageHeader("RequestCoD", message.confirmationOfDelivery.getOrElse(false).toString)
   }
 
   private def findSoapAction(operation: Operation): Option[String] = {

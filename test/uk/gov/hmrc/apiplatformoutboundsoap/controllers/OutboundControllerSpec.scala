@@ -19,18 +19,19 @@ package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 import akka.stream.Materializer
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
+import org.mockito.captor.{ArgCaptor, Captor}
 import org.mockito.scalatest.ResetMocksAfterEachTest
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.Application
+
 import play.api.http.Status.{BAD_REQUEST, OK}
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, Helpers}
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.addressingFormatter
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest, SendingStatus, SentOutboundSoapMessage}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
@@ -46,14 +47,11 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
   with ArgumentMatchersSugar with ResetMocksAfterEachTest {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
 
-  val outboundServiceMock: OutboundService = mock[OutboundService]
-
-  override lazy val app: Application = GuiceApplicationBuilder()
-    .configure("confirmationOfDelivery" -> true)
-    .build
-
   trait Setup {
-    val underTest = new OutboundController(Helpers.stubControllerComponents(), outboundServiceMock)
+    val mockAppConfig = mock[AppConfig]
+    when(mockAppConfig.confirmationOfDelivery).thenReturn(true)
+    val outboundServiceMock: OutboundService = mock[OutboundService]
+    val underTest = new OutboundController(Helpers.stubControllerComponents(),  mockAppConfig,  outboundServiceMock)
   }
 
   "message" should {
@@ -76,16 +74,13 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "send the message request to the outbound service" in new Setup {
-      val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-      when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
+      val messageCaptor: Captor[MessageRequest] = ArgCaptor[MessageRequest]
+      when(outboundServiceMock.sendMessage(messageCaptor.capture)).thenReturn(successful(outboundSoapMessage))
 
       underTest.message()(fakeRequest.withBody(message))
 
-      messageCaptor.getValue.wsdlUrl shouldBe "http://example.com/wsdl"
-      messageCaptor.getValue.wsdlOperation shouldBe "theOp"
-      messageCaptor.getValue.messageBody shouldBe "<IE4N03>example</IE4N03>"
-      messageCaptor.getValue.addressing shouldBe addressing
-      messageCaptor.getValue.confirmationOfDelivery shouldBe true
+      verify(outboundServiceMock).sendMessage(messageCaptor)
+      messageCaptor hasCaptured MessageRequest("http://example.com/wsdl", "theOp", "<IE4N03>example</IE4N03>", addressing, Some(true))
     }
 
     "return OK response with defaults when the request json body addressing section has missing replyTo, faultTo addressing fields" in new Setup {
@@ -166,7 +161,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
       status(result) shouldBe expectedStatus
-      messageCaptor.getValue.confirmationOfDelivery shouldBe true
+      messageCaptor.getValue.confirmationOfDelivery shouldBe Some(true)
     }
 
     "confirmation of delivery field is true when true in the request" in new Setup {
@@ -177,7 +172,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message + ("confirmationOfDelivery" -> JsBoolean(true))))
 
       status(result) shouldBe expectedStatus
-      messageCaptor.getValue.confirmationOfDelivery shouldBe true
+      messageCaptor.getValue.confirmationOfDelivery shouldBe Some(true)
     }
 
     "confirmation of delivery field is false when false in the request" in new Setup {
@@ -188,7 +183,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message + ("confirmationOfDelivery" -> JsBoolean(false))))
 
       status(result) shouldBe expectedStatus
-      messageCaptor.getValue.confirmationOfDelivery shouldBe false
+      messageCaptor.getValue.confirmationOfDelivery shouldBe Some(false)
     }
 
     "return bad request when there is a problem parsing the WSDL" in new Setup {

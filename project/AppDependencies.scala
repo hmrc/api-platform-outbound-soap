@@ -9,6 +9,7 @@ object AppDependencies {
     "uk.gov.hmrc" %% "bootstrap-backend-play-27" % "3.0.0",
     "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-27" % "0.50.0",
     "uk.gov.hmrc" %% "play-scheduling-play-27" % "7.10.0",
+    "com.typesafe.play" %% "play-json-joda" % "2.9.2",
     "com.lightbend.akka" %% "akka-stream-alpakka-mongodb" % "3.0.1",
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
