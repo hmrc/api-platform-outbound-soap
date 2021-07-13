@@ -181,7 +181,7 @@ HTTP Status: 202 (ACCEPTED) with an empty body
 | `x-soap-action` header is blank or contains only whitespace | `400` |
 | message ID supplied in `RelatesTo` element in request body does not match that of any message stored in the database | `404` |
 
-## `GET /retrieve/:messageId`
+## `GET /retrieve/:id`
 Allows retrieval of the message which has either a `messageId` or a `globalId` matching that in the `id` path parameter
 
 ###Response
@@ -202,8 +202,8 @@ HTTP Status: 200 (OK) with a body similar to the following:
 ### Error scenarios
 | Scenario | HTTP Status |
 | --- | --- |
-| `messageId` path parameter is empty or whitespace | `400` |
-| `messageId` path parameter refers to an ID that cannot be found | `404` |
+| `id` path parameter is empty or whitespace | `400` |
+| `id` path parameter refers to an ID that cannot be found | `404` |
 
 ### License
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
