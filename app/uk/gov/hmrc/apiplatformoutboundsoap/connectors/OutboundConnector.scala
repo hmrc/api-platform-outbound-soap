@@ -26,6 +26,7 @@ import uk.gov.hmrc.http.{HttpClient, _}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 @Singleton
 class OutboundConnector @Inject()(
@@ -39,19 +40,25 @@ class OutboundConnector @Inject()(
   lazy val httpClient: HttpClient = if (useProxy) proxiedHttpClient else defaultHttpClient
 
   def postMessage(soapRequest: SoapRequest): Future[Int] = {
+    postMessage("", soapRequest)
+  }
+
+  def postMessage(messageId: String, soapRequest: SoapRequest): Future[Int] = {
     implicit val hc: HeaderCarrier = HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
 
-    def requestLogMessage(statusCode: Int) = s"Attempted request to ${soapRequest.destinationUrl} responded with HTTP response code $statusCode"
+    def requestLogMessage(statusCode: Int) = s"Attempted request to ${soapRequest.destinationUrl} with message ID $messageId got status code $statusCode"
 
     postHttpRequest(soapRequest).map {
       case Left(UpstreamErrorResponse(_, statusCode, _, _)) =>
         logger.warn(requestLogMessage(statusCode))
         statusCode
       case Right(response: HttpResponse) =>
-        if (response.status != HttpStatus.SC_ACCEPTED) {
-          logger.warn(requestLogMessage(response.status))
-        }
         response.status
+    }
+    .recoverWith {
+      case NonFatal(e) =>
+        logger.warn(s"NonFatal error ${e.getMessage} while requesting message with message ID $messageId", e)
+        Future.successful(HttpStatus.SC_INTERNAL_SERVER_ERROR)
     }
   }
 
