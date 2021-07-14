@@ -246,6 +246,21 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       fetchedRecords.head.status shouldBe DeliveryStatus.COD
       fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
     }
+
+    "update all messages when a CoD is received" in {
+      await(serviceRepo.persist(sentMessage))
+      await(serviceRepo.persist(sentMessage.copy(globalId = randomUUID())))
+
+      await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COD, expectedConfirmationMessageBody))
+
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+
+      fetchedRecords.size shouldBe 2
+      fetchedRecords.head.status shouldBe DeliveryStatus.COD
+      fetchedRecords(1).status shouldBe DeliveryStatus.COD
+      fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
+      fetchedRecords(1).asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
+    }
   }
 
   "findById" should {
