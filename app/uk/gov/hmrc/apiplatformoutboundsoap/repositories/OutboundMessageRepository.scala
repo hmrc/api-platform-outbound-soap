@@ -23,16 +23,17 @@ import org.bson.codecs.configuration.CodecRegistries._
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
-import org.mongodb.scala.{MongoClient, MongoCollection}
 import org.mongodb.scala.ReadPreference.primaryPreferred
+import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.{combine, set}
-import org.mongodb.scala.model.{FindOneAndUpdateOptions, IndexModel, IndexOptions, ReturnDocument}
+import org.mongodb.scala.model._
 import org.mongodb.scala.result.InsertOneResult
+import org.mongodb.scala.{BulkWriteResult, MongoClient, MongoCollection}
 import play.api.Logging
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{DeliveryStatus, OutboundSoapMessage, RetryingOutboundSoapMessage, SendingStatus, StatusType}
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.outboundSoapMessageFormatter
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
@@ -41,6 +42,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
 class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appConfig: AppConfig)
@@ -50,11 +52,11 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
     mongoComponent = mongoComponent,
     domainFormat = outboundSoapMessageFormatter,
     indexes = Seq(IndexModel(ascending("globalId"),
-                    IndexOptions().name("globalIdIndex").background(true).unique(true)),
-                  IndexModel(ascending("createDateTime"),
-                    IndexOptions().name("ttlIndex").background(true)
-                      .expireAfter(appConfig.retryMessagesTtl.toSeconds, TimeUnit.SECONDS))))
-    with Logging  {
+      IndexOptions().name("globalIdIndex").background(true).unique(true)),
+      IndexModel(ascending("createDateTime"),
+        IndexOptions().name("ttlIndex").background(true)
+          .expireAfter(appConfig.retryMessagesTtl.toSeconds, TimeUnit.SECONDS))))
+    with Logging {
 
   override lazy val collection: MongoCollection[OutboundSoapMessage] =
     CollectionFactory
@@ -111,11 +113,12 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
       case DeliveryStatus.COE => "coeMessage"
     }
 
-    collection.withReadPreference(primaryPreferred)
-      .findOneAndUpdate(filter = equal("messageId", messageId),
-        update = combine(set("status", Codecs.toBson(newStatus.entryName)), set(field, confirmationMsg)),
-        options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER))
-      .toFutureOption()
+    for {
+      bulkUpdateResult <- collection.bulkWrite(
+        List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.entryName)), set(field, confirmationMsg)))),
+        BulkWriteOptions().ordered(false)).toFuture()
+      findUpdated <- findById(messageId)
+    } yield findUpdated
   }
 
   def findById(searchForId: String): Future[Option[OutboundSoapMessage]] = {
