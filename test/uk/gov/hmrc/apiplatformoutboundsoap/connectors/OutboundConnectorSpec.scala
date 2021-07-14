@@ -43,6 +43,7 @@ class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPe
     val appConfigMock: AppConfig = mock[AppConfig]
     val mockDefaultHttpClient: HttpClient = mock[HttpClient]
     val mockProxiedHttpClient: ProxiedHttpClient = mock[ProxiedHttpClient]
+    val messageId = "messageId"
   }
 
   "OutboundConnector" should {
@@ -72,7 +73,7 @@ class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPe
         .thenReturn(successful(Right(HttpResponse(OK,""))))
       val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
       underTest.httpClient shouldBe mockDefaultHttpClient
-      val result: Int = await(underTest.postMessage(soapRequestMock))
+      val result: Int = await(underTest.postMessage(messageId, soapRequestMock))
       result shouldBe OK
     }
 
@@ -85,7 +86,7 @@ class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPe
         .thenReturn(successful(Left(UpstreamErrorResponse("unexpected error", INTERNAL_SERVER_ERROR))))
       val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
       underTest.httpClient shouldBe mockDefaultHttpClient
-      val result: Int = await(underTest.postMessage(soapRequestMock))
+      val result: Int = await(underTest.postMessage(messageId, soapRequestMock))
       result shouldBe INTERNAL_SERVER_ERROR
     }
 
@@ -98,7 +99,7 @@ class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPe
         .thenReturn(failed(play.shaded.ahc.org.asynchttpclient.exception.RemotelyClosedException.INSTANCE))
       val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
       underTest.httpClient shouldBe mockDefaultHttpClient
-      val result: Int = await(underTest.postMessage(soapRequestMock))
+      val result: Int = await(underTest.postMessage(messageId, soapRequestMock))
       result shouldBe INTERNAL_SERVER_ERROR
     }
   }

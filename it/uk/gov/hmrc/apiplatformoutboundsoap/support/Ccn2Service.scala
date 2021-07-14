@@ -17,6 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.http.Fault
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
 trait Ccn2Service {
@@ -26,6 +27,16 @@ trait Ccn2Service {
         aResponse()
         .withBody(body)
         .withStatus(status)
+      )
+    )
+  }
+
+  def stubCcn2Endpoint(body: String, fault: Fault): StubMapping = {
+    stubFor(post(urlPathEqualTo("/"))
+      .willReturn(
+        aResponse()
+        .withBody(body)
+        .withFault(fault)
       )
     )
   }

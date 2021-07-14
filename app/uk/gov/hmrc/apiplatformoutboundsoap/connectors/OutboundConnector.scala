@@ -39,10 +39,6 @@ class OutboundConnector @Inject()(
   val useProxy: Boolean = useProxyForEnv()
   lazy val httpClient: HttpClient = if (useProxy) proxiedHttpClient else defaultHttpClient
 
-  def postMessage(soapRequest: SoapRequest): Future[Int] = {
-    postMessage("", soapRequest)
-  }
-
   def postMessage(messageId: String, soapRequest: SoapRequest): Future[Int] = {
     implicit val hc: HeaderCarrier = HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
 
