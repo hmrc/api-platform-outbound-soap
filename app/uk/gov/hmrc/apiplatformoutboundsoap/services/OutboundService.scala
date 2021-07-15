@@ -80,13 +80,10 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     val nextRetryDateTime: DateTime = now.plus(appConfig.retryInterval.toMillis)
     val globalId = message.globalId
     val messageId = message.messageId
+
     outboundConnector.postMessage(messageId, SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { result =>
       if (is2xx(result)) {
-        if (result != HttpStatus.SC_ACCEPTED) {
-          logger.warn(s"Retried message with global ID $globalId message ID $messageId got status code $result and successfully sent")
-        } else {
-          logger.info(s"Retried message with global ID $globalId message ID $messageId got status code $result and successfully sent")
-        }
+        log2xxResult(result, globalId, messageId)
         outboundMessageRepository.updateSendingStatus(message.globalId, SendingStatus.SENT) map { updatedMessage =>
           updatedMessage.map(notificationCallbackConnector.sendNotification)
           ()
@@ -110,12 +107,10 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   private def buildOutboundSoapMessage(message: MessageRequest, soapRequest: SoapRequest, result: Int): OutboundSoapMessage = {
     val globalId: UUID = randomUUID
     val messageId = message.addressing.messageId
+    def is3xx(result: Int): Boolean = result >= 300 && result < 400
+
     if (is2xx(result)) {
-      if (result != HttpStatus.SC_ACCEPTED) {
-        logger.warn(s"Message with global ID $globalId message ID $messageId got status code $result and successfully sent")
-      } else {
-        logger.info(s"Message with global ID $globalId message ID $messageId got status code $result and successfully sent")
-      }
+      log2xxResult(result, globalId, messageId)
       SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, result, message.notificationUrl)
     } else if(is3xx(result)|| is4xx(result)) {
       logger.error(s"Message with global ID $globalId message ID $messageId got status code $result and failed")
@@ -223,5 +218,12 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     envelope.getBody.addChild(payload)
   }
 
-  private def is3xx(result: Int): Boolean = result >= 300 && result < 400
+
+  private def log2xxResult(result: Int, globalId: UUID, messageId: String) = {
+    if (result != HttpStatus.SC_ACCEPTED) {
+      logger.warn(s"Retried message with global ID $globalId message ID $messageId got status code $result and successfully sent")
+    } else {
+      logger.info(s"Retried message with global ID $globalId message ID $messageId got status code $result and successfully sent")
+    }
+  }
 }
