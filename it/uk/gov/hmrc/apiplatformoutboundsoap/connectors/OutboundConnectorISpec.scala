@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
+import com.github.tomakehurst.wiremock.http.Fault
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -38,6 +39,7 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
 
   trait Setup {
     val underTest: OutboundConnector = app.injector.instanceOf[OutboundConnector]
+    val messageId = "messageId"
   }
 
 
@@ -48,7 +50,7 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
       val expectedStatus: Int = OK
       primeCcn2Endpoint(message.soapEnvelope, expectedStatus)
 
-      val result: Int = await(underTest.postMessage(message))
+      val result: Int = await(underTest.postMessage(messageId, message))
 
       result shouldBe expectedStatus
     }
@@ -57,15 +59,25 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
       val expectedStatus: Int = INTERNAL_SERVER_ERROR
       primeCcn2Endpoint(message.soapEnvelope, expectedStatus)
 
-      val result: Int = await(underTest.postMessage(message))
+      val result: Int = await(underTest.postMessage(messageId, message))
 
       result shouldBe expectedStatus
+    }
+
+    "return error status when soap fault is returned by the CCN2 service" in new Setup {
+      Seq(Fault.CONNECTION_RESET_BY_PEER, Fault.EMPTY_RESPONSE, Fault.MALFORMED_RESPONSE_CHUNK,
+        Fault.RANDOM_DATA_THEN_CLOSE) foreach { fault =>
+
+        stubCcn2Endpoint(message.soapEnvelope, fault)
+        val result: Int = await(underTest.postMessage(messageId, message))
+        result shouldBe INTERNAL_SERVER_ERROR
+      }
     }
 
     "send the given message to the CCN2 service" in new Setup {
       primeCcn2Endpoint(message.soapEnvelope, OK)
 
-      await(underTest.postMessage(message))
+      await(underTest.postMessage(messageId, message))
 
       verifyRequestBody(message.soapEnvelope)
     }
@@ -73,7 +85,7 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
     "send the right SOAP content type header" in new Setup {
       primeCcn2Endpoint(message.soapEnvelope, OK)
 
-      await(underTest.postMessage(message))
+      await(underTest.postMessage(messageId, message))
 
       verifyHeader(CONTENT_TYPE, "application/soap+xml")
     }

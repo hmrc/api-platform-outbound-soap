@@ -26,6 +26,7 @@ import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.addressing.AddressingConstants.Final.{WSAW_NAMESPACE, WSA_NAMESPACE}
 import org.apache.axis2.addressing.AddressingConstants._
 import org.apache.axis2.wsdl.WSDLUtil
+import org.apache.http.HttpStatus
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
@@ -41,7 +42,7 @@ import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import javax.wsdl.extensions.soap12.SOAP12Address
 import javax.wsdl.xml.WSDLReader
-import javax.wsdl.{Definition, Operation, Part, PortType, Service, Port}
+import javax.wsdl.{Definition, Operation, Part, Port, PortType, Service}
 import javax.xml.namespace.QName
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -65,7 +66,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   def sendMessage(message: MessageRequest): Future[OutboundSoapMessage] = {
     for {
       soapRequest <- buildSoapRequest(message)
-      result <- outboundConnector.postMessage(soapRequest)
+      result <- outboundConnector.postMessage(message.addressing.messageId, soapRequest)
       outboundSoapMessage = buildOutboundSoapMessage(message, soapRequest, result)
       _ <- outboundMessageRepository.persist(outboundSoapMessage)
     } yield outboundSoapMessage
@@ -77,22 +78,26 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
 
   private def retryMessage(message: RetryingOutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Unit] = {
     val nextRetryDateTime: DateTime = now.plus(appConfig.retryInterval.toMillis)
-    outboundConnector.postMessage(SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { result =>
+    val globalId = message.globalId
+    val messageId = message.messageId
+
+    outboundConnector.postMessage(messageId, SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { result =>
       if (is2xx(result)) {
-        logger.info(s"Retried message with global ID ${message.globalId} and message ID ${message.messageId} and succeeded")
+        log2xxResult(result, globalId, messageId)
         outboundMessageRepository.updateSendingStatus(message.globalId, SendingStatus.SENT) map { updatedMessage =>
           updatedMessage.map(notificationCallbackConnector.sendNotification)
           ()
         }
       } else {
         if (message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)) {
-          logger.info(s"Retried message with global ID ${message.globalId} and message ID ${message.messageId} but failed on last attempt")
+          logger.error(s"Retried message with global ID ${message.globalId}  message ID ${message.messageId} got status code $result " +
+            s"and failed on last attempt")
           outboundMessageRepository.updateSendingStatus(message.globalId, SendingStatus.FAILED).map { updatedMessage =>
             updatedMessage.map(notificationCallbackConnector.sendNotification)
             ()
           }
         } else {
-          logger.info(s"Retried message with global ID ${message.globalId} and message ID ${message.messageId} but failed")
+          logger.warn(s"Retried message with global ID ${message.globalId} message ID ${message.messageId} got status code $result and will retry")
           outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryDateTime).map(_ => ())
         }
       }
@@ -102,14 +107,16 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   private def buildOutboundSoapMessage(message: MessageRequest, soapRequest: SoapRequest, result: Int): OutboundSoapMessage = {
     val globalId: UUID = randomUUID
     val messageId = message.addressing.messageId
+    def is3xx(result: Int): Boolean = result >= 300 && result < 400
+
     if (is2xx(result)) {
-      logger.info(s"Message with global ID $globalId and message ID $messageId successfully sent")
+      log2xxResult(result, globalId, messageId)
       SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, result, message.notificationUrl)
     } else if(is3xx(result)|| is4xx(result)) {
-      logger.info(s"Message with global ID $globalId and message ID $messageId failed")
+      logger.error(s"Message with global ID $globalId message ID $messageId got status code $result and failed")
       FailedOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, result, message.notificationUrl)
     } else {
-      logger.info(s"Message with global ID $globalId and message ID $messageId failed on first attempt")
+      logger.warn(s"Message with global ID $globalId message ID $messageId got status code $result and will retry")
       RetryingOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
         now.plus(appConfig.retryInterval.toMillis), result, message.notificationUrl, None, None)
     }
@@ -126,7 +133,8 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
       val envelope: SOAPEnvelope = getSOAP12Factory.getDefaultEnvelope
       addHeaders(message, operation, envelope)
       addBody(message, operation, envelope)
-      val enrichedEnvelope: String = if (appConfig.enableMessageSigning) wsSecurityService.addSignature(envelope) else wsSecurityService.addUsernameToken(envelope)
+      val enrichedEnvelope: String = if (appConfig.enableMessageSigning) wsSecurityService.addSignature(envelope)
+                                     else wsSecurityService.addUsernameToken(envelope)
       val url: String = wsdlDefinition.getAllServices.asScala.values.head.asInstanceOf[Service]
         .getPorts.asScala.values.head.asInstanceOf[Port]
         .getExtensibilityElements.asScala.filter(_.isInstanceOf[SOAP12Address]).head.asInstanceOf[SOAP12Address]
@@ -210,5 +218,12 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     envelope.getBody.addChild(payload)
   }
 
-  private def is3xx(result: Int): Boolean = result >= 300 && result < 400
+
+  private def log2xxResult(result: Int, globalId: UUID, messageId: String) = {
+    if (result != HttpStatus.SC_ACCEPTED) {
+      logger.warn(s"Message with global ID $globalId message ID $messageId got status code $result and successfully sent")
+    } else {
+      logger.info(s"Message with global ID $globalId message ID $messageId got status code $result and successfully sent")
+    }
+  }
 }

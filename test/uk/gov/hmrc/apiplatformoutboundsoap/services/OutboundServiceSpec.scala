@@ -183,7 +183,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "return the outbound soap message for success" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       val result: OutboundSoapMessage = await(underTest.sendMessage(messageRequestFullAddressing))
@@ -197,7 +197,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "get the WSDL definition from cache" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestFullAddressing))
@@ -207,7 +207,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "return the outbound soap message for failure" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(BAD_REQUEST))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(BAD_REQUEST))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
       val result: OutboundSoapMessage = await(underTest.sendMessage(messageRequestFullAddressing))
 
@@ -221,7 +221,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     "save the message as SENT when the connector returns 2xx" in new Setup {
       (200 to 299).foreach { httpCode =>
         when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-        when(outboundConnectorMock.postMessage(*)).thenReturn(successful(httpCode))
+        when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(httpCode))
         val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
         when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
         await(underTest.sendMessage(messageRequestFullAddressing))
@@ -240,7 +240,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     "save the message as FAILED when the connector returns a 3xx, 4xx" in new Setup {
       (300 to 499).foreach { httpCode =>
         when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-        when(outboundConnectorMock.postMessage(*)).thenReturn(successful(httpCode))
+        when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(httpCode))
         val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
         when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
@@ -260,7 +260,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     "save the message as RETRYING when the connector returns a 5xx" in new Setup {
       (500 to 599).foreach { httpCode =>
         when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-        when(outboundConnectorMock.postMessage(*)).thenReturn(successful(httpCode))
+        when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(httpCode))
         val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
         when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
         val expectedInterval = Duration("10s")
@@ -284,7 +284,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
       val messageCaptor: ArgumentCaptor[SoapRequest] = ArgumentCaptor.forClass(classOf[SoapRequest])
-      when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, messageCaptor.capture())).thenReturn(successful(expectedStatus))
 
       await(underTest.sendMessage(messageRequestFullAddressing))
 
@@ -296,7 +296,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
       val messageCaptor: ArgumentCaptor[SoapRequest] = ArgumentCaptor.forClass(classOf[SoapRequest])
-      when(outboundConnectorMock.postMessage(messageCaptor.capture())).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, messageCaptor.capture())).thenReturn(successful(expectedStatus))
 
       await(underTest.sendMessage(messageRequestUrlResolver))
       messageCaptor.getValue.destinationUrl shouldBe "http://example.com/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
@@ -304,7 +304,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "send the SOAP envelope with empty body returned from the security service to the connector" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelopeWithEmptyBodyRequest())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(200))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(200))
       val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
       await(underTest.sendMessage(messageRequestEmptyBody))
@@ -319,7 +319,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     "send the expected SOAP envelope to the security service which adds username token" in new Setup {
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
@@ -331,7 +331,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       when(appConfigMock.enableMessageSigning).thenReturn(true)
       when(wsSecurityServiceMock.addSignature(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
@@ -343,7 +343,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       val persistCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(persistCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
@@ -355,7 +355,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       val persistCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(addressingHeadersWithoutOptionals))
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
       when(outboundMessageRepositoryMock.persist(persistCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
       await(underTest.sendMessage(messageRequestAddressingWithEmptyOptionals))
@@ -365,7 +365,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "persist message ID if present in the request for success" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
       val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
 
@@ -376,7 +376,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "persist message ID if present in the request for failure" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(INTERNAL_SERVER_ERROR))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
@@ -388,7 +388,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "fail when the given operation does not exist in the WSDL definition" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
 
       val exception: NotFoundException = intercept[NotFoundException] {
         await(underTest.sendMessage(messageRequestFullAddressing.copy(wsdlOperation = "missingOperation")))
@@ -399,7 +399,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "fail when the given WSDL does not exist" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
 
       val exception: WSDLException = intercept[WSDLException] {
         await(underTest.sendMessage(messageRequestFullAddressing.copy(wsdlUrl = "http://example.com/missing")))
@@ -410,7 +410,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "fail when the addressing.to field is empty" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing = addressing.copy(to = ""))))
@@ -421,7 +421,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "fail when the addressing.messageId field is empty" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing = addressing.copy(messageId = ""))))
@@ -432,7 +432,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
   "fail when the addressing.from field is empty" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(expectedStatus))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing= addressing.copy(from = ""))))
@@ -448,7 +448,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         "some url", DateTime.now(UTC), DateTime.now(UTC), httpStatus)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(single(retryingMessage))
 
@@ -464,8 +464,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         "<IE4N03>payload 2</IE4N03>", "another url", DateTime.now(UTC), DateTime.now(UTC), httpStatus)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("1s"))
-      when(outboundConnectorMock.postMessage(SoapRequest(anotherRetryingMessage.soapMessage, anotherRetryingMessage.destinationUrl)))
-        .thenReturn(successful(OK))
+      when(outboundConnectorMock.postMessage(anotherRetryingMessage.messageId, SoapRequest(anotherRetryingMessage.soapMessage,
+        anotherRetryingMessage.destinationUrl))).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromIterator(() => Seq(retryingMessage, anotherRetryingMessage).iterator))
@@ -481,7 +481,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(INTERNAL_SERVER_ERROR))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.updateNextRetryTime(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
@@ -499,7 +499,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(appConfigMock.retryDuration).thenReturn(retryDuration)
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(INTERNAL_SERVER_ERROR))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
@@ -517,7 +517,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(sentMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
@@ -535,7 +535,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(appConfigMock.retryDuration).thenReturn(retryDuration)
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(INTERNAL_SERVER_ERROR))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
@@ -553,7 +553,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(appConfigMock.retryDuration).thenReturn(retryDuration)
-      when(outboundConnectorMock.postMessage(*)).thenReturn(successful(OK))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
         thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))

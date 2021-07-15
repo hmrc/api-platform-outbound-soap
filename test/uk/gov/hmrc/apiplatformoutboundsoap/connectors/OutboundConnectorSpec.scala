@@ -29,7 +29,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future.successful
+import scala.concurrent.Future.{failed, successful}
 
 
 class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
@@ -43,6 +43,7 @@ class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPe
     val appConfigMock: AppConfig = mock[AppConfig]
     val mockDefaultHttpClient: HttpClient = mock[HttpClient]
     val mockProxiedHttpClient: ProxiedHttpClient = mock[ProxiedHttpClient]
+    val messageId = "messageId"
   }
 
   "OutboundConnector" should {
@@ -68,10 +69,11 @@ class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPe
       when(soapRequestMock.soapEnvelope).thenReturn("<IE4N03>payload</IE4N03>")
       when(soapRequestMock.destinationUrl).thenReturn("some url")
       when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
-      when(mockDefaultHttpClient.POSTString[Either[UpstreamErrorResponse,HttpResponse]](*,*,*)(*,*,*)).thenReturn(successful(Right(HttpResponse(OK,""))))
+      when(mockDefaultHttpClient.POSTString[Either[UpstreamErrorResponse,HttpResponse]](*,*,*)(*,*,*))
+        .thenReturn(successful(Right(HttpResponse(OK,""))))
       val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
       underTest.httpClient shouldBe mockDefaultHttpClient
-      val result: Int = await(underTest.postMessage(soapRequestMock))
+      val result: Int = await(underTest.postMessage(messageId, soapRequestMock))
       result shouldBe OK
     }
 
@@ -80,10 +82,24 @@ class OutboundConnectorSpec extends AnyWordSpec with Matchers with GuiceOneAppPe
       when(soapRequestMock.soapEnvelope).thenReturn("<IE4N03>payload</IE4N03>")
       when(soapRequestMock.destinationUrl).thenReturn("some url")
       when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
-      when(mockDefaultHttpClient.POSTString[Either[UpstreamErrorResponse,HttpResponse]](*,*,*)(*,*,*)).thenReturn(successful(Left(UpstreamErrorResponse("unexpected error", INTERNAL_SERVER_ERROR))))
+      when(mockDefaultHttpClient.POSTString[Either[UpstreamErrorResponse,HttpResponse]](*,*,*)(*,*,*))
+        .thenReturn(successful(Left(UpstreamErrorResponse("unexpected error", INTERNAL_SERVER_ERROR))))
       val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
       underTest.httpClient shouldBe mockDefaultHttpClient
-      val result: Int = await(underTest.postMessage(soapRequestMock))
+      val result: Int = await(underTest.postMessage(messageId, soapRequestMock))
+      result shouldBe INTERNAL_SERVER_ERROR
+    }
+
+    "return valid status code if http post returns NonFatal errors" in new Setup {
+      val soapRequestMock: SoapRequest = mock[SoapRequest]
+      when(soapRequestMock.soapEnvelope).thenReturn("<IE4N03>payload</IE4N03>")
+      when(soapRequestMock.destinationUrl).thenReturn("some url")
+      when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
+      when(mockDefaultHttpClient.POSTString[Either[UpstreamErrorResponse,HttpResponse]](*,*,*)(*,*,*))
+        .thenReturn(failed(play.shaded.ahc.org.asynchttpclient.exception.RemotelyClosedException.INSTANCE))
+      val underTest = new OutboundConnector(appConfigMock, mockDefaultHttpClient, mockProxiedHttpClient)
+      underTest.httpClient shouldBe mockDefaultHttpClient
+      val result: Int = await(underTest.postMessage(messageId, soapRequestMock))
       result shouldBe INTERNAL_SERVER_ERROR
     }
   }
