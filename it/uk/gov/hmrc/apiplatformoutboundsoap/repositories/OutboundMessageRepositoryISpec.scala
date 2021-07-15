@@ -178,7 +178,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
   }
 
   "updateNextRetryTime" should {
-    "update the retryDateTime on a record given its globalId" in {
+    "update the retryDateTime on a record given its globalID" in {
       await(serviceRepo.persist(retryingMessage))
       val newRetryDateTime = retryingMessage.retryDateTime.minusHours(2)
       await(serviceRepo.updateNextRetryTime(retryingMessage.globalId, newRetryDateTime))
@@ -247,84 +247,30 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
     }
 
-    "update all records with the same messageId when a CoE is received" in {
-      val secondSentMessage = sentMessage.copy(globalId = randomUUID())
+    "update all messages when a CoD is received" in {
       await(serviceRepo.persist(sentMessage))
-      await(serviceRepo.persist(secondSentMessage))
-
-      await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COE, expectedConfirmationMessageBody))
-
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
-
-      fetchedRecords.size shouldBe 2
-      fetchedRecords.head.globalId shouldBe sentMessage.globalId
-      fetchedRecords(1).globalId shouldBe secondSentMessage.globalId
-      fetchedRecords.head.messageId shouldBe sentMessage.messageId
-      fetchedRecords(1).messageId shouldBe secondSentMessage.messageId
-      fetchedRecords.head.soapMessage shouldBe sentMessage.soapMessage
-      fetchedRecords(1).soapMessage shouldBe secondSentMessage.soapMessage
-      fetchedRecords.head.destinationUrl shouldBe sentMessage.destinationUrl
-      fetchedRecords(1).destinationUrl shouldBe secondSentMessage.destinationUrl
-      fetchedRecords.head.status shouldBe DeliveryStatus.COE
-      fetchedRecords(1).status shouldBe DeliveryStatus.COE
-      fetchedRecords.head.createDateTime shouldBe sentMessage.createDateTime
-      fetchedRecords(1).createDateTime shouldBe secondSentMessage.createDateTime
-      fetchedRecords.head.notificationUrl shouldBe sentMessage.notificationUrl
-      fetchedRecords(1).notificationUrl shouldBe secondSentMessage.notificationUrl
-      fetchedRecords.head.ccnHttpStatus shouldBe sentMessage.ccnHttpStatus
-      fetchedRecords(1).ccnHttpStatus shouldBe secondSentMessage.ccnHttpStatus
-      fetchedRecords.head.coeMessage shouldBe Some(expectedConfirmationMessageBody)
-      fetchedRecords(1).coeMessage shouldBe Some(expectedConfirmationMessageBody)
-      fetchedRecords.head.codMessage shouldBe sentMessage.codMessage
-      fetchedRecords(1).codMessage shouldBe secondSentMessage.codMessage
-    }
-
-    "update all records with the same messageId when a CoD is received" in {
-      val secondSentMessage = sentMessage.copy(globalId = randomUUID())
-      await(serviceRepo.persist(sentMessage))
-      await(serviceRepo.persist(secondSentMessage))
+      await(serviceRepo.persist(sentMessage.copy(globalId = randomUUID())))
 
       await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COD, expectedConfirmationMessageBody))
 
       val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
 
       fetchedRecords.size shouldBe 2
-      fetchedRecords.head.globalId shouldBe sentMessage.globalId
-      fetchedRecords(1).globalId shouldBe secondSentMessage.globalId
-      fetchedRecords.head.messageId shouldBe sentMessage.messageId
-      fetchedRecords(1).messageId shouldBe secondSentMessage.messageId
-      fetchedRecords.head.soapMessage shouldBe sentMessage.soapMessage
-      fetchedRecords(1).soapMessage shouldBe secondSentMessage.soapMessage
-      fetchedRecords.head.destinationUrl shouldBe sentMessage.destinationUrl
-      fetchedRecords(1).destinationUrl shouldBe secondSentMessage.destinationUrl
       fetchedRecords.head.status shouldBe DeliveryStatus.COD
       fetchedRecords(1).status shouldBe DeliveryStatus.COD
-      fetchedRecords.head.createDateTime shouldBe sentMessage.createDateTime
-      fetchedRecords(1).createDateTime shouldBe secondSentMessage.createDateTime
-      fetchedRecords.head.notificationUrl shouldBe sentMessage.notificationUrl
-      fetchedRecords(1).notificationUrl shouldBe secondSentMessage.notificationUrl
-      fetchedRecords.head.ccnHttpStatus shouldBe sentMessage.ccnHttpStatus
-      fetchedRecords(1).ccnHttpStatus shouldBe secondSentMessage.ccnHttpStatus
-      fetchedRecords.head.coeMessage shouldBe sentMessage.coeMessage
-      fetchedRecords(1).coeMessage shouldBe secondSentMessage.coeMessage
-      fetchedRecords.head.codMessage shouldBe Some(expectedConfirmationMessageBody)
-      fetchedRecords(1).codMessage shouldBe Some(expectedConfirmationMessageBody)
-    }
-
-    "ensure that unknown messageId returns empty option" in {
-      val emptyMessage = await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COD, expectedConfirmationMessageBody))
-      emptyMessage shouldBe None
+      fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
+      fetchedRecords(1).asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
     }
   }
 
   "findById" should {
-    "return message when messageId matches" in {
+    "return message when messageID matches" in {
       await(serviceRepo.persist(sentMessage))
       val Some(found): Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
       found shouldBe sentMessage
     }
 
-    "return message when globalId matches" in {
+    "return message when globalID matches" in {
       await(serviceRepo.persist(sentMessage))
       val Some(found): Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.globalId.toString))
       found shouldBe sentMessage
@@ -333,14 +279,6 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
     "return nothing when ID does not exist" in {
       val found: Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
       found shouldBe None
-    }
-
-    "return newest message for a given messageId" in {
-      await(serviceRepo.persist(sentMessage))
-      await(serviceRepo.persist(sentMessage.copy(createDateTime = DateTime.now().minusHours(1), globalId = randomUUID())))
-
-      val Some(found): Option[OutboundSoapMessage] = await(serviceRepo.findById(sentMessage.messageId))
-      found shouldBe sentMessage
     }
   }
 }
