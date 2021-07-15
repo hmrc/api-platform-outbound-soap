@@ -73,9 +73,8 @@ HTTP Status: 200 (OK)
 | operation not found in the WSDL | `404` |
 
 ## `POST /acknowledgement`
-Allows CCN2 system to asynchronously send an acknowledgment in reply to a message sent to them. Upon receipt of such a message, this service will update the message referred to in 
-the RelatesTo field with its new status - either COD or COE - and will append the acknowledgment message, in its entirety, to the 
-original request. 
+Allows CCN2 system to asynchronously send an acknowledgment in reply to a message sent to them. Upon receipt of such a message, this service will update the message referred to in the RelatesTo field with its new status - either COD or COE - and will append the acknowledgment message, in its entirety, to the 
+original request. In the event that multiple messages with the same `messageId` are found then they will all be updated in the same fashion.
 
 ### Request headers
 | Name | Description |
@@ -182,7 +181,7 @@ HTTP Status: 202 (ACCEPTED) with an empty body
 | message ID supplied in `RelatesTo` element in request body does not match that of any message stored in the database | `404` |
 
 ## `GET /retrieve/:id`
-Allows retrieval of the message which has either a `messageId` or a `globalId` matching that in the `id` path parameter
+Allows retrieval of the message which has either a `messageId` or a `globalId` matching that in the `id` path parameter. In the event that more than one message with the same `messageId` exists then the message most recently sent will be returned.
 
 ###Response
 HTTP Status: 200 (OK) with a body similar to the following:

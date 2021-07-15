@@ -1,5 +1,6 @@
 import uk.gov.hmrc.DefaultBuildSettings.integrationTestSettings
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
+import bloop.integrations.sbt.BloopDefaults
 
 val appName = "api-platform-outbound-soap"
 
