@@ -27,10 +27,11 @@ import org.mongodb.scala.ReadPreference.primaryPreferred
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
+import org.mongodb.scala.model.Sorts.descending
 import org.mongodb.scala.model.Updates.{combine, set}
 import org.mongodb.scala.model._
 import org.mongodb.scala.result.InsertOneResult
-import org.mongodb.scala.{BulkWriteResult, MongoClient, MongoCollection}
+import org.mongodb.scala.{MongoClient, MongoCollection}
 import play.api.Logging
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
@@ -42,7 +43,6 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 @Singleton
 class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appConfig: AppConfig)
@@ -122,7 +122,8 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
   }
 
   def findById(searchForId: String): Future[Option[OutboundSoapMessage]] = {
-    collection.find(filter = or(equal("messageId", searchForId), equal("globalId", searchForId))).headOption()
+    val findQuery = or(Document("messageId" -> searchForId), Document("globalId" -> searchForId))
+    collection.find(findQuery).sort(descending("createDateTime")).headOption()
       .recover {
         case e: Exception =>
           logger.warn(s"error finding message - ${e.getMessage}")
