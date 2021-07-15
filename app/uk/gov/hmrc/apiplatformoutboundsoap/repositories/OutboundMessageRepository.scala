@@ -114,7 +114,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
     }
 
     for {
-      bulkUpdateResult <- collection.bulkWrite(
+      _ <- collection.bulkWrite(
         List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.entryName)), set(field, confirmationMsg)))),
         BulkWriteOptions().ordered(false)).toFuture()
       findUpdated <- findById(messageId)
