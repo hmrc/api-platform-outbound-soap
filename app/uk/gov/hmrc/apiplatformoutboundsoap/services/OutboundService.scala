@@ -221,9 +221,9 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
 
   private def log2xxResult(result: Int, globalId: UUID, messageId: String) = {
     if (result != HttpStatus.SC_ACCEPTED) {
-      logger.warn(s"Retried message with global ID $globalId message ID $messageId got status code $result and successfully sent")
+      logger.warn(s"Message with global ID $globalId message ID $messageId got status code $result and successfully sent")
     } else {
-      logger.info(s"Retried message with global ID $globalId message ID $messageId got status code $result and successfully sent")
+      logger.info(s"Message with global ID $globalId message ID $messageId got status code $result and successfully sent")
     }
   }
 }
