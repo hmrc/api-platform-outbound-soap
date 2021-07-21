@@ -48,6 +48,7 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
             NotFound
         }
       } else {
+        logger.warn(s"Unable to find RelatesTo id in [$id]. Request is ${xml}")
         Future.successful(BadRequest)
       }
     }
