@@ -1,8 +1,13 @@
 # api-platform-outbound-soap
 
 This service allows other HMRC services to send messages to external SOAP web services. It has a retry mechanism whereby if the
-CCN2 SOAP service doesn't return a 2xx response, the request will be retried every 60 seconds for 5 minutes by default.
-The total duration and the interval are both configurable.
+CCN2 SOAP service doesn't return a 2xx response, the request will be retried every 60 seconds for 5 minutes by default assuming that the `retry.enabled` property in `application.conf` is set to `true`. The total duration and the interval are both configurable.
+The retry logic works as follows:
+Initial request to CCN2 results in a 2xx response -> message goes into a sent state.
+Initial request to CCN2 results in a non 2xx response -> message goes into a retrying state.
+Subsequent request to CCN2 results in a non 2xx response and inside retry duration -> message retried.
+Subsequent request to CCN2 results in a 2xx response and inside retry duration -> message goes into a sent state.
+Subsequent request to CCN2 results in a non 2xx response and outside retry duration -> message goes into failed state.
 
 ## `POST /message`
 Send a SOAP message for the given operation
@@ -73,7 +78,7 @@ HTTP Status: 200 (OK)
 | operation not found in the WSDL | `404` |
 
 ## `POST /acknowledgement`
-Allows CCN2 system to asynchronously send an acknowledgment in reply to a message sent to them. Upon receipt of such a message, this service will update the message referred to in the RelatesTo field with its new status - either COD or COE - and will append the acknowledgment message, in its entirety, to the 
+Allows CCN2 system to asynchronously send an acknowledgment in reply to a message sent to them. Upon receipt of such a message, this service will update the message referred to in the RelatesTo field with its new status - either COD or COE - and will append the acknowledgment message, in its entirety, to the
 original request. In the event that multiple messages with the same `messageId` are found then they will all be updated in the same fashion.
 
 ### Request headers

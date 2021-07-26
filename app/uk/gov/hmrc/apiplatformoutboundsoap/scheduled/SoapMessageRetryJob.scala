@@ -37,7 +37,7 @@ class SoapMessageRetryJob @Inject()(appConfig: AppConfig, override val lockRepos
 
   override def initialDelay: FiniteDuration = appConfig.retryInitialDelay.asInstanceOf[FiniteDuration]
 
-  override def interval: FiniteDuration = appConfig.retryInterval.asInstanceOf[FiniteDuration] / 10
+  override def interval: FiniteDuration = appConfig.retryInterval.asInstanceOf[FiniteDuration]
 
   override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
     outboundService.retryMessages(HeaderCarrier()).map(done => Result(done.toString))
