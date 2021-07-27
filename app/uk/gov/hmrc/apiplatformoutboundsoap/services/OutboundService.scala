@@ -31,7 +31,7 @@ import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 import play.api.cache.AsyncCacheApi
-import play.api.{Logger, LoggerLike}
+import play.api.Logging
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
@@ -55,8 +55,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
                                 appConfig: AppConfig,
                                 cache: AsyncCacheApi)
                                (implicit val ec: ExecutionContext, mat: Materializer)
-  extends HttpErrorFunctions {
-  val logger: LoggerLike = Logger
+  extends HttpErrorFunctions with Logging {
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
 
   def now: DateTime = DateTime.now(UTC)
@@ -112,7 +111,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     if (is2xx(result)) {
       log2xxResult(result, globalId, messageId)
       SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, result, message.notificationUrl)
-    } else if(is3xx(result)|| is4xx(result)) {
+    } else if (is3xx(result)|| is4xx(result)) {
       logger.error(s"Message with global ID $globalId message ID $messageId got status code $result and failed")
       FailedOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, result, message.notificationUrl)
     } else {
@@ -202,7 +201,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
 
   private def addWithAddressElementChildToSoapHeader(isRequired: String => Boolean, property: String, elementName: String,
                                                      namespace: OMNamespace, envelope: SOAPEnvelope): Unit = {
-    if(isRequired(property)) {
+    if (isRequired(property)) {
       val addressingElement: OMElement = getOMFactory.createOMElement(elementName, namespace)
       val addressingElementInner: OMElement = getOMFactory.createOMElement("Address", namespace)
       getOMFactory.createOMText(addressingElementInner, property)

@@ -17,8 +17,8 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
 import org.apache.http.HttpStatus
+import play.api.Logging
 import play.api.http.HeaderNames.CONTENT_TYPE
-import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -33,11 +33,10 @@ class OutboundConnector @Inject()(
                                    appConfig: AppConfig,
                                    defaultHttpClient: HttpClient,
                                    proxiedHttpClient: ProxiedHttpClient)
-                                 (implicit ec: ExecutionContext) extends HttpErrorFunctions {
+                                 (implicit ec: ExecutionContext) extends HttpErrorFunctions with Logging {
 
-  val logger: LoggerLike = Logger
-  val useProxy: Boolean = useProxyForEnv()
   lazy val httpClient: HttpClient = if (useProxy) proxiedHttpClient else defaultHttpClient
+  val useProxy: Boolean = useProxyForEnv()
 
   def postMessage(messageId: String, soapRequest: SoapRequest): Future[Int] = {
     implicit val hc: HeaderCarrier = HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
@@ -51,11 +50,11 @@ class OutboundConnector @Inject()(
       case Right(response: HttpResponse) =>
         response.status
     }
-    .recoverWith {
-      case NonFatal(e) =>
-        logger.warn(s"NonFatal error ${e.getMessage} while requesting message with message ID $messageId", e)
-        Future.successful(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-    }
+      .recoverWith {
+        case NonFatal(e) =>
+          logger.warn(s"NonFatal error ${e.getMessage} while requesting message with message ID $messageId", e)
+          Future.successful(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+      }
   }
 
   def postHttpRequest(soapRequest: SoapRequest)(implicit hc: HeaderCarrier) = {
