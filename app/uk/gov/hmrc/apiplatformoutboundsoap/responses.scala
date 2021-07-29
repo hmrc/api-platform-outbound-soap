@@ -26,6 +26,14 @@ object ErrorCode extends Enumeration {
   val INTERNAL_SERVER_ERROR = Value("INTERNAL_SERVER_ERROR")
 }
 
+object CcnRequestResult extends Enumeration {
+  type CcnRequestResult = Value
+  val UNEXPECTED_SUCCESS = Value("UNEXPECTED_SUCCESS")
+  val SUCCESS = Value("SUCCESS")
+  val FAIL_ERROR = Value("FAIL_ERROR")
+  val RETRYABLE_ERROR = Value("RETRYABLE_ERROR")
+}
+
 object JsErrorResponse {
   def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
     Json.obj(

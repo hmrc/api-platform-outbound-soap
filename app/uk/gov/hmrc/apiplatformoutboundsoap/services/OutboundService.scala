@@ -32,6 +32,9 @@ import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 import play.api.cache.AsyncCacheApi
 import play.api.Logging
+import play.shaded.ahc.io.netty.handler.codec.http.HttpResponseStatus
+import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult
+import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult._
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
@@ -65,8 +68,8 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   def sendMessage(message: MessageRequest): Future[OutboundSoapMessage] = {
     for {
       soapRequest <- buildSoapRequest(message)
-      result <- outboundConnector.postMessage(message.addressing.messageId, soapRequest)
-      outboundSoapMessage = buildOutboundSoapMessage(message, soapRequest, result)
+      httpStatus <- outboundConnector.postMessage(message.addressing.messageId, soapRequest)
+      outboundSoapMessage = buildOutboundSoapMessage(message, soapRequest, httpStatus)
       _ <- outboundMessageRepository.persist(outboundSoapMessage)
     } yield outboundSoapMessage
   }
@@ -79,45 +82,53 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     val nextRetryDateTime: DateTime = now.plus(appConfig.retryInterval.toMillis)
     val globalId = message.globalId
     val messageId = message.messageId
+    def is3xx(result: Int): Boolean = result >= 300 && result < 400
 
-    outboundConnector.postMessage(messageId, SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { result =>
-      if (is2xx(result)) {
-        log2xxResult(result, globalId, messageId)
+    outboundConnector.postMessage(messageId, SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { httpStatus =>
+      if (is2xx(httpStatus)) {
+        log2xxResult(httpStatus, globalId, messageId)
         outboundMessageRepository.updateSendingStatus(message.globalId, SendingStatus.SENT) map { updatedMessage =>
+          updatedMessage.map(notificationCallbackConnector.sendNotification)
+          ()
+        }
+      } else if (is3xx(httpStatus) || is4xx(httpStatus)) {
+        logger.error(s"Message with global ID $globalId message ID $messageId got status code $httpStatus and failed")
+        outboundMessageRepository.updateSendingStatus(message.globalId, SendingStatus.FAILED) map { updatedMessage =>
           updatedMessage.map(notificationCallbackConnector.sendNotification)
           ()
         }
       } else {
         if (message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)) {
-          logger.error(s"Retried message with global ID ${message.globalId}  message ID ${message.messageId} got status code $result " +
+          logger.error(s"Retried message with global ID ${message.globalId}  message ID ${message.messageId} got status code $httpStatus " +
             s"and failed on last attempt")
           outboundMessageRepository.updateSendingStatus(message.globalId, SendingStatus.FAILED).map { updatedMessage =>
             updatedMessage.map(notificationCallbackConnector.sendNotification)
             ()
           }
         } else {
-          logger.warn(s"Retried message with global ID ${message.globalId} message ID ${message.messageId} got status code $result and will retry")
+          logger.warn(s"Retried message with global ID ${message.globalId} message ID ${message.messageId} got status code $httpStatus and will retry")
           outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryDateTime).map(_ => ())
         }
       }
     }
   }
 
-  private def buildOutboundSoapMessage(message: MessageRequest, soapRequest: SoapRequest, result: Int): OutboundSoapMessage = {
+
+  private def buildOutboundSoapMessage(message: MessageRequest, soapRequest: SoapRequest, httpStatus: Int): OutboundSoapMessage = {
     val globalId: UUID = randomUUID
     val messageId = message.addressing.messageId
     def is3xx(result: Int): Boolean = result >= 300 && result < 400
 
-    if (is2xx(result)) {
-      log2xxResult(result, globalId, messageId)
-      SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, result, message.notificationUrl)
-    } else if (is3xx(result)|| is4xx(result)) {
-      logger.error(s"Message with global ID $globalId message ID $messageId got status code $result and failed")
-      FailedOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, result, message.notificationUrl)
+    if (is2xx(httpStatus)) {
+      log2xxResult(httpStatus, globalId, messageId)
+      SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, httpStatus, message.notificationUrl)
+    } else if (is3xx(httpStatus) || is4xx(httpStatus)) {
+      logger.error(s"Message with global ID $globalId message ID $messageId got status code $httpStatus and failed")
+      FailedOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, httpStatus, message.notificationUrl)
     } else {
-      logger.warn(s"Message with global ID $globalId message ID $messageId got status code $result and will retry")
+      logger.warn(s"Message with global ID $globalId message ID $messageId got status code $httpStatus and will retry")
       RetryingOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
-        now.plus(appConfig.retryInterval.toMillis), result, message.notificationUrl, None, None)
+        now.plus(appConfig.retryInterval.toMillis), httpStatus, message.notificationUrl, None, None)
     }
   }
 
@@ -217,12 +228,24 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     envelope.getBody.addChild(payload)
   }
 
-
-  private def log2xxResult(result: Int, globalId: UUID, messageId: String) = {
-    if (result != HttpStatus.SC_ACCEPTED) {
-      logger.warn(s"Message with global ID $globalId message ID $messageId got status code $result and successfully sent")
+  private def log2xxResult(httpStatus: Int, globalId: UUID, messageId: String) = {
+    val successLogMsg: String = s"Message with global ID $globalId and message ID $messageId got status code $httpStatus and successfully sent"
+    if (httpStatus != HttpStatus.SC_ACCEPTED) {
+      logger.warn(successLogMsg)
     } else {
-      logger.info(s"Message with global ID $globalId message ID $messageId got status code $result and successfully sent")
+      logger.info(successLogMsg)
+    }
+  }
+
+  private def mapHttpStatusCode(httpStatusCode: Int): CcnRequestResult.Value = {
+    if ((List(200, 201) :: List(203 to 299)).contains(httpStatusCode)) {
+      UNEXPECTED_SUCCESS
+    } else if (httpStatusCode == HttpResponseStatus.ACCEPTED) {
+      SUCCESS
+    } else if (List(300 to 499).contains(httpStatusCode)){
+      FAIL_ERROR
+    } else {
+      RETRYABLE_ERROR
     }
   }
 }
