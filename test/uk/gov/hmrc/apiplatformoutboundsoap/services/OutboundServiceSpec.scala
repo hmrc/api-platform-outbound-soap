@@ -492,6 +492,24 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       verify(outboundMessageRepositoryMock).updateNextRetryTime(retryingMessage.globalId, expectedCreateDateTime.plus(appConfigMock.retryInterval.toMillis))
     }
 
+    "retry a message and mark failed when SOAP request received 1xx status" in new Setup {
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
+        "some url", DateTime.now(UTC), DateTime.now(UTC), httpStatus)
+      when(appConfigMock.parallelism).thenReturn(2)
+      when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
+      when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(CONTINUE))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
+        thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
+      when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
+      await(underTest.retryMessages)
+
+      verify(outboundMessageRepositoryMock, never).updateNextRetryTime(*, *)
+      verify(outboundMessageRepositoryMock, never).updateSendingStatus(retryingMessage.globalId, SendingStatus.SENT)
+      verify(outboundMessageRepositoryMock, never).updateSendingStatus(retryingMessage.globalId, SendingStatus.RETRYING)
+      verify(outboundMessageRepositoryMock).updateSendingStatus(retryingMessage.globalId, SendingStatus.FAILED)
+    }
+
     "retry a message and mark failed when SOAP request received 3xx status" in new Setup {
       val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
         "some url", DateTime.now(UTC), DateTime.now(UTC), httpStatus)
