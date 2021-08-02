@@ -3,11 +3,13 @@
 This service allows other HMRC services to send messages to external SOAP web services. It has a retry mechanism whereby if the
 CCN2 SOAP service doesn't return a 2xx response, the request will be retried every 60 seconds for 5 minutes by default assuming that the `retry.enabled` property in `application.conf` is set to `true`. The total duration and the interval are both configurable.
 The retry logic works as follows:
-Initial request to CCN2 results in a 2xx response -> message goes into a sent state.
-Initial request to CCN2 results in a non 2xx response -> message goes into a retrying state.
-Subsequent request to CCN2 results in a non 2xx response and inside retry duration -> message retried.
-Subsequent request to CCN2 results in a 2xx response and inside retry duration -> message goes into a sent state.
-Subsequent request to CCN2 results in a non 2xx response and outside retry duration -> message goes into failed state.
+ * Initial request to CCN2 results in a 2xx response -> message goes into a sent state.
+ * Initial request to CCN2 results in a 5xx response -> message goes into a retrying state.
+ * Initial request to CCN2 results in a 1xx, 3xx or 4xx response -> message goes into failed state.
+ * Subsequent request to CCN2 results in a 1xx, 3xx or 4xx response and inside retry duration -> message goes into failed state.
+ * Subsequent request to CCN2 results in a 5xx response and inside retry duration -> message retried.
+ * Subsequent request to CCN2 results in a 2xx response and inside retry duration -> message goes into a sent state.
+ * Subsequent request to CCN2 results in a non 2xx response and outside retry duration -> message goes into failed state.
 
 ## `POST /message`
 Send a SOAP message for the given operation
