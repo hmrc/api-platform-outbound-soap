@@ -74,18 +74,6 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     } yield outboundSoapMessage
   }
 
-  private def logCcnSendResult(osm: OutboundSoapMessage, httpStatus: Int): Future[Unit] = {
-    val globalId = osm.globalId
-    val messageId = osm.messageId
-    mapHttpStatusCode(httpStatus) match {
-      case SUCCESS => logSuccess(httpStatus, globalId, messageId)
-      case UNEXPECTED_SUCCESS => logSuccess(httpStatus, globalId, messageId)
-      case FAIL_ERROR => logSendingFailure(httpStatus, globalId, messageId)
-      case RETRYABLE_ERROR => logContinuingRetrying(httpStatus, globalId, messageId)
-    }
-    Future.unit
-  }
-
   def retryMessages(implicit hc: HeaderCarrier): Future[Done] = {
     outboundMessageRepository.retrieveMessagesForRetry.runWith(Sink.foreachAsync[RetryingOutboundSoapMessage](appConfig.parallelism)(retryMessage))
   }
@@ -107,11 +95,14 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
 
     outboundConnector.postMessage(messageId, SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { httpStatus =>
       mapHttpStatusCode(httpStatus) match {
-        case SUCCESS => logSuccess(httpStatus, globalId, messageId)
+        case SUCCESS =>
+          logSuccess(httpStatus, globalId, messageId)
           updateStatusAndNotify(SendingStatus.SENT)
-        case UNEXPECTED_SUCCESS => logSuccess(httpStatus, globalId, messageId)
+        case UNEXPECTED_SUCCESS =>
+          logSuccess(httpStatus, globalId, messageId)
           updateStatusAndNotify(SendingStatus.SENT)
-        case FAIL_ERROR => logSendingFailure(httpStatus, message.globalId, message.messageId)
+        case FAIL_ERROR =>
+          logSendingFailure(httpStatus, message.globalId, message.messageId)
           updateStatusAndNotify(SendingStatus.FAILED)
         case RETRYABLE_ERROR =>
           if (retryDurationExpired) {
@@ -280,10 +271,15 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     }
   }
 
-//  private def updateStatusAndNotify(globalId: UUID, newStatus: SendingStatus)(implicit hc: HeaderCarrier) = {
-//    outboundMessageRepository.updateSendingStatus(globalId, newStatus) map { updatedMessage =>
-//      updatedMessage.map(notificationCallbackConnector.sendNotification)
-//      ()
-//    }
-//  }
+  private def logCcnSendResult(osm: OutboundSoapMessage, httpStatus: Int): Future[Unit] = {
+    val globalId = osm.globalId
+    val messageId = osm.messageId
+    mapHttpStatusCode(httpStatus) match {
+      case SUCCESS => logSuccess(httpStatus, globalId, messageId)
+      case UNEXPECTED_SUCCESS => logSuccess(httpStatus, globalId, messageId)
+      case FAIL_ERROR => logSendingFailure(httpStatus, globalId, messageId)
+      case RETRYABLE_ERROR => logContinuingRetrying(httpStatus, globalId, messageId)
+    }
+    Future.unit
+  }
 }
