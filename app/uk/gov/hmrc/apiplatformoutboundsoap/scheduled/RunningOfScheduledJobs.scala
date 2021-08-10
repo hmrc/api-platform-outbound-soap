@@ -34,14 +34,14 @@ trait RunningOfScheduledJobs extends Logging {
   implicit val ec: ExecutionContext
   lazy val scheduler: akka.actor.Scheduler = application.actorSystem.scheduler
   val application: Application
-  val scheduledJobs: Seq[ScheduledJob]
+  val scheduledJobs: Seq[LockedScheduledJob]
 
   val applicationLifecycle: ApplicationLifecycle
 
   private[scheduled] var cancellables: Seq[Cancellable] = Seq.empty
 
   cancellables = scheduledJobs.map { job =>
-    scheduler.schedule(job.initialDelay, job.interval) {
+    scheduler.scheduleWithFixedDelay(job.initialDelay, job.interval)(() => {
       val stopWatch = new StopWatch
       stopWatch.start()
       logger.info(s"Executing job ${job.name}")
@@ -54,7 +54,7 @@ trait RunningOfScheduledJobs extends Logging {
           stopWatch.stop()
           logger.error(s"Exception running job ${job.name} after $stopWatch", throwable)
       }
-    }
+    })
   }
 
   applicationLifecycle.addStopHook { () =>
@@ -68,8 +68,6 @@ trait RunningOfScheduledJobs extends Logging {
       }
       logger.warn(s"Job ${job.configKey} is finished")
     }
-    Future.successful()
-
+    Future.successful(())
   }
-
 }

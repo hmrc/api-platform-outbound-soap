@@ -4,11 +4,11 @@ import sbt._
 
 object AppDependencies {
   val akkaVersion = "2.6.14"
+  val bootstrapPlayVersion = "5.10.0"
 
   val compile = Seq(
-    "uk.gov.hmrc" %% "bootstrap-backend-play-28" % "5.9.0",
+    "uk.gov.hmrc" %% "bootstrap-backend-play-28" % bootstrapPlayVersion,
     "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28" % "0.52.0",
-//    "uk.gov.hmrc" %% "play-scheduling-play-27" % "7.10.0",
     "uk.gov.hmrc" %% "mongo-lock" % "7.0.0-play-28",
     "uk.gov.hmrc" %% "simple-reactivemongo" % "8.0.0-play-28",
     "com.typesafe.play" %% "play-json-joda" % "2.9.2",
@@ -28,7 +28,7 @@ object AppDependencies {
   )
 
   val test = Seq(
-    "uk.gov.hmrc" %% "bootstrap-test-play-28" % "5.9.0" % "test, it",
+    "uk.gov.hmrc" %% "bootstrap-test-play-28" % bootstrapPlayVersion % "test, it",
     "org.scalatest" %% "scalatest" % "3.1.2" % "test, it",
     "org.mockito" %% "mockito-scala-scalatest" % "1.14.4" % "test, it",
     "com.typesafe.play" %% "play-test" % current % "test, it",

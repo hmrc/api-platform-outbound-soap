@@ -19,9 +19,17 @@ package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 import org.joda.time.Duration
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-trait LockedScheduledJob extends ScheduledJob {
+trait LockedScheduledJob {
+  case class Result(message: String)
+  def name: String
+  def configKey: String = name
+
+  def initialDelay: FiniteDuration
+
+  def interval: FiniteDuration
 
   def executeInLock(implicit ec: ExecutionContext): Future[this.Result]
 
@@ -44,5 +52,6 @@ trait LockedScheduledJob extends ScheduledJob {
       case Some(Result(msg)) => Result(s"Job with $name run and completed with result $msg")
       case None              => Result(s"Job with $name cannot aquire mongo lock, not running")
     }
+  override def toString() = s"$name after $initialDelay every $interval"
 
 }

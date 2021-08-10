@@ -38,7 +38,7 @@ class Scheduler @Inject()(override val applicationLifecycle: ApplicationLifecycl
                           soapMessageRetryJob: SoapMessageRetryJob,
                           appConfig: AppConfig)
                          (override implicit val ec: ExecutionContext) extends RunningOfScheduledJobs {
-  override lazy val scheduledJobs: Seq[ScheduledJob] = if (appConfig.retryEnabled) Seq(soapMessageRetryJob) else Seq()
+  override lazy val scheduledJobs: Seq[LockedScheduledJob] = if (appConfig.retryEnabled) Seq(soapMessageRetryJob) else Seq()
 }
 
 class SchedulerPlayModule extends Module {
