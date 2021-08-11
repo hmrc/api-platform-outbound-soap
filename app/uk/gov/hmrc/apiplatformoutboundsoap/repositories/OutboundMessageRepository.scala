@@ -53,6 +53,8 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
     domainFormat = outboundSoapMessageFormatter,
     indexes = Seq(IndexModel(ascending("globalId"),
       IndexOptions().name("globalIdIndex").background(true).unique(true)),
+      IndexModel(ascending("messageId"),
+      IndexOptions().name("messageIdIndex").background(true).unique(false)),
       IndexModel(ascending("createDateTime"),
         IndexOptions().name("ttlIndex").background(true)
           .expireAfter(appConfig.retryMessagesTtl.toSeconds, TimeUnit.SECONDS))))
