@@ -129,6 +129,14 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       globalIdIndex.get("background").get shouldBe BsonBoolean(true)
     }
 
+    "create index on message ID" in {
+      await(serviceRepo.persist(sentMessage))
+
+      val Some(globalIdIndex) = await(serviceRepo.collection.listIndexes().toFuture()).find(i => i.get("name").get.asString().getValue == "messageIdIndex")
+      globalIdIndex.get("unique") shouldBe None
+      globalIdIndex.get("background").get shouldBe BsonBoolean(true)
+    }
+
     "fail when a message with the same ID already exists" in {
       await(serviceRepo.persist(retryingMessage))
 
