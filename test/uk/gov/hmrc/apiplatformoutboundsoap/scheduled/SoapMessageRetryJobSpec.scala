@@ -56,7 +56,17 @@ class SoapMessageRetryJobSpec extends AnyWordSpec with Matchers with MockitoSuga
 
       ex.getMessage shouldBe "Something went wrong"
     }
-
   }
 
+  "execute" should {
+    "return response for success" in new Setup {
+      when(outboundServiceMock.retryMessages(*)).thenReturn(successful(Done))
+      when(repositoryMock.lock(*,*,*)).thenReturn(successful(true))
+      when(repositoryMock.releaseLock(*,*)).thenReturn(successful(()))
+
+      val result: underTest.Result = await(underTest.execute)
+
+      result.message shouldBe "Job with SoapMessageRetryJob run and completed with result Done"
+    }
+  }
 }

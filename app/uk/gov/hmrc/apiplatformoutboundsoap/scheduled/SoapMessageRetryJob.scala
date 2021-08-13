@@ -21,7 +21,6 @@ import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.LockRepository
-import uk.gov.hmrc.play.scheduling.LockedScheduledJob
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration

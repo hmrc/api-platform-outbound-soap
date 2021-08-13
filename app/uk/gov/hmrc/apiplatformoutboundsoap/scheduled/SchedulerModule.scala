@@ -17,14 +17,13 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
 import com.google.inject.AbstractModule
-import play.api.{Application, Configuration, Environment}
+import javax.inject.{Inject, Provider, Singleton}
 import play.api.inject.{ApplicationLifecycle, Binding, Module}
+import play.api.{Application, Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.lock.LockRepository
-import uk.gov.hmrc.play.scheduling.{RunningOfScheduledJobs, ScheduledJob}
 
-import javax.inject.{Inject, Provider, Singleton}
 import scala.concurrent.ExecutionContext
 
 class SchedulerModule extends AbstractModule {
@@ -39,7 +38,7 @@ class Scheduler @Inject()(override val applicationLifecycle: ApplicationLifecycl
                           soapMessageRetryJob: SoapMessageRetryJob,
                           appConfig: AppConfig)
                          (override implicit val ec: ExecutionContext) extends RunningOfScheduledJobs {
-  override lazy val scheduledJobs: Seq[ScheduledJob] = if (appConfig.retryEnabled) Seq(soapMessageRetryJob) else Seq()
+  override lazy val scheduledJobs: Seq[LockedScheduledJob] = if (appConfig.retryEnabled) Seq(soapMessageRetryJob) else Seq()
 }
 
 class SchedulerPlayModule extends Module {
