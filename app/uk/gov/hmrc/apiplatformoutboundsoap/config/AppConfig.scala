@@ -23,7 +23,7 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.Duration
 
 @Singleton
-class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
+class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesConfig) {
 
   val authBaseUrl: String = servicesConfig.baseUrl("auth")
 
@@ -53,5 +53,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val addressingFaultTo: String = config.getOptional[String]("addressing.faultTo").getOrElse("")
   val confirmationOfDelivery: Boolean = config.getOptional[Boolean]("confirmationOfDelivery").getOrElse(false)
   val proxyRequiredForThisEnvironment = config.getOptional[Boolean]("proxy.proxyRequiredForThisEnvironment").getOrElse(false)
+  val twoWaySSLRequiredForThisEnvironment = config.getOptional[Boolean]("proxy.twoWaySSLRequiredForThisEnvironment").getOrElse(false)
 
 }

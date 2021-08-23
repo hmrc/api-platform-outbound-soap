@@ -16,13 +16,17 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
+import akka.actor.ActorSystem
 import org.apache.http.HttpStatus
 import play.api.Logging
 import play.api.http.HeaderNames.CONTENT_TYPE
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
+import uk.gov.hmrc.apiplatformoutboundsoap.http.TwoWaySSLProxyClient
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.play.audit.http.HttpAuditing
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -30,13 +34,29 @@ import scala.util.control.NonFatal
 
 @Singleton
 class OutboundConnector @Inject()(
+                                   httpAuditing: HttpAuditing,
                                    appConfig: AppConfig,
+                                   wsClient: WSClient,
                                    defaultHttpClient: HttpClient,
-                                   proxiedHttpClient: ProxiedHttpClient)
+                                   proxiedHttpClient: ProxiedHttpClient,
+                                   system: ActorSystem
+                                   )
                                  (implicit ec: ExecutionContext) extends HttpErrorFunctions with Logging {
 
-  lazy val httpClient: HttpClient = if (useProxy) proxiedHttpClient else defaultHttpClient
-  val useProxy: Boolean = useProxyForEnv()
+  val proxyClient: HttpClient = new TwoWaySSLProxyClient(
+    httpAuditing,
+    appConfig.config,
+    wsClient,
+    "microservice.services.auth",
+    system)
+  case class UseProxyOrTwoWAYSSL(useProxy: Boolean, useTwoWaySSL: Boolean)
+
+  lazy val httpClient: HttpClient =
+    if (useProxyOrTwoWAYSSL.useProxy) proxiedHttpClient
+    else if(useProxyOrTwoWAYSSL.useTwoWaySSL) proxyClient
+    else defaultHttpClient
+
+  val useProxyOrTwoWAYSSL = useProxyOrTwoWaySSLOrNot()
 
   def postMessage(messageId: String, soapRequest: SoapRequest): Future[Int] = {
     implicit val hc: HeaderCarrier = HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
@@ -61,7 +81,7 @@ class OutboundConnector @Inject()(
     httpClient.POSTString[Either[UpstreamErrorResponse, HttpResponse]](soapRequest.destinationUrl, soapRequest.soapEnvelope)
   }
 
-  def useProxyForEnv(): Boolean = {
-    appConfig.proxyRequiredForThisEnvironment
+  def useProxyOrTwoWaySSLOrNot(): UseProxyOrTwoWAYSSL = {
+    UseProxyOrTwoWAYSSL(appConfig.proxyRequiredForThisEnvironment, appConfig.twoWaySSLRequiredForThisEnvironment)
   }
 }

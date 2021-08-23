@@ -4,3 +4,6 @@ leakDetectionExemptions:
   - ruleId: 'filename_private_key_11'
     filePaths:
       - '/app/resources/KeyStore.jks'
+  - ruleId: 'filename_test_conf'
+    filePaths:
+      - '/test/resources/application.conf'

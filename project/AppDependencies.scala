@@ -24,10 +24,12 @@ object AppDependencies {
     "org.apache.wss4j" % "wss4j-ws-security-dom" % "2.3.0",
     "com.beachape" %% "enumeratum-play-json" % "1.6.0",
     "com.typesafe.play" %% "play-json-joda" % "2.7.1",
+    "org.typelevel"     %% "cats-core"                  % "2.0.0",
     caffeine
   )
 
   val test = Seq(
+    "org.scalamock"        %% "scalamock-scalatest-support" % "3.6.0"             % "test",
     "uk.gov.hmrc" %% "bootstrap-test-play-28" % bootstrapPlayVersion % "test, it",
     "org.scalatest" %% "scalatest" % "3.1.2" % "test, it",
     "org.mockito" %% "mockito-scala-scalatest" % "1.14.4" % "test, it",
