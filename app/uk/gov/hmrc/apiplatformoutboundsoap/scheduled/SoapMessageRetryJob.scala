@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@ import org.joda.time.Duration
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.lock.LockRepository
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SoapMessageRetryJob @Inject()(appConfig: AppConfig, override val lockRepository: LockRepository,
+class SoapMessageRetryJob @Inject()(appConfig: AppConfig, override val lockRepository: MongoLockRepository,
                                     outboundService: OutboundService)
   extends LockedScheduledJob {
   override val releaseLockAfter: Duration = Duration.standardSeconds(appConfig.retryJobLockDuration.toSeconds)

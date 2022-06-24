@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.test.Helpers._
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
-import uk.gov.hmrc.lock.LockRepository
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.{failed, successful}
@@ -36,7 +36,7 @@ class SoapMessageRetryJobSpec extends AnyWordSpec with Matchers with MockitoSuga
     val appConfigMock: AppConfig = mock[AppConfig]
     when(appConfigMock.retryJobLockDuration).thenReturn(Duration("1 hour"))
     val outboundServiceMock: OutboundService = mock[OutboundService]
-    val repositoryMock: LockRepository = mock[LockRepository]
+    val repositoryMock: MongoLockRepository = mock[MongoLockRepository]
     val underTest: SoapMessageRetryJob = new SoapMessageRetryJob(appConfigMock, repositoryMock, outboundServiceMock)
   }
 
@@ -61,7 +61,7 @@ class SoapMessageRetryJobSpec extends AnyWordSpec with Matchers with MockitoSuga
   "execute" should {
     "return response for success" in new Setup {
       when(outboundServiceMock.retryMessages(*)).thenReturn(successful(Done))
-      when(repositoryMock.lock(*,*,*)).thenReturn(successful(true))
+      when(repositoryMock.takeLock(*,*,*)).thenReturn(successful(true))
       when(repositoryMock.releaseLock(*,*)).thenReturn(successful(()))
 
       val result: underTest.Result = await(underTest.execute)

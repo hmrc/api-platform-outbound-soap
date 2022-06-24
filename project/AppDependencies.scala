@@ -8,9 +8,7 @@ object AppDependencies {
 
   val compile = Seq(
     "uk.gov.hmrc" %% "bootstrap-backend-play-28" % bootstrapPlayVersion,
-    "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28" % "0.52.0",
-    "uk.gov.hmrc" %% "mongo-lock" % "7.0.0-play-28",
-    "uk.gov.hmrc" %% "simple-reactivemongo" % "8.0.0-play-28",
+    "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28" % "0.65.0",
     "com.typesafe.play" %% "play-json-joda" % "2.9.2",
     "com.lightbend.akka" %% "akka-stream-alpakka-mongodb" % "3.0.1",
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
@@ -19,7 +17,6 @@ object AppDependencies {
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.typesafe.akka" %% "akka-protobuf-v3" % akkaVersion,
     "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
-    "org.reactivemongo" %% "reactivemongo-akkastream" % "0.20.13",
     "org.apache.axis2" % "axis2-kernel" % "1.7.9",
     "org.apache.wss4j" % "wss4j-ws-security-dom" % "2.3.0",
     "com.beachape" %% "enumeratum-play-json" % "1.6.0",
