@@ -1,4 +1,4 @@
-# api-platform-outbound-soap
+# API Platform Outbound Soap service
 
 This service allows other HMRC services to send messages to external SOAP web services. It has a retry mechanism whereby if the
 CCN2 SOAP service doesn't return a 2xx response, the request will be retried every 60 seconds for 5 minutes by default assuming that the `retry.enabled` property in `application.conf` is set to `true`. The total duration and the interval are both configurable.
@@ -211,5 +211,25 @@ HTTP Status: 200 (OK) with a body similar to the following:
 | `id` path parameter is empty or whitespace | `400` |
 | `id` path parameter refers to an ID that cannot be found | `404` |
 
+### Running locally
+The service can be tested locally as follows:
+ - run the service using its `run_local_with_dependencies.sh` script. This starts it on port 6703
+ - start the `api-platform-test` service using its `run_local.sh` script or using Service Manager. This service acts to host the WSDL
+ referred to in the `wsdlUrl` parameter in the following curl command.
+ - choose one of the WSDLs published by `api-platform-test` (these are found in its `public` directory) and one of the WSDL operations therein
+ - use these to build a curl request using the following as a template:
+ ```
+curl -k 'http://localhost:6703/message' -H 'Content-Type: application/json' 
+-d '{ "wsdlUrl":"http://localhost:9604/assets/wsdl/<wsdl path>",
+ "wsdlOperation":"<preferred WSDL operation>", "messageBody":"", "confirmationOfDelivery": true,
+ "addressing":{"to":"partner:CCN2.Partner.EU.Customs.TAXUD/ICS_CR.PROD","messageId":"some_id","from":"caller"}}'
+```  
+
+An example using real values is:
+```
+curl -k 'http://localhost:6703/message' -H 'Content-Type: application/json' -d 
+'{ "wsdlUrl":"http://localhost:9604/assets/wsdl//V2/ICS2-MS-TSCs_Sep2021/./MS/2.CR-for-NES-Services/2.CR-for-NES-Services/BusinessActivityService/ICS/ReferralManagementBAS/V2/CCN2.Service.Customs.EU.ICS.ReferralManagementBAS_2.0.0_CCN2_2.0.0.wsdl",
+ "wsdlOperation":"IE4R02provideAdditionalInformation", "messageBody":"", "confirmationOfDelivery": true, "addressing":{"to":"partner:CCN2.Partner.EU.Customs.TAXUD/ICS_CR.PROD","messageId":"some_id","from":"caller"}}'
+```
 ### License
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
