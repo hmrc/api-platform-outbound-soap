@@ -40,8 +40,6 @@ trait LockedScheduledJob {
 
   lazy val lockKeeper: LockService = LockService(lockRepository, lockId = s"$name-scheduled-job-lock", ttl = 1.hour)
 
-  def isRunning: Future[Boolean] = lockRepository.isLocked(lockKeeper.lockId, "owner")
-
   final def execute(implicit ec: ExecutionContext): Future[Result] =
     lockKeeper.withLock {
       executeInLock

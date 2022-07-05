@@ -60,14 +60,6 @@ trait RunningOfScheduledJobs extends Logging {
   applicationLifecycle.addStopHook { () =>
     logger.info(s"Cancelling all scheduled jobs.")
     cancellables.foreach(_.cancel())
-    scheduledJobs.foreach { job =>
-      logger.info(s"Checking if job ${job.configKey} is running")
-      while (Await.result(job.isRunning, 5.seconds)) {
-        logger.warn(s"Waiting for job ${job.configKey} to finish")
-        Thread.sleep(1000)
-      }
-      logger.warn(s"Job ${job.configKey} is finished")
-    }
     Future.successful(())
   }
 }
