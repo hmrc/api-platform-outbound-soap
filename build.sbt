@@ -3,7 +3,7 @@ import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
 
 val appName = "api-platform-outbound-soap"
 
-val silencerVersion = "1.7.0"
+val silencerVersion = "1.7.9"
 
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
@@ -22,10 +22,10 @@ lazy val microservice = Project(appName, file("."))
   .disablePlugins(JUnitXmlReportPlugin)
   .settings(
     majorVersion                     := 0,
-    scalaVersion                     := "2.12.11",
+    scalaVersion                     := "2.12.13",
     PlayKeys.playDefaultPort         := 6703,
     libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test,
-    dependencyOverrides              ++= AppDependencies.jettyOverrides,
+    dependencyOverrides              ++= AppDependencies.axiomOverrides,
     scoverageSettings,
     // ***************
     // Use the silencer plugin to suppress warnings

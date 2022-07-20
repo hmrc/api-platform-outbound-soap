@@ -75,11 +75,11 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
 
     "send the message request to the outbound service" in new Setup {
       val messageCaptor: Captor[MessageRequest] = ArgCaptor[MessageRequest]
-      when(outboundServiceMock.sendMessage(messageCaptor.capture)).thenReturn(successful(outboundSoapMessage))
+      when(outboundServiceMock.sendMessage(messageCaptor)).thenReturn(successful(outboundSoapMessage))
 
       underTest.message()(fakeRequest.withBody(message))
 
-      verify(outboundServiceMock).sendMessage(messageCaptor)
+      verify(outboundServiceMock).sendMessage(any)
       messageCaptor hasCaptured MessageRequest("http://example.com/wsdl", "theOp", "<IE4N03>example</IE4N03>", addressing, Some(true))
     }
 
