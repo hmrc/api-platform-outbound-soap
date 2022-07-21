@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
 import org.joda.time.Duration
-import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,22 +36,16 @@ trait LockedScheduledJob {
 
   val releaseLockAfter: Duration
 
-  val lockRepository: LockRepository
+  val lockRepository: MongoLockRepository
 
-  lazy val lockKeeper = new LockKeeper {
-    override def repo: LockRepository = lockRepository
-    override def lockId: String  = s"$name-scheduled-job-lock"
-    override val forceLockReleaseAfter: Duration = releaseLockAfter
-  }
-
-  def isRunning: Future[Boolean] = lockKeeper.isLocked
+  lazy val lockKeeper: LockService = LockService(lockRepository, lockId = s"$name-scheduled-job-lock", ttl = 1.hour)
 
   final def execute(implicit ec: ExecutionContext): Future[Result] =
-    lockKeeper.tryLock {
+    lockKeeper.withLock {
       executeInLock
     } map {
       case Some(Result(msg)) => Result(s"Job with $name run and completed with result $msg")
-      case None              => Result(s"Job with $name cannot aquire mongo lock, not running")
+      case None              => Result(s"Job with $name cannot acquire mongo lock, not running")
     }
   override def toString() = s"$name after $initialDelay every $interval"
 

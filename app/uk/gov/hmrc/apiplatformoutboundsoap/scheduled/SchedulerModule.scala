@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,11 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
 import com.google.inject.AbstractModule
-import javax.inject.{Inject, Provider, Singleton}
-import play.api.inject.{ApplicationLifecycle, Binding, Module}
-import play.api.{Application, Configuration, Environment}
-import play.modules.reactivemongo.ReactiveMongoComponent
+import play.api.Application
+import play.api.inject.ApplicationLifecycle
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.lock.LockRepository
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 class SchedulerModule extends AbstractModule {
@@ -39,17 +37,4 @@ class Scheduler @Inject()(override val applicationLifecycle: ApplicationLifecycl
                           appConfig: AppConfig)
                          (override implicit val ec: ExecutionContext) extends RunningOfScheduledJobs {
   override lazy val scheduledJobs: Seq[LockedScheduledJob] = if (appConfig.retryEnabled) Seq(soapMessageRetryJob) else Seq()
-}
-
-class SchedulerPlayModule extends Module {
-  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = {
-    Seq(
-      bind[LockRepository].toProvider[LockRepositoryProvider]
-    )
-  }
-}
-
-@Singleton
-class LockRepositoryProvider @Inject()(mongoComponent: ReactiveMongoComponent) extends Provider[LockRepository] {
-  override def get(): LockRepository = new LockRepository()(mongoComponent.mongoConnector.db)
 }
