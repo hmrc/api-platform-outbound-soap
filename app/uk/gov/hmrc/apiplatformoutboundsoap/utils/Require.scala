@@ -18,7 +18,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.utils
 
 object Require {
 
-   final def validate(requirement: Boolean, message: => String) {
+   final def validate(requirement: Boolean, message: => String): Unit = {
     if (!requirement) {
       throw new IllegalArgumentException(message)
     }

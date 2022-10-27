@@ -46,7 +46,7 @@ import javax.wsdl.extensions.soap12.SOAP12Address
 import javax.wsdl.xml.WSDLReader
 import javax.wsdl.{Definition, Operation, Part, Port, PortType, Service}
 import javax.xml.namespace.QName
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
