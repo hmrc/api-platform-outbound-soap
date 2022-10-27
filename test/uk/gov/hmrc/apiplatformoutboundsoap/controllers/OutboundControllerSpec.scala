@@ -116,7 +116,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
         Json.obj("wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> Json.toJson(addressing))))
 
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/wsdlUrl,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
+      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/wsdlUrl,List(JsonValidationError(List(error.path.missing),List()))))"
     }
 
     "return bad request when the request json body is missing messageBody field" in new Setup {
@@ -126,7 +126,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
         Json.obj("wsdlUrl" -> "http://example.com/wsdl", "wsdlOperation" -> "theOp", "addressing" -> Json.toJson(addressing))))
 
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/messageBody,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
+      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/messageBody,List(JsonValidationError(List(error.path.missing),List()))))"
     }
 
     "return bad request when the request json body addressing section is missing to field" in new Setup {
@@ -138,7 +138,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe
-        "Invalid MessageRequest payload: List((/addressing/to,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
+        "Invalid MessageRequest payload: List((/addressing/to,List(JsonValidationError(List(error.path.missing),List()))))"
     }
 
     "return bad request when the request json body addressing section is missing message ID field" in new Setup {
@@ -150,7 +150,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe
-        "Invalid MessageRequest payload: List((/addressing/messageId,List(JsonValidationError(List(error.path.missing),WrappedArray()))))"
+        "Invalid MessageRequest payload: List((/addressing/messageId,List(JsonValidationError(List(error.path.missing),List()))))"
     }
 
     "default confirmation of delivery to true if not present in request but its overridden in config" in new Setup {

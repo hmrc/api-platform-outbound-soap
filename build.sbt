@@ -23,7 +23,7 @@ lazy val microservice = Project(appName, file("."))
   .disablePlugins(JUnitXmlReportPlugin)
   .settings(
     majorVersion                     := 0,
-    scalaVersion                     := "2.12.15",
+    scalaVersion                     := "2.13.8",
     PlayKeys.playDefaultPort         := 6703,
     libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test,
     dependencyOverrides              ++= AppDependencies.axiomOverrides,
@@ -41,9 +41,8 @@ lazy val microservice = Project(appName, file("."))
   .configs(IntegrationTest)
   .settings(integrationTestSettings(): _*)
   .settings(
-    unmanagedResourceDirectories in IntegrationTest += baseDirectory.value / "test" / "resources"
+    IntegrationTest / unmanagedResourceDirectories += baseDirectory.value / "test" / "resources"
   )
   .settings(
-    unmanagedResourceDirectories in Compile += baseDirectory.value / "app" / "resources"
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "app" / "resources"
   )
-  .settings(scalacOptions ++= Seq("-Ypartial-unification"))

@@ -3,8 +3,8 @@ import play.sbt.PlayImport.caffeine
 import sbt._
 
 object AppDependencies {
-  val bootstrapPlayVersion = "6.3.0"
-  val mongoVersion = "0.67.0"
+  val bootstrapPlayVersion = "7.8.0"
+  val mongoVersion = "0.73.0"
 
   val compile = Seq(
     "uk.gov.hmrc" %% "bootstrap-backend-play-28" % bootstrapPlayVersion,
@@ -25,7 +25,7 @@ object AppDependencies {
     "com.vladsch.flexmark" %  "flexmark-all" % "0.64.0" % "test, it",
     "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0" % "test, it",
     "org.xmlunit" % "xmlunit-core" % "2.9.0" % "test, it",
-    "uk.gov.hmrc.mongo" %% "hmrc-mongo-test-play-28" % mongoVersion % "it",
+    "uk.gov.hmrc.mongo" %% "hmrc-mongo-test-play-28" % mongoVersion % "it"
   )
 
   val axiomVersion = "1.4.0"
