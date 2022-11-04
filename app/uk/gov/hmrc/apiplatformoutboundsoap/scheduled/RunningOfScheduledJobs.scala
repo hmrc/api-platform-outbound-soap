@@ -21,8 +21,7 @@ import org.apache.commons.lang3.time.StopWatch
 import play.api.inject.ApplicationLifecycle
 import play.api.{Application, Logging}
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 

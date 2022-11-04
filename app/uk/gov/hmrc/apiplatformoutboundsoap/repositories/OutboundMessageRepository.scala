@@ -86,7 +86,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
   }
 
   def retrieveMessagesForRetry: Source[RetryingOutboundSoapMessage, NotUsed] = {
-    MongoSource(collection.withReadPreference(primaryPreferred)
+    MongoSource(collection.withReadPreference(primaryPreferred())
       .find(filter = and(equal("status", SendingStatus.RETRYING.entryName),
         and(lte("retryDateTime", now(UTC)))))
       .sort(ascending("retryDateTime"))
@@ -94,7 +94,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
   }
 
   def updateNextRetryTime(globalId: UUID, newRetryDateTime: DateTime): Future[Option[RetryingOutboundSoapMessage]] = {
-    collection.withReadPreference(primaryPreferred)
+    collection.withReadPreference(primaryPreferred())
       .findOneAndUpdate(filter = equal("globalId", Codecs.toBson(globalId)),
         update = set("retryDateTime", newRetryDateTime),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
@@ -102,7 +102,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
   }
 
   def updateSendingStatus(globalId: UUID, newStatus: SendingStatus): Future[Option[OutboundSoapMessage]] = {
-    collection.withReadPreference(primaryPreferred)
+    collection.withReadPreference(primaryPreferred())
       .findOneAndUpdate(filter = equal("globalId", Codecs.toBson(globalId)),
         update = set("status", Codecs.toBson(newStatus.entryName)),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)

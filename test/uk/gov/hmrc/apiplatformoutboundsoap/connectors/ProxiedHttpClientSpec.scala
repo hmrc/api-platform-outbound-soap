@@ -21,9 +21,9 @@ import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.{WSClient, WSProxyServer, WSRequest}
+import play.api.{Application, Configuration}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 
@@ -35,6 +35,7 @@ class ProxiedHttpClientSpec extends AnyWordSpec with Matchers with GuiceOneAppPe
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .configure(
+      "http-verbs.proxy.enabled" -> true,
       "proxy.protocol" -> "http",
       "proxy.host" -> proxyHost,
       "proxy.port" -> proxyPort

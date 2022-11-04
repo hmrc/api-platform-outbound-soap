@@ -485,7 +485,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.updateNextRetryTime(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
+        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
 
       await(underTest.retryMessages)
 
@@ -500,7 +500,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(CONTINUE))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
+        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       await(underTest.retryMessages)
 
@@ -518,7 +518,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(TEMPORARY_REDIRECT))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
+        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       await(underTest.retryMessages)
 
@@ -536,7 +536,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(NOT_FOUND))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
+        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       await(underTest.retryMessages)
 
@@ -556,7 +556,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
+        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
 
       await(underTest.retryMessages)
 
@@ -574,7 +574,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(sentMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
+        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
 
       await(underTest.retryMessages)
 
@@ -592,7 +592,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
+        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
 
       await(underTest.retryMessages)
 
@@ -610,7 +610,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).toIterator))
+        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
       when(notificationCallbackConnectorMock.sendNotification(*)(*)).thenReturn(successful(Some(INTERNAL_SERVER_ERROR)))
 
       await(underTest.retryMessages)
