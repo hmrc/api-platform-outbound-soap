@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
-import org.joda.time.DateTime
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -28,6 +27,8 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 
 import java.io.IOException
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -41,19 +42,19 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
   }
 
   "message" should {
-    import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.DateTimeFormatter
+    import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.instantFormat
     val fakeRequest = FakeRequest("GET", "/retrieve")
     val ccn2HttpStatus = 200
     val failedOutboundSoapMessage = FailedOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>",
-      "http://destinat.ion", DateTime.now, ccn2HttpStatus)
+      "http://destinat.ion", Instant.now, ccn2HttpStatus)
     val sentOutboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>",
-      "http://destinat.ion", DateTime.now, ccn2HttpStatus)
+      "http://destinat.ion", Instant.now, ccn2HttpStatus)
     val retryingOutboundSoapMessage = RetryingOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>",
-      "http://destinat.ion", DateTime.now, DateTime.now, ccn2HttpStatus)
+      "http://destinat.ion", Instant.now, Instant.now, ccn2HttpStatus)
     val codSoapMessage = CodSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion",
-      DateTime.now, ccn2HttpStatus, codMessage = Some("<soap:Body><ccn2:CoD><ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp></ccn2:CoD></soap:Body>"))
+      Instant.now, ccn2HttpStatus, codMessage = Some("<soap:Body><ccn2:CoD><ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp></ccn2:CoD></soap:Body>"))
     val coeSoapMessage = CoeSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion",
-      DateTime.now, ccn2HttpStatus, coeMessage = Some("<coe><error>failed</error></coe>"))
+      Instant.now, ccn2HttpStatus, coeMessage = Some("<coe><error>failed</error></coe>"))
 
     "return a failed message when supplied with an ID that exists" in new Setup {
       when(repositoryMock.findById(*)).thenReturn(Future.successful(Some(failedOutboundSoapMessage)))
@@ -65,7 +66,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "messageId").as[String] shouldBe failedOutboundSoapMessage.messageId
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe failedOutboundSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe failedOutboundSoapMessage.destinationUrl
-      (contentAsJson(result) \ "createDateTime").as[DateTime] shouldBe failedOutboundSoapMessage.createDateTime
+      (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe failedOutboundSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
       (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe failedOutboundSoapMessage.ccnHttpStatus
       (contentAsJson(result) \ "status").as[SendingStatus] shouldBe SendingStatus.FAILED
     }
@@ -80,7 +81,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "messageId").as[String] shouldBe retryingOutboundSoapMessage.messageId
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe retryingOutboundSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe retryingOutboundSoapMessage.destinationUrl
-      (contentAsJson(result) \ "createDateTime").as[DateTime] shouldBe retryingOutboundSoapMessage.createDateTime
+      (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe retryingOutboundSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
       (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe retryingOutboundSoapMessage.ccnHttpStatus
       (contentAsJson(result) \ "status").as[SendingStatus] shouldBe SendingStatus.RETRYING
     }
@@ -95,7 +96,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "messageId").as[String] shouldBe sentOutboundSoapMessage.messageId
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe sentOutboundSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe sentOutboundSoapMessage.destinationUrl
-      (contentAsJson(result) \ "createDateTime").as[DateTime] shouldBe sentOutboundSoapMessage.createDateTime
+      (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe sentOutboundSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
       (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe sentOutboundSoapMessage.ccnHttpStatus
       (contentAsJson(result) \ "status").as[SendingStatus] shouldBe SendingStatus.SENT
     }
@@ -110,7 +111,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "messageId").as[String] shouldBe coeSoapMessage.messageId
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe coeSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe coeSoapMessage.destinationUrl
-      (contentAsJson(result) \ "createDateTime").as[DateTime] shouldBe coeSoapMessage.createDateTime
+      (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe coeSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
       (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe coeSoapMessage.ccnHttpStatus
       Some((contentAsJson(result) \ "coeMessage").as[String]) shouldBe coeSoapMessage.coeMessage
       (contentAsJson(result) \ "status").as[DeliveryStatus] shouldBe DeliveryStatus.COE
@@ -125,7 +126,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "messageId").as[String] shouldBe codSoapMessage.messageId
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe codSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe codSoapMessage.destinationUrl
-      (contentAsJson(result) \ "createDateTime").as[DateTime] shouldBe codSoapMessage.createDateTime
+      (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe codSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
       (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe codSoapMessage.ccnHttpStatus
       Some((contentAsJson(result) \ "codMessage").as[String]) shouldBe codSoapMessage.codMessage
       (contentAsJson(result) \ "status").as[DeliveryStatus] shouldBe DeliveryStatus.COD

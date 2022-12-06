@@ -16,17 +16,17 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-import org.joda.time.DateTime
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.time.Instant
 import java.util.UUID
 
 class OutboundSoapMessageSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
   private val ccnHttpStatus: Int = 200
-  private val now = DateTime.now
+  private val now = Instant.now
   val retryingMessage = RetryingOutboundSoapMessage(UUID.randomUUID(), "11111", "some retrying message", "some destination url", now, now, ccnHttpStatus)
   val failedMessage = FailedOutboundSoapMessage(UUID.randomUUID(), "22222", "failed message", "some destination url", now, ccnHttpStatus)
   val sentMessage = SentOutboundSoapMessage(UUID.randomUUID(), "33333", "sent message", "some destination url", now, ccnHttpStatus)

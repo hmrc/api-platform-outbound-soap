@@ -17,8 +17,8 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
-import org.joda.time.DateTime
 
+import java.time.Instant
 import java.util.UUID
 import scala.collection.immutable
 import scala.reflect.classTag
@@ -29,11 +29,12 @@ sealed trait OutboundSoapMessage {
   val soapMessage: String
   val destinationUrl: String
   val status: StatusType
-  val createDateTime: DateTime
+  val createDateTime: Instant
   val notificationUrl: Option[String]
   val ccnHttpStatus: Int
   val coeMessage: Option[String]
   val codMessage: Option[String]
+  val sentDateTime: Option[Instant]
 }
 
 object OutboundSoapMessage {
@@ -61,11 +62,13 @@ case class SentOutboundSoapMessage(globalId: UUID,
                                    messageId: String,
                                    soapMessage: String,
                                    destinationUrl: String,
-                                   createDateTime: DateTime,
+                                   createDateTime: Instant,
                                    ccnHttpStatus: Int,
                                    notificationUrl: Option[String] = None,
-                                    codMessage: Option[String] = None,
-                                    coeMessage: Option[String] = None) extends OutboundSoapMessage {
+                                   codMessage: Option[String] = None,
+                                   coeMessage: Option[String] = None,
+                                   sentDateTime: Option[Instant] = None
+                                  ) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.SENT
 }
 
@@ -73,11 +76,12 @@ case class FailedOutboundSoapMessage(globalId: UUID,
                                      messageId: String,
                                      soapMessage: String,
                                      destinationUrl: String,
-                                     createDateTime: DateTime,
+                                     createDateTime: Instant,
                                      ccnHttpStatus: Int,
                                      notificationUrl: Option[String] = None,
                                      codMessage: Option[String] = None,
-                                     coeMessage: Option[String] = None) extends OutboundSoapMessage {
+                                     coeMessage: Option[String] = None,
+                                     sentDateTime: Option[Instant] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.FAILED
 }
 
@@ -85,11 +89,12 @@ case class CoeSoapMessage(globalId: UUID,
                           messageId: String,
                           soapMessage: String,
                           destinationUrl: String,
-                          createDateTime: DateTime,
+                          createDateTime: Instant,
                           ccnHttpStatus: Int,
                           notificationUrl: Option[String] = None,
                           codMessage: Option[String] = None,
-                          coeMessage: Option[String] = None) extends OutboundSoapMessage {
+                          coeMessage: Option[String] = None,
+                          sentDateTime: Option[Instant] = None) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COE
 }
 
@@ -97,11 +102,12 @@ case class CodSoapMessage(globalId: UUID,
                           messageId: String,
                           soapMessage: String,
                           destinationUrl: String,
-                          createDateTime: DateTime,
+                          createDateTime: Instant,
                           ccnHttpStatus: Int,
                           notificationUrl: Option[String] = None,
                           codMessage: Option[String] = None,
-                          coeMessage: Option[String] = None) extends OutboundSoapMessage {
+                          coeMessage: Option[String] = None,
+                          sentDateTime: Option[Instant] = None) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COD
 }
 
@@ -109,19 +115,20 @@ case class RetryingOutboundSoapMessage(globalId: UUID,
                                        messageId: String,
                                        soapMessage: String,
                                        destinationUrl: String,
-                                       createDateTime: DateTime,
-                                       retryDateTime: DateTime,
+                                       createDateTime: Instant,
+                                       retryDateTime: Instant,
                                        ccnHttpStatus: Int,
                                        notificationUrl: Option[String] = None,
                                        codMessage: Option[String] = None,
-                                       coeMessage: Option[String] = None) extends OutboundSoapMessage {
+                                       coeMessage: Option[String] = None,
+                                       sentDateTime: Option[Instant] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.RETRYING
 
   def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus,
     notificationUrl, codMessage, coeMessage)
 
   def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus,
-    notificationUrl, codMessage, coeMessage)
+    notificationUrl, codMessage, coeMessage, Some(Instant.now))
 }
 
 sealed abstract class StatusType extends EnumEntry

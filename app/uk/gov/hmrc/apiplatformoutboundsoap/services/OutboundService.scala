@@ -23,12 +23,9 @@ import org.apache.axiom.om.OMAbstractFactory.{getOMFactory, getSOAP12Factory}
 import org.apache.axiom.om._
 import org.apache.axiom.om.util.AXIOMUtil.stringToOM
 import org.apache.axiom.soap.SOAPEnvelope
-import org.apache.axis2.addressing.AddressingConstants.Final.{WSAW_NAMESPACE, WSA_NAMESPACE}
+import org.apache.axis2.addressing.AddressingConstants.Final.{WSA_NAMESPACE, WSAW_NAMESPACE}
 import org.apache.axis2.addressing.AddressingConstants._
 import org.apache.axis2.wsdl.WSDLUtil
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone.UTC
-import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 import play.api.cache.AsyncCacheApi
 import play.api.Logging
 import play.api.http.Status._
@@ -40,6 +37,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, NotFoundException}
 
+import java.time.{Duration, Instant}
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import javax.wsdl.extensions.soap12.SOAP12Address
@@ -58,9 +56,8 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
                                 cache: AsyncCacheApi)
                                (implicit val ec: ExecutionContext, mat: Materializer)
   extends HttpErrorFunctions with Logging {
-  val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
 
-  def now: DateTime = DateTime.now(UTC)
+  def now: Instant = Instant.now
 
   def randomUUID: UUID = UUID.randomUUID
 
@@ -79,7 +76,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
   }
 
   private def retryMessage(message: RetryingOutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Unit] = {
-    val nextRetryDateTime: DateTime = now.plus(appConfig.retryInterval.toMillis)
+    val nextRetryInstant: Instant = now.plus(Duration.ofMillis(appConfig.retryInterval.toMillis))
     val globalId = message.globalId
     val messageId = message.messageId
     def updateStatusAndNotify(newStatus: SendingStatus)(implicit hc: HeaderCarrier) = {
@@ -89,18 +86,25 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
       }
     }
 
+    def updateToSentAndNotify(sentInstant: Instant)(implicit hc: HeaderCarrier) = {
+      outboundMessageRepository.updateToSent(globalId, sentInstant) map { updatedMessage =>
+        updatedMessage.map(notificationCallbackConnector.sendNotification)
+        ()
+      }
+    }
+
     def retryDurationExpired = {
-      message.createDateTime.plus(appConfig.retryDuration.toMillis).isBefore(now.getMillis)
+      message.createDateTime.plus(Duration.ofMillis(appConfig.retryDuration.toMillis)).isBefore(now)
     }
 
     outboundConnector.postMessage(messageId, SoapRequest(message.soapMessage, message.destinationUrl)) flatMap { httpStatus =>
       mapHttpStatusCode(httpStatus) match {
         case SUCCESS =>
           logSuccess(httpStatus, globalId, messageId)
-          updateStatusAndNotify(SendingStatus.SENT)
+          updateToSentAndNotify(now)
         case UNEXPECTED_SUCCESS =>
           logSuccess(httpStatus, globalId, messageId)
-          updateStatusAndNotify(SendingStatus.SENT)
+          updateToSentAndNotify(now)
         case FAIL_ERROR =>
           logSendingFailure(httpStatus, message.globalId, message.messageId)
           updateStatusAndNotify(SendingStatus.FAILED)
@@ -110,7 +114,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
             updateStatusAndNotify(SendingStatus.FAILED)
           } else {
             logContinuingRetrying(httpStatus, globalId, messageId)
-            outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryDateTime).map(_ => ())
+            outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryInstant).map(_ => ())
           }
         case _ => Future.unit
       }
@@ -122,7 +126,8 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     val messageId = message.addressing.messageId
 
     def succeededMessage = {
-      SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, httpStatus, message.notificationUrl)
+      SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
+        httpStatus, message.notificationUrl, None, None, Some(now))
     }
 
     def failedMessage = {
@@ -131,7 +136,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
 
     def retryingMessage = {
       RetryingOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
-        now.plus(appConfig.retryInterval.toMillis), httpStatus, message.notificationUrl, None, None)
+        now.plus(Duration.ofMillis(appConfig.retryInterval.toMillis)), httpStatus, message.notificationUrl, None, None)
     }
 
     mapHttpStatusCode(httpStatus) match {
@@ -189,7 +194,7 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
     }
 
     addToMessageHeader("Version", "1.0")
-    addToMessageHeader("SendingDateAndTime", DateTime.now().toString(dateTimeFormatter))
+    addToMessageHeader("SendingDateAndTime", Instant.now.toString)
     findSoapAction(operation).foreach(addToMessageHeader("MessageType", _))
     addToMessageHeader("RequestCoD", message.confirmationOfDelivery.getOrElse(false).toString)
   }

@@ -28,10 +28,11 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
-import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, UpdateSuccessResult, UpdateResult}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, UpdateResult, UpdateSuccessResult}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
@@ -77,7 +78,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
         |    </soap:Body>
         |</soap:Envelope>""".stripMargin.replaceAll("\n", ""))
 
-    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", DateTime.now(UTC), OK)
+    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK)
     val msgId: String = "abcd1234"
 
     "update a sent message with a CoD" in new Setup {
