@@ -17,15 +17,12 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
 import akka.stream.Materializer
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone.UTC
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.mockito.scalatest.ResetMocksAfterEachTest
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-
 import play.api.http.Status.{BAD_REQUEST, OK}
 import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.Result
@@ -37,6 +34,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest, S
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.http.NotFoundException
 
+import java.time.Instant
 import java.util.UUID
 import javax.wsdl.WSDLException
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -60,7 +58,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     val addressingJson = Json.toJson(addressing)
     val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson)
-    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", DateTime.now(UTC), OK)
+    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK)
 
     "return the response returned by the outbound service" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))

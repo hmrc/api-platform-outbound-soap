@@ -30,6 +30,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.support.{NotificationsService, WireMo
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
 
+import java.time.Instant
 import java.util.UUID
 import javax.ws.rs.core.MediaType.APPLICATION_JSON
 
@@ -47,7 +48,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
     val underTest: NotificationCallbackConnector = app.injector.instanceOf[NotificationCallbackConnector]
     val globalId: UUID = UUID.randomUUID()
     val messageId: String = "some message id"
-    val now: DateTime = DateTime.now
+    val now: Instant = Instant.now
     val httpStatus: Int = 200
     implicit val hc: HeaderCarrier = HeaderCarrier()
   }

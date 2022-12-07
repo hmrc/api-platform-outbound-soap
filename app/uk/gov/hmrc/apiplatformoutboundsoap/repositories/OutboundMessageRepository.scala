@@ -20,25 +20,24 @@ import akka.NotUsed
 import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.scaladsl.Source
 import org.bson.codecs.configuration.CodecRegistries._
-import org.joda.time.DateTime
-import org.joda.time.DateTime.now
-import org.joda.time.DateTimeZone.UTC
+import org.mongodb.scala.{MongoClient, MongoCollection}
 import org.mongodb.scala.ReadPreference.primaryPreferred
 import org.mongodb.scala.bson.collection.immutable.Document
+import org.mongodb.scala.model._
 import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Sorts.descending
 import org.mongodb.scala.model.Updates.{combine, set}
-import org.mongodb.scala.model._
 import org.mongodb.scala.result.InsertOneResult
-import org.mongodb.scala.{MongoClient, MongoCollection}
 import play.api.Logging
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.outboundSoapMessageFormatter
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
@@ -72,7 +71,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
             Codecs.playFormatCodec(MongoFormatter.sentSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.codSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.coeSoapMessageFormatter),
-            Codecs.playFormatCodec(MongoFormatter.dateTimeFormat),
+            Codecs.playFormatCodec(MongoJavatimeFormats.instantFormat),
             Codecs.playFormatCodec(StatusType.jsonFormat),
             Codecs.playFormatCodec(DeliveryStatus.jsonFormat),
             Codecs.playFormatCodec(SendingStatus.jsonFormat)
@@ -88,15 +87,15 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
   def retrieveMessagesForRetry: Source[RetryingOutboundSoapMessage, NotUsed] = {
     MongoSource(collection.withReadPreference(primaryPreferred())
       .find(filter = and(equal("status", SendingStatus.RETRYING.entryName),
-        and(lte("retryDateTime", now(UTC)))))
+        and(lte("retryDateTime", Codecs.toBson(Instant.now)))))
       .sort(ascending("retryDateTime"))
       .map(_.asInstanceOf[RetryingOutboundSoapMessage]))
   }
 
-  def updateNextRetryTime(globalId: UUID, newRetryDateTime: DateTime): Future[Option[RetryingOutboundSoapMessage]] = {
+  def updateNextRetryTime(globalId: UUID, newRetryDateTime: Instant): Future[Option[RetryingOutboundSoapMessage]] = {
     collection.withReadPreference(primaryPreferred())
       .findOneAndUpdate(filter = equal("globalId", Codecs.toBson(globalId)),
-        update = set("retryDateTime", newRetryDateTime),
+        update = set("retryDateTime", Codecs.toBson(newRetryDateTime)),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
       ).map(_.asInstanceOf[RetryingOutboundSoapMessage]).headOption()
   }
@@ -105,6 +104,17 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
     collection.withReadPreference(primaryPreferred())
       .findOneAndUpdate(filter = equal("globalId", Codecs.toBson(globalId)),
         update = set("status", Codecs.toBson(newStatus.entryName)),
+        options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+      ).toFutureOption()
+  }
+
+  def updateToSent(globalId: UUID, sentInstant: Instant): Future[Option[OutboundSoapMessage]] = {
+    collection.withReadPreference(primaryPreferred())
+      .findOneAndUpdate(filter = equal("globalId", Codecs.toBson(globalId)),
+        update = combine(
+          set("sentDateTime", Codecs.toBson(sentInstant)),
+          set("status", Codecs.toBson(SendingStatus.SENT.entryName))
+        ),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
       ).toFutureOption()
   }
