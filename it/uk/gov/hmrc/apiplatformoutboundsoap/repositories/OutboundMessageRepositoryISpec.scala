@@ -31,12 +31,13 @@ import play.api.test.Helpers.{await, defaultAwaitTimeout}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
-
 import java.time.{Duration, Instant}
 import java.util.UUID.randomUUID
 
+import org.scalatest.concurrent.IntegrationPatience
+
 class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositorySupport[OutboundSoapMessage] with
-  Matchers with BeforeAndAfterEach with GuiceOneAppPerSuite {
+  Matchers with BeforeAndAfterEach with GuiceOneAppPerSuite with IntegrationPatience {
   val serviceRepo = repository.asInstanceOf[OutboundMessageRepository]
 
   override implicit lazy val app: Application = appBuilder.build()
