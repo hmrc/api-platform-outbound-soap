@@ -18,7 +18,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import uk.gov.hmrc.apiplatformoutboundsoap.utils.Require.validate
 
-case class  MessageRequest(wsdlUrl: String,
+case class MessageRequest(wsdlUrl: String,
                           wsdlOperation: String,
                           messageBody: String,
                           addressing: Addressing,

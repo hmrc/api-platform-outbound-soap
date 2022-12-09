@@ -25,9 +25,10 @@ import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
-
 import javax.inject.{Inject, Singleton}
 import javax.wsdl.WSDLException
+import play.api.Logging
+
 import scala.concurrent.ExecutionContext
 
 @Singleton
@@ -35,10 +36,11 @@ class OutboundController @Inject()(cc: ControllerComponents,
                                    appConfig: AppConfig,
                                    outboundService: OutboundService)
                                   (implicit ec: ExecutionContext)
-  extends BackendController(cc) {
+  extends BackendController(cc) with Logging {
 
   def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
     withJsonBody[MessageRequest] { messageRequest =>
+      logger.info(s"Received request to send message to CCN2. Message body is $messageRequest")
       val codValue = messageRequest.confirmationOfDelivery match {
         case Some(cod) => cod
         case None =>  appConfig.confirmationOfDelivery
