@@ -23,7 +23,8 @@ case class MessageRequest(wsdlUrl: String,
                           messageBody: String,
                           addressing: Addressing,
                           confirmationOfDelivery: Option[Boolean],
-                          notificationUrl: Option[String] = None)
+                          notificationUrl: Option[String] = None,
+                          privateHeaders: Option[List[PrivateHeader]] = None)
 
 case class Addressing(from: String,
                       to: String,
@@ -35,3 +36,5 @@ case class Addressing(from: String,
   validate(messageId.trim != "", "addressing.messageId being empty")
   validate(from.trim != "", "addressing.from being empty")
 }
+
+case class PrivateHeader(name: String, value: String)

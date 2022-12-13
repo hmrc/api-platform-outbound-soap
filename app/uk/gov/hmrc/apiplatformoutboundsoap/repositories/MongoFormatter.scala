@@ -26,6 +26,10 @@ private[repositories] object MongoFormatter {
     typeNaming = JsonNaming { fullName =>
       OutboundSoapMessage.typeToStatus(fullName).entryName
     })
+  implicit val privateHeaderReads: Reads[PrivateHeader] = Json.reads[PrivateHeader]
+  implicit val privateHeaderWrites: OWrites[PrivateHeader] = Json.writes[PrivateHeader]
+  implicit val privateHeaderFormatter: OFormat[PrivateHeader] =
+    OFormat(privateHeaderReads, privateHeaderWrites)
 
   implicit val retryingMessageReads: Reads[RetryingOutboundSoapMessage] =
     Json.reads[RetryingOutboundSoapMessage]
@@ -79,23 +83,23 @@ private[repositories] object MongoFormatter {
 
   implicit val outboundSoapMessageWrites: OWrites[OutboundSoapMessage] = new OWrites[OutboundSoapMessage] {
     override def writes(soapMessage: OutboundSoapMessage): JsObject = soapMessage match {
-      case r@RetryingOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _) =>
+      case r@RetryingOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _, _) =>
         retryingSoapMessageFormatter.writes(r) ++ Json.obj(
           "status" -> SendingStatus.RETRYING.entryName
         )
-      case f@FailedOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _) =>
+      case f@FailedOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _) =>
         failedSoapMessageFormatter.writes(f) ++ Json.obj(
           "status" -> SendingStatus.FAILED.entryName
         )
-      case s@SentOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _) =>
+      case s@SentOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _) =>
         sentSoapMessageFormatter.writes(s) ++ Json.obj(
           "status" -> SendingStatus.SENT.entryName
         )
-      case cod@CodSoapMessage(_, _, _, _, _, _, _, _, _, _) =>
+      case cod@CodSoapMessage(_, _, _, _, _, _, _, _, _, _, _) =>
         codSoapMessageFormatter.writes(cod) ++ Json.obj(
           "status" -> DeliveryStatus.COD.entryName
         )
-      case coe@CoeSoapMessage(_, _, _, _, _, _, _, _, _, _) =>
+      case coe@CoeSoapMessage(_, _, _, _, _, _, _, _, _, _, _) =>
         coeSoapMessageFormatter.writes(coe) ++ Json.obj(
           "status" -> DeliveryStatus.COE.entryName
         )
