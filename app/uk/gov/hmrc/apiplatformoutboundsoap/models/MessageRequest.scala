@@ -37,4 +37,7 @@ case class Addressing(from: String,
   validate(from.trim != "", "addressing.from being empty")
 }
 
-case class PrivateHeader(name: String, value: String)
+case class PrivateHeader(name: String, value: String) {
+  validate(name.trim.length < 1024, "privateHeaders name is longer than 1024 characters")
+  validate(value.trim.length < 1024, "privateHeaders value is longer than 1024 characters")
+}

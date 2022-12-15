@@ -42,9 +42,10 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
 
   override implicit lazy val app: Application = appBuilder.build()
   val ccnHttpStatus: Int = 200
+  val privateHeaders = Some(List(PrivateHeader(name="name1", value="value1"), PrivateHeader(name="name2", value="value2")))
   val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url",
     Instant.now, Instant.now, ccnHttpStatus)
-  val sentMessage = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", Instant.now, ccnHttpStatus)
+  val sentMessage = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", Instant.now, ccnHttpStatus, None, None, None, None, privateHeaders)
   implicit val materialiser: Materializer = app.injector.instanceOf[Materializer]
   val failedMessage = FailedOutboundSoapMessage(randomUUID, "MessageId-A3", "<IE4N03>payload</IE4N03>", "some url", Instant.now, ccnHttpStatus)
   val coeMessage = CoeSoapMessage(randomUUID, "MessageId-A4", "<IE4N03>payload</IE4N03>", "some url", Instant.now, ccnHttpStatus, coeMessage = Some("<COEMessage><Fault>went wrong</Fault></COEMessage>"))
@@ -288,6 +289,8 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       fetchedRecords(1).coeMessage shouldBe Some(expectedConfirmationMessageBody)
       fetchedRecords.head.codMessage shouldBe sentMessage.codMessage
       fetchedRecords(1).codMessage shouldBe secondSentMessage.codMessage
+      fetchedRecords.head.privateHeaders shouldBe sentMessage.privateHeaders
+      fetchedRecords(1).privateHeaders shouldBe secondSentMessage.privateHeaders
     }
 
     "update all records with the same messageId when a CoD is received" in {
