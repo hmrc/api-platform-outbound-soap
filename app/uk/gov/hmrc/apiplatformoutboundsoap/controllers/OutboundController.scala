@@ -25,11 +25,13 @@ import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
+
 import javax.inject.{Inject, Singleton}
 import javax.wsdl.WSDLException
 import play.api.Logging
+import uk.gov.hmrc.apiplatformoutboundsoap.{ErrorCode, JsErrorResponse}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class OutboundController @Inject()(cc: ControllerComponents,
@@ -41,16 +43,29 @@ class OutboundController @Inject()(cc: ControllerComponents,
   def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
     withJsonBody[MessageRequest] { messageRequest =>
       logger.info(s"Received request to send message to CCN2. Message body is $messageRequest")
-      val codValue = messageRequest.confirmationOfDelivery match {
-        case Some(cod) => cod
-        case None =>  appConfig.confirmationOfDelivery
+      messageRequest.privateHeaders match {
+        case Some(privHeaders) =>
+          if (privHeaders.length > 5) {
+            logger.info(s"privHeaders length:${privHeaders.length}")
+            Future.successful(BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, "Maximum 5 private headers are allowed in message request"))))
+          } else {
+            sendMessage(messageRequest)
+          }
+        case None => sendMessage(messageRequest)
       }
-      outboundService.sendMessage(messageRequest.copy(confirmationOfDelivery = Some(codValue)))
-        .map(outboundSoapMessage => Ok(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(outboundSoapMessage))))
-        .recover(recovery)
     }
   }
 
+  private def sendMessage(messageRequest: MessageRequest) : Future[Result] = {
+    logger.info("coming here")
+    val codValue = messageRequest.confirmationOfDelivery match {
+      case Some(cod) => cod
+      case None =>  appConfig.confirmationOfDelivery
+    }
+    outboundService.sendMessage(messageRequest.copy(confirmationOfDelivery = Some(codValue)))
+      .map(outboundSoapMessage => Ok(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(outboundSoapMessage))))
+      .recover(recovery)
+  }
   private def recovery: PartialFunction[Throwable, Result] = {
     case e: WSDLException => BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, e.getMessage)))
     case e: NotFoundException => NotFound(Json.toJson(ErrorResponse(NOT_FOUND, e.message)))
