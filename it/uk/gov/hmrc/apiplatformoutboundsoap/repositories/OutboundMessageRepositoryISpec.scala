@@ -42,7 +42,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
 
   override implicit lazy val app: Application = appBuilder.build()
   val ccnHttpStatus: Int = 200
-  val privateHeaders = Some(List(PrivateHeader(name="name1", value="value1"), PrivateHeader(name="name2", value="value2")))
+  val privateHeaders = Some(List(PrivateHeader(name="name1", value=Some("value1")), PrivateHeader(name="name2", value=Some("value2"))))
   val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url",
     Instant.now, Instant.now, ccnHttpStatus)
   val sentMessage = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", Instant.now, ccnHttpStatus, None, None, None, None, privateHeaders)
