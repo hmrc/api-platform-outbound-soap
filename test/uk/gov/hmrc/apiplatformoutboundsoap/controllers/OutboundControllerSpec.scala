@@ -56,8 +56,9 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     val fakeRequest = FakeRequest("POST", "/message")
     val addressing = Addressing(messageId = "987", to = "AddressedTo", replyTo = "ReplyTo", faultTo = "FaultTo", from = "from")
     val addressingJson = Json.toJson(addressing)
-    val privateHeaders = List(PrivateHeader(name = "name1", value = "value1"), PrivateHeader(name = "name2", value = "value2"))
-    val privateHeadersTooMany = List(PrivateHeader(name = "name1", value = "value1"), PrivateHeader(name = "name2", value = "value2"), PrivateHeader(name = "name3", value = "value3"), PrivateHeader(name = "name4", value = "value4"), PrivateHeader(name = "name5", value = "value5"), PrivateHeader(name = "name6", value = "value6"))
+    val privateHeaders = List(PrivateHeader(name = "name1", value = Some("value1")), PrivateHeader(name = "name2", value = Some("value2")))
+    val privateHeadersMissingValue = List(PrivateHeader(name = "name1", value = None), PrivateHeader(name = "name2", value = Some("value2")))
+    val privateHeadersTooMany = List(PrivateHeader(name = "name1", value = Some("value1")), PrivateHeader(name = "name2", value = Some("value2")), PrivateHeader(name = "name3", value = Some("value3")), PrivateHeader(name = "name4", value = Some("value4")), PrivateHeader(name = "name5", value = Some("value5")), PrivateHeader(name = "name6", value = Some("value6")))
     val privateHeadersJson = Json.toJson(privateHeaders)
     val privateHeadersTooManyJson = Json.toJson(privateHeadersTooMany)
     val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
@@ -66,6 +67,9 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersJson )
     val messageWithTooManyPrivateHeaders = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersTooManyJson )
+    val messageWithPrivateHeadersMissingValue = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
+      "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersMissingValue )
+
     val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK)
 
     "return the response returned by the outbound service" in new Setup {
@@ -106,6 +110,28 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       status(result) shouldBe BAD_REQUEST
       (contentAsJson(result) \ "statusCode").as[Int] shouldBe BAD_REQUEST
       (contentAsJson(result) \ "message").as[String] shouldBe "Maximum 5 private headers are allowed in message request"
+    }
+
+    "return OK response when the request json private header is missing its value" in new Setup {
+      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
+
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(messageWithPrivateHeadersMissingValue))
+
+      status(result) shouldBe OK
+    }
+
+    "return bad response when the request json private header is having invalid name key" in new Setup {
+      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
+
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(
+        Json.obj("wsdlUrl" -> "http://example.com/wsdl",
+          "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
+            Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from"),
+          "privateHeaders" -> Json.arr(Json.obj("name123" -> "value")))
+      ))
+
+      status(result) shouldBe BAD_REQUEST
+      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/privateHeaders(0)/name,List(JsonValidationError(List(error.path.missing),List()))))"
     }
 
     "return OK response with defaults when the request json body addressing section has missing replyTo, faultTo addressing fields" in new Setup {
