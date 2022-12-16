@@ -46,7 +46,7 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       val msgJson: JsObject = formatter.writes(SentOutboundSoapMessage(UUID.randomUUID(), "12334", "sent message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg"), None, Some(now)))
       msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("SENT"))
-      msgJson.value.get("sentDateTime") shouldBe Some(JsString(now.toString))
+      msgJson.value.get("sentDateTime") shouldBe Some(MongoJavatimeFormats.instantFormat.writes(now))
     }
 
     "correctly write a FAILED message" in {

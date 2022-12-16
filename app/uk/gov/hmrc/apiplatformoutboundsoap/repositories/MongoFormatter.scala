@@ -18,7 +18,9 @@ package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
 import play.api.libs.json._
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
-private[repositories] object MongoFormatter {
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
+
+private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implicits{
 
   implicit val cfg = JsonConfiguration(
     discriminator = "status",
@@ -26,7 +28,6 @@ private[repositories] object MongoFormatter {
     typeNaming = JsonNaming { fullName =>
       OutboundSoapMessage.typeToStatus(fullName).entryName
     })
-
   implicit val retryingMessageReads: Reads[RetryingOutboundSoapMessage] =
     Json.reads[RetryingOutboundSoapMessage]
   implicit val retryingMessageWrites: OWrites[RetryingOutboundSoapMessage] =

@@ -57,7 +57,7 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
       IndexModel(ascending("createDateTime"),
         IndexOptions().name("ttlIndex").background(true)
           .expireAfter(appConfig.retryMessagesTtl.toSeconds, TimeUnit.SECONDS))))
-    with Logging {
+    with Logging with MongoJavatimeFormats.Implicits {
 
   override lazy val collection: MongoCollection[OutboundSoapMessage] =
     CollectionFactory
@@ -71,7 +71,6 @@ class OutboundMessageRepository @Inject()(mongoComponent: MongoComponent, appCon
             Codecs.playFormatCodec(MongoFormatter.sentSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.codSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.coeSoapMessageFormatter),
-            Codecs.playFormatCodec(MongoJavatimeFormats.instantFormat),
             Codecs.playFormatCodec(StatusType.jsonFormat),
             Codecs.playFormatCodec(DeliveryStatus.jsonFormat),
             Codecs.playFormatCodec(SendingStatus.jsonFormat)
