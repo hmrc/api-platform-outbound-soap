@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
-import org.joda.time.DateTime
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -31,6 +30,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.ws.rs.core.MediaType.APPLICATION_JSON
 
@@ -48,7 +48,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
     val underTest: NotificationCallbackConnector = app.injector.instanceOf[NotificationCallbackConnector]
     val globalId: UUID = UUID.randomUUID()
     val messageId: String = "some message id"
-    val now: Instant = Instant.now
+    val now: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
     val httpStatus: Int = 200
     implicit val hc: HeaderCarrier = HeaderCarrier()
   }
