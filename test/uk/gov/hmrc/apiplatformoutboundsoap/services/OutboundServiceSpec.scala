@@ -38,7 +38,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
-import java.time.{Instant, Period}
+import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.wsdl.WSDLException

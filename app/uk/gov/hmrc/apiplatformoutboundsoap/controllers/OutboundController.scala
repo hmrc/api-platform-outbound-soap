@@ -29,7 +29,6 @@ import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 import javax.inject.{Inject, Singleton}
 import javax.wsdl.WSDLException
 import play.api.Logging
-import uk.gov.hmrc.apiplatformoutboundsoap.{ErrorCode, JsErrorResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
