@@ -41,12 +41,13 @@ class OutboundController @Inject()(cc: ControllerComponents,
   extends BackendController(cc) with Logging {
 
   def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
+    val maxPrivateHeaders = 5
     withJsonBody[MessageRequest] { messageRequest =>
       logger.info(s"Received request to send message to CCN2. Message body is $messageRequest")
       messageRequest.privateHeaders match {
         case Some(privHeaders) =>
-          if (privHeaders.length > 5) {
-            logger.info(s"privHeaders length:${privHeaders.length}")
+          if (privHeaders.length > maxPrivateHeaders) {
+            logger.warn(s"Rejecting request because it has ${privHeaders.length} private headers and the maximum is $maxPrivateHeaders")
             Future.successful(BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, "Maximum 5 private headers are allowed in message request"))))
           } else {
             sendMessage(messageRequest)
@@ -57,7 +58,6 @@ class OutboundController @Inject()(cc: ControllerComponents,
   }
 
   private def sendMessage(messageRequest: MessageRequest) : Future[Result] = {
-    logger.info("coming here")
     val codValue = messageRequest.confirmationOfDelivery match {
       case Some(cod) => cod
       case None =>  appConfig.confirmationOfDelivery

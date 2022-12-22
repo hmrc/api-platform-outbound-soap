@@ -57,8 +57,12 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     val addressing = Addressing(messageId = "987", to = "AddressedTo", replyTo = "ReplyTo", faultTo = "FaultTo", from = "from")
     val addressingJson = Json.toJson(addressing)
     val privateHeaders = List(PrivateHeader(name = "name1", value = Some("value1")), PrivateHeader(name = "name2", value = Some("value2")))
-    val privateHeadersMissingValue = List(PrivateHeader(name = "name1", value = None), PrivateHeader(name = "name2", value = Some("value2")))
-    val privateHeadersTooMany = List(PrivateHeader(name = "name1", value = Some("value1")), PrivateHeader(name = "name2", value = Some("value2")), PrivateHeader(name = "name3", value = Some("value3")), PrivateHeader(name = "name4", value = Some("value4")), PrivateHeader(name = "name5", value = Some("value5")), PrivateHeader(name = "name6", value = Some("value6")))
+    val privateHeadersEmptyValue = List(PrivateHeader(name = "name1", value = None), PrivateHeader(name = "name2", value = Some("value2")))
+    val privateHeadersTooMany = privateHeaders ++ List(
+      PrivateHeader(name = "name3", value = Some("value3")),
+      PrivateHeader(name = "name4", value = Some("value4")),
+      PrivateHeader(name = "name5", value = Some("value5")),
+      PrivateHeader(name = "name6", value = Some("value6")))
     val privateHeadersJson = Json.toJson(privateHeaders)
     val privateHeadersTooManyJson = Json.toJson(privateHeadersTooMany)
     val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
@@ -67,8 +71,8 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersJson )
     val messageWithTooManyPrivateHeaders = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
       "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersTooManyJson )
-    val messageWithPrivateHeadersMissingValue = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-      "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersMissingValue )
+    val messageWithEmptyValuePrivateHeader = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
+      "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersEmptyValue )
 
     val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK)
 
@@ -103,26 +107,23 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       messageCaptor hasCaptured MessageRequest("http://example.com/wsdl", "theOp", "<IE4N03>example</IE4N03>", addressing, Some(true), None, Some(privateHeaders))
     }
 
-    "return Bad Request with too many private headers sent in the message to the outbound service" in new Setup {
-      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
-
+    "return Bad Request when too many private headers are sent in the message request" in new Setup {
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(messageWithTooManyPrivateHeaders))
       status(result) shouldBe BAD_REQUEST
       (contentAsJson(result) \ "statusCode").as[Int] shouldBe BAD_REQUEST
       (contentAsJson(result) \ "message").as[String] shouldBe "Maximum 5 private headers are allowed in message request"
+      verifyZeroInteractions(outboundServiceMock)
     }
 
-    "return OK response when the request json private header is missing its value" in new Setup {
+    "return OK response when the a private header has an empty value" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(messageWithPrivateHeadersMissingValue))
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(messageWithEmptyValuePrivateHeader))
 
       status(result) shouldBe OK
     }
 
-    "return bad response when the request json private header is having invalid name key" in new Setup {
-      when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
-
+    "return bad response when the request json private header has an invalid name key" in new Setup {
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(
         Json.obj("wsdlUrl" -> "http://example.com/wsdl",
           "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
@@ -132,6 +133,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/privateHeaders(0)/name,List(JsonValidationError(List(error.path.missing),List()))))"
+      verifyZeroInteractions(outboundServiceMock)
     }
 
     "return OK response with defaults when the request json body addressing section has missing replyTo, faultTo addressing fields" in new Setup {

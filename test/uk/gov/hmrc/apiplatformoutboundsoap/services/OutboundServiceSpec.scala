@@ -329,20 +329,6 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       messageCaptor.getValue.globalId shouldBe expectedGlobalId
     }
 
-//    "send the SOAP envelope with empty body and private headers in message returned from the security service to the connector" in new Setup {
-//      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelopeWithEmptyBodyRequest())
-//      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(200))
-//      val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
-//      when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
-//      await(underTest.sendMessage(messageRequestWithPrivateHeaders))
-//
-//      messageCaptor.getValue.status shouldBe SendingStatus.SENT
-//      messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelopeWithEmptyBodyRequest()
-//      messageCaptor.getValue.messageId shouldBe messageId
-//      messageCaptor.getValue.globalId shouldBe expectedGlobalId
-//      messageCaptor.getValue.privateHeaders shouldBe privateHeaders
-//    }
-
     "send the expected SOAP envelope to the security service which adds username token" in new Setup {
       val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
