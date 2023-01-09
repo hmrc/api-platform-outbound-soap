@@ -38,7 +38,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
-import java.time.{Instant, Period}
+import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.wsdl.WSDLException
@@ -84,7 +84,9 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val messageId = "123"
     val to = "CCN2"
     val from = "HMRC"
-    val addressing = Addressing(from , to , "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
+    val longPrivateHeaderValue = "value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1valuevlue1value1value1"
+    val privateHeaders = Some(List(PrivateHeader(name = "name1", Some(value = "value1")), PrivateHeader(name = "name2", Some(value = "value2"))))
+    val addressing = Addressing(from, to, "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
     // mixin refers to mandatory and default addressing fields
     val addressingMixinFields = Addressing(from = from, to = to, replyTo = "ReplyTo", faultTo = "FaultTo", messageId = messageId)
     val addressingWithEmptyOptionalFields = Addressing(from = from, to = to, replyTo = " ", faultTo = "", messageId = messageId)
@@ -115,6 +117,16 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       Some("http://somenotification.url")
     )
 
+    val messageRequestWithPrivateHeaders = MessageRequest(
+      "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
+      "IsAlive",
+      "",
+      addressing = addressing,
+      confirmationOfDelivery = Some(false),
+      Some("http://somenotification.url"),
+      privateHeaders = privateHeaders
+    )
+
     val messageRequestMinimalAddressing = messageRequestFullAddressing
       .copy(addressing = addressingMixinFields)
     val messageRequestAddressingWithEmptyOptionals = messageRequestFullAddressing
@@ -137,9 +149,9 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         |<wsa:MessageID>123</wsa:MessageID>""".stripMargin.replaceAll("\n", "")
 
     val addressingHeadersWithoutOptionals =
-          """<wsa:From><wsa:Address>HMRC</wsa:Address></wsa:From>
-            |<wsa:To>CCN2</wsa:To>
-            |<wsa:MessageID>123</wsa:MessageID>""".stripMargin.replaceAll("\n", "")
+      """<wsa:From><wsa:Address>HMRC</wsa:Address></wsa:From>
+        |<wsa:To>CCN2</wsa:To>
+        |<wsa:MessageID>123</wsa:MessageID>""".stripMargin.replaceAll("\n", "")
 
     def expectedSoapEnvelope(extraHeaders: String = ""): String =
       s"""<?xml version='1.0' encoding='utf-8'?>
@@ -315,7 +327,6 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       messageCaptor.getValue.soapMessage shouldBe expectedSoapEnvelopeWithEmptyBodyRequest()
       messageCaptor.getValue.messageId shouldBe messageId
       messageCaptor.getValue.globalId shouldBe expectedGlobalId
-
     }
 
     "send the expected SOAP envelope to the security service which adds username token" in new Setup {
@@ -432,15 +443,25 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       exception.getMessage should include("addressing.messageId being empty")
     }
 
-  "fail when the addressing.from field is empty" in new Setup {
+    "fail when the addressing.from field is empty" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
-        await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing= addressing.copy(from = ""))))
+        await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing = addressing.copy(from = ""))))
       }
 
       exception.getMessage should include("addressing.from being empty")
+    }
+
+    "fail when the private headers field parameters size is greater than 1024" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
+
+      val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
+        await(underTest.sendMessage(messageRequestWithPrivateHeaders.copy(privateHeaders = Some(List(PrivateHeader(name = "name1", value = Some(longPrivateHeaderValue)), PrivateHeader(name = "name2", value = Some("value2")))))))
+      }
+      exception.getMessage should include("privateHeaders value is longer than 1024 characters")
     }
   }
 

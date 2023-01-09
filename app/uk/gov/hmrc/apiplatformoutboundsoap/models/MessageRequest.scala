@@ -23,7 +23,8 @@ case class MessageRequest(wsdlUrl: String,
                           messageBody: String,
                           addressing: Addressing,
                           confirmationOfDelivery: Option[Boolean],
-                          notificationUrl: Option[String] = None)
+                          notificationUrl: Option[String] = None,
+                          privateHeaders: Option[List[PrivateHeader]] = None)
 
 case class Addressing(from: String,
                       to: String,
@@ -34,4 +35,9 @@ case class Addressing(from: String,
   validate(to.trim != "", "addressing.to being empty")
   validate(messageId.trim != "", "addressing.messageId being empty")
   validate(from.trim != "", "addressing.from being empty")
+}
+
+case class PrivateHeader(name: String, value: Option[String]) {
+  validate(name.trim.length < 1024, "privateHeaders name is longer than 1024 characters")
+  validate(!(value.isDefined && value.get.trim.length > 1024), "privateHeaders value is longer than 1024 characters")
 }

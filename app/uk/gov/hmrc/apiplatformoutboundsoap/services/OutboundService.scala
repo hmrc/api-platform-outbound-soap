@@ -127,16 +127,16 @@ class OutboundService @Inject()(outboundConnector: OutboundConnector,
 
     def succeededMessage = {
       SentOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
-        httpStatus, message.notificationUrl, None, None, Some(now))
+        httpStatus, message.notificationUrl, None, None, Some(now), message.privateHeaders)
     }
 
     def failedMessage = {
-      FailedOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, httpStatus, message.notificationUrl)
+      FailedOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now, httpStatus, message.notificationUrl, None, None, None, message.privateHeaders)
     }
 
     def retryingMessage = {
       RetryingOutboundSoapMessage(globalId, messageId, soapRequest.soapEnvelope, soapRequest.destinationUrl, now,
-        now.plus(Duration.ofMillis(appConfig.retryInterval.toMillis)), httpStatus, message.notificationUrl, None, None)
+        now.plus(Duration.ofMillis(appConfig.retryInterval.toMillis)), httpStatus, message.notificationUrl, None, None, None, message.privateHeaders)
     }
 
     mapHttpStatusCode(httpStatus) match {

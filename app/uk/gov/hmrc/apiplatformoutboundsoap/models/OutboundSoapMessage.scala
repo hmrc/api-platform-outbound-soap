@@ -35,6 +35,7 @@ sealed trait OutboundSoapMessage {
   val coeMessage: Option[String]
   val codMessage: Option[String]
   val sentDateTime: Option[Instant]
+  val privateHeaders: Option[List[PrivateHeader]]
 }
 
 object OutboundSoapMessage {
@@ -67,7 +68,8 @@ case class SentOutboundSoapMessage(globalId: UUID,
                                    notificationUrl: Option[String] = None,
                                    codMessage: Option[String] = None,
                                    coeMessage: Option[String] = None,
-                                   sentDateTime: Option[Instant] = None
+                                   sentDateTime: Option[Instant] = None,
+                                   privateHeaders: Option[List[PrivateHeader]] = None
                                   ) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.SENT
 }
@@ -81,7 +83,8 @@ case class FailedOutboundSoapMessage(globalId: UUID,
                                      notificationUrl: Option[String] = None,
                                      codMessage: Option[String] = None,
                                      coeMessage: Option[String] = None,
-                                     sentDateTime: Option[Instant] = None) extends OutboundSoapMessage {
+                                     sentDateTime: Option[Instant] = None,
+                                     privateHeaders: Option[List[PrivateHeader]] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.FAILED
 }
 
@@ -94,7 +97,8 @@ case class CoeSoapMessage(globalId: UUID,
                           notificationUrl: Option[String] = None,
                           codMessage: Option[String] = None,
                           coeMessage: Option[String] = None,
-                          sentDateTime: Option[Instant] = None) extends OutboundSoapMessage {
+                          sentDateTime: Option[Instant] = None,
+                          privateHeaders: Option[List[PrivateHeader]] = None) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COE
 }
 
@@ -107,7 +111,8 @@ case class CodSoapMessage(globalId: UUID,
                           notificationUrl: Option[String] = None,
                           codMessage: Option[String] = None,
                           coeMessage: Option[String] = None,
-                          sentDateTime: Option[Instant] = None) extends OutboundSoapMessage {
+                          sentDateTime: Option[Instant] = None,
+                          privateHeaders: Option[List[PrivateHeader]] = None) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COD
 }
 
@@ -121,7 +126,8 @@ case class RetryingOutboundSoapMessage(globalId: UUID,
                                        notificationUrl: Option[String] = None,
                                        codMessage: Option[String] = None,
                                        coeMessage: Option[String] = None,
-                                       sentDateTime: Option[Instant] = None) extends OutboundSoapMessage {
+                                       sentDateTime: Option[Instant] = None,
+                                       privateHeaders: Option[List[PrivateHeader]] = None) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.RETRYING
 
   def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus,
