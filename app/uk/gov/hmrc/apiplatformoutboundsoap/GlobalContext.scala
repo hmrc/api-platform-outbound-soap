@@ -21,7 +21,7 @@ import play.api.inject.Injector
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class GlobalContext @Inject()(playBuiltinInjector: Injector) {
+class GlobalContext @Inject() (playBuiltinInjector: Injector) {
   GlobalContext.injectorRef = playBuiltinInjector
 }
 

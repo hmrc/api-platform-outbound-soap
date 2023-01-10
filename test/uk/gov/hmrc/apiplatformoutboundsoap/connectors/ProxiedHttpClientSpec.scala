@@ -30,30 +30,30 @@ import uk.gov.hmrc.play.audit.http.HttpAuditing
 class ProxiedHttpClientSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with OptionValues {
 
   private val actorSystem = ActorSystem("test-actor-system")
-  val proxyHost = "localhost"
-  val proxyPort = 8080
+  val proxyHost           = "localhost"
+  val proxyPort           = 8080
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .configure(
       "http-verbs.proxy.enabled" -> true,
-      "proxy.protocol" -> "http",
-      "proxy.host" -> proxyHost,
-      "proxy.port" -> proxyPort
+      "proxy.protocol"           -> "http",
+      "proxy.host"               -> proxyHost,
+      "proxy.port"               -> proxyPort
     ).build()
 
   trait Setup {
-    val url = "http://example.com"
-    val config: Configuration = app.injector.instanceOf[Configuration]
+    val url                        = "http://example.com"
+    val config: Configuration      = app.injector.instanceOf[Configuration]
     val httpAuditing: HttpAuditing = app.injector.instanceOf[HttpAuditing]
-    val wsClient: WSClient =  app.injector.instanceOf[WSClient]
+    val wsClient: WSClient         = app.injector.instanceOf[WSClient]
 
-    val proxiedClientTest = new ProxiedHttpClient(config, httpAuditing, wsClient, actorSystem)
+    val proxiedClientTest          = new ProxiedHttpClient(config, httpAuditing, wsClient, actorSystem)
     implicit val hc: HeaderCarrier = HeaderCarrier()
   }
 
   "buildRequest" should {
     "build request with the configured proxy" in new Setup {
-      val request: WSRequest = proxiedClientTest.buildRequest(url, Seq.empty)
+      val request: WSRequest         = proxiedClientTest.buildRequest(url, Seq.empty)
       val proxyServer: WSProxyServer = request.proxyServer.value
       proxyServer.host shouldBe proxyHost
       proxyServer.port shouldBe proxyPort

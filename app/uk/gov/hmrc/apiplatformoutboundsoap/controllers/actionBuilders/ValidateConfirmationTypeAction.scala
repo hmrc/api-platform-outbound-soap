@@ -25,8 +25,8 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ValidateConfirmationTypeAction @Inject()()(implicit ec: ExecutionContext)
-  extends ActionFilter[Request] with HttpErrorFunctions with Logging {
+class ValidateConfirmationTypeAction @Inject() ()(implicit ec: ExecutionContext)
+    extends ActionFilter[Request] with HttpErrorFunctions with Logging {
   override def executionContext: ExecutionContext = ec
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
@@ -35,7 +35,7 @@ class ValidateConfirmationTypeAction @Inject()()(implicit ec: ExecutionContext)
   }
 
   private def validateEnum(deliveryStatus: Option[String]): Option[Status] = {
-    val validConfirmationTypeValues = Seq("CCN2.Service.Platform.AcknowledgementService/CoD", "CCN2.Service.Platform.AcknowledgementService/CoE")
+    val validConfirmationTypeValues    = Seq("CCN2.Service.Platform.AcknowledgementService/CoD", "CCN2.Service.Platform.AcknowledgementService/CoE")
     val deliveryStatusPrepared: String = deliveryStatus.map(d => d.trim).getOrElse("")
     if (validConfirmationTypeValues.contains(deliveryStatusPrepared)) {
       None

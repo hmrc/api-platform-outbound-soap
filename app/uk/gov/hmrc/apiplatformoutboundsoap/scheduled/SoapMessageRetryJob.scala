@@ -27,9 +27,8 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SoapMessageRetryJob @Inject()(appConfig: AppConfig, override val lockRepository: MongoLockRepository,
-                                    outboundService: OutboundService)
-  extends LockedScheduledJob {
+class SoapMessageRetryJob @Inject() (appConfig: AppConfig, override val lockRepository: MongoLockRepository, outboundService: OutboundService)
+    extends LockedScheduledJob {
   override val releaseLockAfter: Duration = Duration.standardSeconds(appConfig.retryJobLockDuration.toSeconds)
 
   override def name: String = "SoapMessageRetryJob"

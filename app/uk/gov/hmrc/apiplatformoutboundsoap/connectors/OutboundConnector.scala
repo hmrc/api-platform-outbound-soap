@@ -29,14 +29,15 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
-class OutboundConnector @Inject()(
-                                   appConfig: AppConfig,
-                                   defaultHttpClient: HttpClient,
-                                   proxiedHttpClient: ProxiedHttpClient)
-                                 (implicit ec: ExecutionContext) extends HttpErrorFunctions with Logging {
+class OutboundConnector @Inject() (
+    appConfig: AppConfig,
+    defaultHttpClient: HttpClient,
+    proxiedHttpClient: ProxiedHttpClient
+  )(implicit ec: ExecutionContext
+  ) extends HttpErrorFunctions with Logging {
 
   lazy val httpClient: HttpClient = if (useProxy) proxiedHttpClient else defaultHttpClient
-  val useProxy: Boolean = useProxyForEnv()
+  val useProxy: Boolean           = useProxyForEnv()
 
   def postMessage(messageId: String, soapRequest: SoapRequest): Future[Int] = {
     implicit val hc: HeaderCarrier = HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
@@ -47,7 +48,7 @@ class OutboundConnector @Inject()(
       case Left(UpstreamErrorResponse(_, statusCode, _, _)) =>
         logger.warn(requestLogMessage(statusCode))
         statusCode
-      case Right(response: HttpResponse) =>
+      case Right(response: HttpResponse)                    =>
         response.status
     }
       .recoverWith {

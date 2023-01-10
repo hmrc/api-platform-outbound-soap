@@ -21,24 +21,23 @@ import com.github.tomakehurst.wiremock.http.Fault
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
 trait Ccn2Service {
-  def primeCcn2Endpoint(body: String, status : Int): StubMapping = {
+
+  def primeCcn2Endpoint(body: String, status: Int): StubMapping = {
     stubFor(post(urlPathEqualTo("/"))
       .willReturn(
         aResponse()
-        .withBody(body)
-        .withStatus(status)
-      )
-    )
+          .withBody(body)
+          .withStatus(status)
+      ))
   }
 
   def stubCcn2Endpoint(body: String, fault: Fault): StubMapping = {
     stubFor(post(urlPathEqualTo("/"))
       .willReturn(
         aResponse()
-        .withBody(body)
-        .withFault(fault)
-      )
-    )
+          .withBody(body)
+          .withFault(fault)
+      ))
   }
 
   def verifyRequestBody(expectedRequestBody: String): Unit = {

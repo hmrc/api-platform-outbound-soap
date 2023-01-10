@@ -42,37 +42,52 @@ import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 
 class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite
-  with ArgumentMatchersSugar with ResetMocksAfterEachTest {
+    with ArgumentMatchersSugar with ResetMocksAfterEachTest {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
 
   trait Setup {
-    val mockAppConfig = mock[AppConfig]
+    val mockAppConfig                        = mock[AppConfig]
     when(mockAppConfig.confirmationOfDelivery).thenReturn(true)
     val outboundServiceMock: OutboundService = mock[OutboundService]
-    val underTest = new OutboundController(Helpers.stubControllerComponents(),  mockAppConfig,  outboundServiceMock)
+    val underTest                            = new OutboundController(Helpers.stubControllerComponents(), mockAppConfig, outboundServiceMock)
   }
 
   "message" should {
-    val fakeRequest = FakeRequest("POST", "/message")
-    val addressing = Addressing(messageId = "987", to = "AddressedTo", replyTo = "ReplyTo", faultTo = "FaultTo", from = "from")
-    val addressingJson = Json.toJson(addressing)
-    val privateHeaders = List(PrivateHeader(name = "name1", value = Some("value1")), PrivateHeader(name = "name2", value = Some("value2")))
-    val privateHeadersEmptyValue = List(PrivateHeader(name = "name1", value = None), PrivateHeader(name = "name2", value = Some("value2")))
-    val privateHeadersTooMany = privateHeaders ++ List(
+    val fakeRequest                        = FakeRequest("POST", "/message")
+    val addressing                         = Addressing(messageId = "987", to = "AddressedTo", replyTo = "ReplyTo", faultTo = "FaultTo", from = "from")
+    val addressingJson                     = Json.toJson(addressing)
+    val privateHeaders                     = List(PrivateHeader(name = "name1", value = Some("value1")), PrivateHeader(name = "name2", value = Some("value2")))
+    val privateHeadersEmptyValue           = List(PrivateHeader(name = "name1", value = None), PrivateHeader(name = "name2", value = Some("value2")))
+    val privateHeadersTooMany              = privateHeaders ++ List(
       PrivateHeader(name = "name3", value = Some("value3")),
       PrivateHeader(name = "name4", value = Some("value4")),
       PrivateHeader(name = "name5", value = Some("value5")),
-      PrivateHeader(name = "name6", value = Some("value6")))
-    val privateHeadersJson = Json.toJson(privateHeaders)
-    val privateHeadersTooManyJson = Json.toJson(privateHeadersTooMany)
-    val message = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-      "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson)
-    val messageWithPrivateHeaders = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-      "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersJson )
-    val messageWithTooManyPrivateHeaders = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-      "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersTooManyJson )
-    val messageWithEmptyValuePrivateHeader = Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-      "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson, "privateHeaders" -> privateHeadersEmptyValue )
+      PrivateHeader(name = "name6", value = Some("value6"))
+    )
+    val privateHeadersJson                 = Json.toJson(privateHeaders)
+    val privateHeadersTooManyJson          = Json.toJson(privateHeadersTooMany)
+    val message                            = Json.obj("wsdlUrl" -> "http://example.com/wsdl", "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> addressingJson)
+    val messageWithPrivateHeaders          = Json.obj(
+      "wsdlUrl"        -> "http://example.com/wsdl",
+      "wsdlOperation"  -> "theOp",
+      "messageBody"    -> "<IE4N03>example</IE4N03>",
+      "addressing"     -> addressingJson,
+      "privateHeaders" -> privateHeadersJson
+    )
+    val messageWithTooManyPrivateHeaders   = Json.obj(
+      "wsdlUrl"        -> "http://example.com/wsdl",
+      "wsdlOperation"  -> "theOp",
+      "messageBody"    -> "<IE4N03>example</IE4N03>",
+      "addressing"     -> addressingJson,
+      "privateHeaders" -> privateHeadersTooManyJson
+    )
+    val messageWithEmptyValuePrivateHeader = Json.obj(
+      "wsdlUrl"        -> "http://example.com/wsdl",
+      "wsdlOperation"  -> "theOp",
+      "messageBody"    -> "<IE4N03>example</IE4N03>",
+      "addressing"     -> addressingJson,
+      "privateHeaders" -> privateHeadersEmptyValue
+    )
 
     val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK)
 
@@ -125,10 +140,14 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
 
     "return bad response when the request json private header has an invalid name key" in new Setup {
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(
-        Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-          "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
+        Json.obj(
+          "wsdlUrl"        -> "http://example.com/wsdl",
+          "wsdlOperation"  -> "theOp",
+          "messageBody"    -> "<IE4N03>example</IE4N03>",
+          "addressing"     ->
             Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from"),
-          "privateHeaders" -> Json.arr(Json.obj("name123" -> "value")))
+          "privateHeaders" -> Json.arr(Json.obj("name123" -> "value"))
+        )
       ))
 
       status(result) shouldBe BAD_REQUEST
@@ -140,9 +159,13 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
       when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
-          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from"))))
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj(
+        "wsdlUrl"       -> "http://example.com/wsdl",
+        "wsdlOperation" -> "theOp",
+        "messageBody"   -> "<IE4N03>example</IE4N03>",
+        "addressing"    ->
+          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from")
+      )))
 
       status(result) shouldBe OK
       messageCaptor.getValue.addressing.from shouldBe "from"
@@ -153,9 +176,13 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     "return bad request when the request json body addressing section has empty from field" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
-          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> " "))))
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj(
+        "wsdlUrl"       -> "http://example.com/wsdl",
+        "wsdlOperation" -> "theOp",
+        "messageBody"   -> "<IE4N03>example</IE4N03>",
+        "addressing"    ->
+          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> " ")
+      )))
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe
@@ -166,7 +193,8 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(
-        Json.obj("wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> Json.toJson(addressing))))
+        Json.obj("wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> Json.toJson(addressing))
+      ))
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/wsdlUrl,List(JsonValidationError(List(error.path.missing),List()))))"
@@ -176,7 +204,8 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(
-        Json.obj("wsdlUrl" -> "http://example.com/wsdl", "wsdlOperation" -> "theOp", "addressing" -> Json.toJson(addressing))))
+        Json.obj("wsdlUrl" -> "http://example.com/wsdl", "wsdlOperation" -> "theOp", "addressing" -> Json.toJson(addressing))
+      ))
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/messageBody,List(JsonValidationError(List(error.path.missing),List()))))"
@@ -185,9 +214,13 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     "return bad request when the request json body addressing section is missing to field" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
-          Json.obj("messageId" -> "some msg id"))))
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj(
+        "wsdlUrl"       -> "http://example.com/wsdl",
+        "wsdlOperation" -> "theOp",
+        "messageBody"   -> "<IE4N03>example</IE4N03>",
+        "addressing"    ->
+          Json.obj("messageId" -> "some msg id")
+      )))
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe
@@ -197,9 +230,13 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     "return bad request when the request json body addressing section is missing message ID field" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj("wsdlUrl" -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" ->
-          Json.obj("to" -> "who it is to"))))
+      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj(
+        "wsdlUrl"       -> "http://example.com/wsdl",
+        "wsdlOperation" -> "theOp",
+        "messageBody"   -> "<IE4N03>example</IE4N03>",
+        "addressing"    ->
+          Json.obj("to" -> "who it is to")
+      )))
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe
@@ -207,7 +244,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "default confirmation of delivery to true if not present in request but its overridden in config" in new Setup {
-      val expectedStatus: Int = OK
+      val expectedStatus: Int                           = OK
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
       when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
 
@@ -218,7 +255,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "confirmation of delivery field is true when true in the request" in new Setup {
-      val expectedStatus: Int = OK
+      val expectedStatus: Int                           = OK
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
       when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
 
@@ -229,7 +266,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "confirmation of delivery field is false when false in the request" in new Setup {
-      val expectedStatus: Int = OK
+      val expectedStatus: Int                           = OK
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
       when(outboundServiceMock.sendMessage(messageCaptor.capture())).thenReturn(successful(outboundSoapMessage))
 

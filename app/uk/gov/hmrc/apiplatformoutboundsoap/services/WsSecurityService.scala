@@ -30,17 +30,17 @@ import java.util.Properties
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class WsSecurityService @Inject()(appConfig: AppConfig) {
+class WsSecurityService @Inject() (appConfig: AppConfig) {
   val ROLE = "CCN2.Platform"
 
   val crytoProperties: Properties = new Properties()
   crytoProperties.setProperty("org.apache.wss4j.crypto.merlin.keystore.file", appConfig.cryptoKeystoreLocation)
   crytoProperties.setProperty("org.apache.wss4j.crypto.merlin.keystore.password", appConfig.keystorePassword)
-  lazy val crypto: Crypto = CryptoFactory.getInstance(crytoProperties)
+  lazy val crypto: Crypto         = CryptoFactory.getInstance(crytoProperties)
 
   def addUsernameToken(soapEnvelope: SOAPEnvelope): String = {
     val secHeader: WSSecHeader = createSecurityHeader(soapEnvelope)
-    val builder = new WSSecUsernameToken(secHeader)
+    val builder                = new WSSecUsernameToken(secHeader)
     builder.setPasswordType(PASSWORD_TEXT)
     builder.setUserInfo(appConfig.ccn2Username, appConfig.ccn2Password)
     prettyDocumentToString(builder.build())
@@ -48,7 +48,7 @@ class WsSecurityService @Inject()(appConfig: AppConfig) {
 
   def addSignature(soapEnvelope: SOAPEnvelope): String = {
     val secHeader: WSSecHeader = createSecurityHeader(soapEnvelope)
-    val builder = new WSSecSignature(secHeader)
+    val builder                = new WSSecSignature(secHeader)
     builder.setKeyIdentifierType(WSConstants.ISSUER_SERIAL)
     builder.setUserInfo(appConfig.keystoreAlias, appConfig.keystorePassword)
     builder.setDigestAlgo(WSS4JConstants.SHA256)
@@ -57,7 +57,7 @@ class WsSecurityService @Inject()(appConfig: AppConfig) {
   }
 
   private def createSecurityHeader(soapEnvelope: SOAPEnvelope) = {
-    val envelopeDocument = toDOM(soapEnvelope).getOwnerDocument
+    val envelopeDocument       = toDOM(soapEnvelope).getOwnerDocument
     val secHeader: WSSecHeader = new WSSecHeader(ROLE, envelopeDocument)
     secHeader.insertSecurityHeader()
     secHeader

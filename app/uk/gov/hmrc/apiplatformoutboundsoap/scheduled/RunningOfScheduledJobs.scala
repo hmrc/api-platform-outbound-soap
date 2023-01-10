@@ -24,10 +24,8 @@ import play.api.{Application, Logging}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-
-/**
- * All implementing classes must be singletons - see https://www.playframework.com/documentation/2.6.x/ScalaDependencyInjection#Stopping/cleaning-up
- */
+/** All implementing classes must be singletons - see https://www.playframework.com/documentation/2.6.x/ScalaDependencyInjection#Stopping/cleaning-up
+  */
 trait RunningOfScheduledJobs extends Logging {
 
   implicit val ec: ExecutionContext
@@ -49,7 +47,7 @@ trait RunningOfScheduledJobs extends Logging {
         case Success(job.Result(message)) =>
           stopWatch.stop()
           logger.debug(s"Completed job ${job.name} in $stopWatch: $message")
-        case Failure(throwable) =>
+        case Failure(throwable)           =>
           stopWatch.stop()
           logger.error(s"Exception running job ${job.name} after $stopWatch", throwable)
       }

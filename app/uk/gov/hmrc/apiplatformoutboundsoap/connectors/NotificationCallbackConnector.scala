@@ -27,8 +27,7 @@ import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationCallbackConnector @Inject()(httpClient: HttpClient)
-                                             (implicit ec: ExecutionContext) extends HttpErrorFunctions with Logging {
+class NotificationCallbackConnector @Inject() (httpClient: HttpClient)(implicit ec: ExecutionContext) extends HttpErrorFunctions with Logging {
 
   def sendNotification(message: OutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Option[Int]] = {
     (message.notificationUrl map { url =>

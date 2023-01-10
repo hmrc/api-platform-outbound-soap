@@ -39,22 +39,30 @@ import org.scalatest.concurrent.IntegrationPatience
 
 import java.time.temporal.ChronoUnit
 
-class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositorySupport[OutboundSoapMessage] with
-  Matchers with BeforeAndAfterEach with GuiceOneAppPerSuite with IntegrationPatience {
+class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositorySupport[OutboundSoapMessage] with Matchers with BeforeAndAfterEach with GuiceOneAppPerSuite
+    with IntegrationPatience {
   val serviceRepo = repository.asInstanceOf[OutboundMessageRepository]
 
   override implicit lazy val app: Application = appBuilder.build()
-  val ccnHttpStatus: Int = 200
-  val privateHeaders = Some(List(PrivateHeader(name="name1", value=Some("value1")), PrivateHeader(name="name2", value=Some("value2"))))
-  val instantNow: Instant = now.truncatedTo(ChronoUnit.MILLIS)
-  val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url",
-    instantNow, instantNow, ccnHttpStatus, None, None, None, None, privateHeaders)
-  val sentMessage = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", instantNow,
-    ccnHttpStatus, None, None, None, None, privateHeaders)
+  val ccnHttpStatus: Int                      = 200
+  val privateHeaders                          = Some(List(PrivateHeader(name = "name1", value = Some("value1")), PrivateHeader(name = "name2", value = Some("value2"))))
+  val instantNow: Instant                     = now.truncatedTo(ChronoUnit.MILLIS)
+
+  val retryingMessage                     =
+    RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", instantNow, instantNow, ccnHttpStatus, None, None, None, None, privateHeaders)
+  val sentMessage                         = SentOutboundSoapMessage(randomUUID, "MessageId-A2", "<IE4N03>payload</IE4N03>", "some url", instantNow, ccnHttpStatus, None, None, None, None, privateHeaders)
   implicit val materialiser: Materializer = app.injector.instanceOf[Materializer]
-  val failedMessage = FailedOutboundSoapMessage(randomUUID, "MessageId-A3", "<IE4N03>payload</IE4N03>", "some url", instantNow, ccnHttpStatus)
-  val coeMessage = CoeSoapMessage(randomUUID, "MessageId-A4", "<IE4N03>payload</IE4N03>", "some url", instantNow, ccnHttpStatus,
-    coeMessage = Some("<COEMessage><Fault>went wrong</Fault></COEMessage>"))
+  val failedMessage                       = FailedOutboundSoapMessage(randomUUID, "MessageId-A3", "<IE4N03>payload</IE4N03>", "some url", instantNow, ccnHttpStatus)
+
+  val coeMessage = CoeSoapMessage(
+    randomUUID,
+    "MessageId-A4",
+    "<IE4N03>payload</IE4N03>",
+    "some url",
+    instantNow,
+    ccnHttpStatus,
+    coeMessage = Some("<COEMessage><Fault>went wrong</Fault></COEMessage>")
+  )
   val codMessage = CodSoapMessage(randomUUID, "MessageId-A5", "<IE4N03>payload</IE4N03>", "some url", instantNow, ccnHttpStatus)
 
   override def beforeEach(): Unit = {
@@ -167,8 +175,14 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
 
     "not retrieve retrying messages when they are not ready for retrying" in {
       val retryingMessageNotReadyForRetrying = RetryingOutboundSoapMessage(
-        randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", instantNow,
-        instantNow.plus(Duration.ofHours(1)), ccnHttpStatus)
+        randomUUID,
+        "MessageId-A1",
+        "<IE4N03>payload</IE4N03>",
+        "some url",
+        instantNow,
+        instantNow.plus(Duration.ofHours(1)),
+        ccnHttpStatus
+      )
 
       await(serviceRepo.persist(retryingMessageNotReadyForRetrying))
       await(serviceRepo.persist(sentMessage))
@@ -178,7 +192,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
     }
 
     "retrieve retrying messages with retryDate in ascending order" in {
-      val retryingMessageOldRetryDatetime = retryingMessage.copy(globalId = randomUUID, retryDateTime = retryingMessage.retryDateTime.minus(Duration.ofHours(1)))
+      val retryingMessageOldRetryDatetime       = retryingMessage.copy(globalId = randomUUID, retryDateTime = retryingMessage.retryDateTime.minus(Duration.ofHours(1)))
       val retryingMessageEvenOlderRetryDatetime = retryingMessage.copy(globalId = randomUUID, retryDateTime = retryingMessage.retryDateTime.minus(Duration.ofHours(2)))
       await(serviceRepo.persist(retryingMessageEvenOlderRetryDatetime))
       await(serviceRepo.persist(retryingMessage))
@@ -206,7 +220,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
 
     "updated message is returned from the database after updating retryDateTime" in {
       await(serviceRepo.persist(retryingMessage))
-      val newRetryDateTime = retryingMessage.retryDateTime.minus(Duration.ofHours(2))
+      val newRetryDateTime     = retryingMessage.retryDateTime.minus(Duration.ofHours(2))
       val Some(updatedMessage) = await(serviceRepo.updateNextRetryTime(retryingMessage.globalId, newRetryDateTime))
 
       updatedMessage.retryDateTime shouldBe newRetryDateTime
@@ -363,4 +377,3 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
     }
   }
 }
-

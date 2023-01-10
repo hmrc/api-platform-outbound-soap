@@ -42,24 +42,24 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
 
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
-  val cache: AsyncCacheApi = app.injector.instanceOf[AsyncCacheApi]
+  val cache: AsyncCacheApi       = app.injector.instanceOf[AsyncCacheApi]
 
   trait Setup {
-    val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]
-    val outboundMessageRepositoryMock: OutboundMessageRepository = mock[OutboundMessageRepository]
+    val outboundConnectorMock: OutboundConnector                         = mock[OutboundConnector]
+    val outboundMessageRepositoryMock: OutboundMessageRepository         = mock[OutboundMessageRepository]
     val notificationCallbackConnectorMock: NotificationCallbackConnector = mock[NotificationCallbackConnector]
-    val appConfigMock: AppConfig = mock[AppConfig]
-    val httpStatus: Int = 200
+    val appConfigMock: AppConfig                                         = mock[AppConfig]
+    val httpStatus: Int                                                  = 200
 
     val expectedCreateDateTime: DateTime = DateTime.now(UTC)
-    val expectedGlobalId: UUID = UUID.randomUUID
+    val expectedGlobalId: UUID           = UUID.randomUUID
 
-    val underTest: ConfirmationService = new ConfirmationService(outboundMessageRepository = outboundMessageRepositoryMock,
-      notificationCallbackConnector = notificationCallbackConnectorMock)
+    val underTest: ConfirmationService =
+      new ConfirmationService(outboundMessageRepository = outboundMessageRepositoryMock, notificationCallbackConnector = notificationCallbackConnectorMock)
   }
 
   "processConfirmation" should {
-    val confirmationRequestCod: Elem =xml.XML.loadString(
+    val confirmationRequestCod: Elem = xml.XML.loadString(
       """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
         |<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ccn2="http://ccn2.ec.eu/CCN2.Service.Platform.Acknowledgement.Schema">
         |    <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
@@ -76,14 +76,15 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
         |            <ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp>
         |        </ccn2:CoD>
         |    </soap:Body>
-        |</soap:Envelope>""".stripMargin.replaceAll("\n", ""))
+        |</soap:Envelope>""".stripMargin.replaceAll("\n", "")
+    )
 
     val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK)
-    val msgId: String = "abcd1234"
+    val msgId: String       = "abcd1234"
 
     "update a sent message with a CoD" in new Setup {
       when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Some(outboundSoapMessage)))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Some(outboundSoapMessage)))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus(*, *, *)).thenReturn(successful(Some(outboundSoapMessage)))
       val result: UpdateResult = await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COD))
       result shouldBe UpdateSuccessResult
       verify(outboundMessageRepositoryMock).findById("abcd1234")
@@ -92,7 +93,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
 
     "update a sent message with a CoE" in new Setup {
       when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Some(outboundSoapMessage)))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Some(outboundSoapMessage)))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus(*, *, *)).thenReturn(successful(Some(outboundSoapMessage)))
       val result: UpdateResult = await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COE))
       result shouldBe UpdateSuccessResult
       verify(outboundMessageRepositoryMock).updateConfirmationStatus("abcd1234", DeliveryStatus.COE, confirmationRequestCod.toString())
@@ -100,14 +101,14 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
 
     "return failure for RelatesTo ID which cannot be found" in new Setup {
       when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
-      val result: UpdateResult  = await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COE))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus(*, *, *)).thenReturn(successful(Option.empty[SentOutboundSoapMessage]))
+      val result: UpdateResult = await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COE))
       result shouldBe MessageIdNotFoundResult
     }
 
-   "send update to notification URL" in new Setup {
+    "send update to notification URL" in new Setup {
       when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Some(outboundSoapMessage)))
-      when(outboundMessageRepositoryMock.updateConfirmationStatus(*,*,*)).thenReturn(successful(Option(outboundSoapMessage)))
+      when(outboundMessageRepositoryMock.updateConfirmationStatus(*, *, *)).thenReturn(successful(Option(outboundSoapMessage)))
       await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COE))
       verify(notificationCallbackConnectorMock).sendNotification(refEq(outboundSoapMessage))(*)
     }

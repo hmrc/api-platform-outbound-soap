@@ -23,34 +23,34 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.Duration
 
 @Singleton
-class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
+class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
 
   val authBaseUrl: String = servicesConfig.baseUrl("auth")
 
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
-  val graphiteHost: String = config.get[String]("microservice.metrics.graphite.host")
+  val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
 
-  val ccn2Host: String = config.get[String]("ccn2Host")
-  val ccn2Port: Int = config.get[Int]("ccn2Port")
-  val ccn2Username: String = config.get[String]("ccn2Username")
-  val ccn2Password: String = config.get[String]("ccn2Password")
+  val ccn2Host: String               = config.get[String]("ccn2Host")
+  val ccn2Port: Int                  = config.get[Int]("ccn2Port")
+  val ccn2Username: String           = config.get[String]("ccn2Username")
+  val ccn2Password: String           = config.get[String]("ccn2Password")
   val cryptoKeystoreLocation: String = config.get[String]("cryptoKeystoreLocation")
-  val keystoreAlias:String = config.get[String]("keystoreAlias")
-  val keystorePassword: String = config.get[String]("keystorePassword")
-  val enableMessageSigning: Boolean = config.get[Boolean]("enableMessageSigning")
+  val keystoreAlias: String          = config.get[String]("keystoreAlias")
+  val keystorePassword: String       = config.get[String]("keystorePassword")
+  val enableMessageSigning: Boolean  = config.get[Boolean]("enableMessageSigning")
 
-  val retryInterval: Duration = Duration(config.getOptional[String]("retry.interval").getOrElse("60 sec"))
-  val retryDuration: Duration = Duration(config.getOptional[String]("retry.duration").getOrElse("5 min"))
-  val retryInitialDelay: Duration = Duration(config.getOptional[String]("retry.initial.delay").getOrElse("30 sec"))
-  val retryEnabled: Boolean = config.getOptional[Boolean]("retry.enabled").getOrElse(false)
+  val retryInterval: Duration        = Duration(config.getOptional[String]("retry.interval").getOrElse("60 sec"))
+  val retryDuration: Duration        = Duration(config.getOptional[String]("retry.duration").getOrElse("5 min"))
+  val retryInitialDelay: Duration    = Duration(config.getOptional[String]("retry.initial.delay").getOrElse("30 sec"))
+  val retryEnabled: Boolean          = config.getOptional[Boolean]("retry.enabled").getOrElse(false)
   val retryJobLockDuration: Duration = Duration(config.getOptional[String]("retry.lock.duration").getOrElse("1 hr"))
-  val retryMessagesTtl: Duration = Duration(config.getOptional[String]("retry.messages.ttl").getOrElse("30 day"))
+  val retryMessagesTtl: Duration     = Duration(config.getOptional[String]("retry.messages.ttl").getOrElse("30 day"))
 
-  val parallelism: Int = config.getOptional[Int]("retry.parallelism").getOrElse(5)
-  val cacheDuration: Duration = Duration(config.getOptional[String]("cache.duration").getOrElse("1 day"))
-  val addressingFrom: String = config.getOptional[String]("addressing.from").getOrElse("")
-  val addressingReplyTo: String = config.getOptional[String]("addressing.replyTo").getOrElse("")
-  val addressingFaultTo: String = config.getOptional[String]("addressing.faultTo").getOrElse("")
+  val parallelism: Int                = config.getOptional[Int]("retry.parallelism").getOrElse(5)
+  val cacheDuration: Duration         = Duration(config.getOptional[String]("cache.duration").getOrElse("1 day"))
+  val addressingFrom: String          = config.getOptional[String]("addressing.from").getOrElse("")
+  val addressingReplyTo: String       = config.getOptional[String]("addressing.replyTo").getOrElse("")
+  val addressingFaultTo: String       = config.getOptional[String]("addressing.faultTo").getOrElse("")
   val confirmationOfDelivery: Boolean = config.getOptional[Boolean]("confirmationOfDelivery").getOrElse(false)
   val proxyRequiredForThisEnvironment = config.getOptional[Boolean]("proxy.proxyRequiredForThisEnvironment").getOrElse(false)
 

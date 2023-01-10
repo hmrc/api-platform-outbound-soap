@@ -47,6 +47,6 @@ trait LockedScheduledJob {
       case Some(Result(msg)) => Result(s"Job with $name run and completed with result $msg")
       case None              => Result(s"Job with $name cannot acquire mongo lock, not running")
     }
-  override def toString() = s"$name after $initialDelay every $interval"
+  override def toString()                                          = s"$name after $initialDelay every $interval"
 
 }

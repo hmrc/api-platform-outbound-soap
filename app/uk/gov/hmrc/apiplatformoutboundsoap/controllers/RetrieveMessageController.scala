@@ -28,23 +28,21 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class RetrieveMessageController @Inject()(cc: ControllerComponents,
-                                          messageRepository: OutboundMessageRepository)
-                                         (implicit ec: ExecutionContext)
-  extends BackendController(cc) with Logging {
+class RetrieveMessageController @Inject() (cc: ControllerComponents, messageRepository: OutboundMessageRepository)(implicit ec: ExecutionContext)
+    extends BackendController(cc) with Logging {
 
   def message(id: String): Action[AnyContent] = Action.async {
     id.trim match {
       case "" => Future.successful(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "id should not be empty")))
-      case _ => messageRepository.findById(id).flatMap(maybeOutboundSoapMessage =>
-        if (maybeOutboundSoapMessage.nonEmpty) {
-          Future.successful(Ok(Json.toJson(maybeOutboundSoapMessage)))
-        } else {
-          Future.successful(NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"id [${id}] could not be found")))
+      case _  => messageRepository.findById(id).flatMap(maybeOutboundSoapMessage =>
+          if (maybeOutboundSoapMessage.nonEmpty) {
+            Future.successful(Ok(Json.toJson(maybeOutboundSoapMessage)))
+          } else {
+            Future.successful(NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"id [${id}] could not be found")))
+          }
+        ) recover {
+          case e: Exception => InternalServerError(JsErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR, "error querying database"))
         }
-      ) recover {
-        case e: Exception => InternalServerError(JsErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR, "error querying database"))
-      }
     }
   }
 }

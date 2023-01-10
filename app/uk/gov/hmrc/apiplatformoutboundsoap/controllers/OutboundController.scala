@@ -33,11 +33,8 @@ import play.api.Logging
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class OutboundController @Inject()(cc: ControllerComponents,
-                                   appConfig: AppConfig,
-                                   outboundService: OutboundService)
-                                  (implicit ec: ExecutionContext)
-  extends BackendController(cc) with Logging {
+class OutboundController @Inject() (cc: ControllerComponents, appConfig: AppConfig, outboundService: OutboundService)(implicit ec: ExecutionContext)
+    extends BackendController(cc) with Logging {
 
   def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
     val maxPrivateHeaders = 5
@@ -51,22 +48,23 @@ class OutboundController @Inject()(cc: ControllerComponents,
           } else {
             sendMessage(messageRequest)
           }
-        case None => sendMessage(messageRequest)
+        case None              => sendMessage(messageRequest)
       }
     }
   }
 
-  private def sendMessage(messageRequest: MessageRequest) : Future[Result] = {
+  private def sendMessage(messageRequest: MessageRequest): Future[Result] = {
     val codValue = messageRequest.confirmationOfDelivery match {
       case Some(cod) => cod
-      case None =>  appConfig.confirmationOfDelivery
+      case None      => appConfig.confirmationOfDelivery
     }
     outboundService.sendMessage(messageRequest.copy(confirmationOfDelivery = Some(codValue)))
       .map(outboundSoapMessage => Ok(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(outboundSoapMessage))))
       .recover(recovery)
   }
+
   private def recovery: PartialFunction[Throwable, Result] = {
-    case e: WSDLException => BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, e.getMessage)))
+    case e: WSDLException     => BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, e.getMessage)))
     case e: NotFoundException => NotFound(Json.toJson(ErrorResponse(NOT_FOUND, e.message)))
   }
 }

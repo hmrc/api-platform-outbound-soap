@@ -18,20 +18,17 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import uk.gov.hmrc.apiplatformoutboundsoap.utils.Require.validate
 
-case class MessageRequest(wsdlUrl: String,
-                          wsdlOperation: String,
-                          messageBody: String,
-                          addressing: Addressing,
-                          confirmationOfDelivery: Option[Boolean],
-                          notificationUrl: Option[String] = None,
-                          privateHeaders: Option[List[PrivateHeader]] = None)
+case class MessageRequest(
+    wsdlUrl: String,
+    wsdlOperation: String,
+    messageBody: String,
+    addressing: Addressing,
+    confirmationOfDelivery: Option[Boolean],
+    notificationUrl: Option[String] = None,
+    privateHeaders: Option[List[PrivateHeader]] = None
+  )
 
-case class Addressing(from: String,
-                      to: String,
-                      replyTo: String,
-                      faultTo: String,
-                      messageId: String,
-                      relatesTo: Option[String] = None){
+case class Addressing(from: String, to: String, replyTo: String, faultTo: String, messageId: String, relatesTo: Option[String] = None) {
   validate(to.trim != "", "addressing.to being empty")
   validate(messageId.trim != "", "addressing.messageId being empty")
   validate(from.trim != "", "addressing.from being empty")

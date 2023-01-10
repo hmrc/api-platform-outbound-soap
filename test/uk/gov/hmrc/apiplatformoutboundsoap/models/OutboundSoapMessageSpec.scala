@@ -26,12 +26,12 @@ import java.util.UUID
 class OutboundSoapMessageSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
   private val ccnHttpStatus: Int = 200
-  private val now = Instant.now
-  val retryingMessage = RetryingOutboundSoapMessage(UUID.randomUUID(), "11111", "some retrying message", "some destination url", now, now, ccnHttpStatus)
-  val failedMessage = FailedOutboundSoapMessage(UUID.randomUUID(), "22222", "failed message", "some destination url", now, ccnHttpStatus)
-  val sentMessage = SentOutboundSoapMessage(UUID.randomUUID(), "33333", "sent message", "some destination url", now, ccnHttpStatus)
-  val coeMessage = CoeSoapMessage(UUID.randomUUID(), "44444", "coe message", "some destination url", now, ccnHttpStatus)
-  val codMessage = CodSoapMessage(UUID.randomUUID(), "55555", "cod message", "some destination url", now, ccnHttpStatus)
+  private val now                = Instant.now
+  val retryingMessage            = RetryingOutboundSoapMessage(UUID.randomUUID(), "11111", "some retrying message", "some destination url", now, now, ccnHttpStatus)
+  val failedMessage              = FailedOutboundSoapMessage(UUID.randomUUID(), "22222", "failed message", "some destination url", now, ccnHttpStatus)
+  val sentMessage                = SentOutboundSoapMessage(UUID.randomUUID(), "33333", "sent message", "some destination url", now, ccnHttpStatus)
+  val coeMessage                 = CoeSoapMessage(UUID.randomUUID(), "44444", "coe message", "some destination url", now, ccnHttpStatus)
+  val codMessage                 = CodSoapMessage(UUID.randomUUID(), "55555", "cod message", "some destination url", now, ccnHttpStatus)
 
   "typeNaming" should {
     "return correct type for RetryingOutboundSoapMessage" in {
@@ -60,7 +60,7 @@ class OutboundSoapMessageSpec extends AnyWordSpec with Matchers with MockitoSuga
       val e: IllegalArgumentException = intercept[IllegalArgumentException] {
         OutboundSoapMessage.typeToStatus("a string".getClass.getCanonicalName)
       }
-      e.getMessage should include ("java.lang.String is not a valid class")
+      e.getMessage should include("java.lang.String is not a valid class")
     }
   }
 }
