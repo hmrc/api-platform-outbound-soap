@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
+import java.time.Instant
+import java.util.UUID
+
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import java.time.Instant
-import java.util.UUID
 
 class OutboundSoapMessageSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 

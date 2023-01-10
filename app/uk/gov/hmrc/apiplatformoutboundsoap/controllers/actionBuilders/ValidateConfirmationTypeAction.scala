@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers.actionBuilders
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+
 import _root_.uk.gov.hmrc.http.HttpErrorFunctions
+
 import play.api.Logging
 import play.api.mvc.Results._
 import play.api.mvc.{ActionFilter, Request, Result}
-
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ValidateConfirmationTypeAction @Inject() ()(implicit ec: ExecutionContext)

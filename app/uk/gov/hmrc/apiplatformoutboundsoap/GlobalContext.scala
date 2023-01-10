@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap
 
-import play.api.inject.Injector
-
 import javax.inject.{Inject, Singleton}
+
+import play.api.inject.Injector
 
 @Singleton
 class GlobalContext @Inject() (playBuiltinInjector: Injector) {

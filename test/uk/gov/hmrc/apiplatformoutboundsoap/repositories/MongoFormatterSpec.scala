@@ -16,15 +16,17 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
+import java.time.Instant
+import java.util.UUID
+
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import play.api.libs.json.{JsObject, JsString}
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-import java.time.Instant
-import java.util.UUID
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
 
 class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 

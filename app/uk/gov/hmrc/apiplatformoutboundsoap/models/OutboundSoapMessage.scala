@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
-
 import java.time.Instant
 import java.util.UUID
 import scala.collection.immutable
 import scala.reflect.classTag
+
+import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
 sealed trait OutboundSoapMessage {
   val globalId: UUID

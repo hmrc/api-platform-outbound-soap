@@ -16,16 +16,17 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc._
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.apiplatformoutboundsoap.{ErrorCode, JsErrorResponse}
-import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class RetrieveMessageController @Inject() (cc: ControllerComponents, messageRepository: OutboundMessageRepository)(implicit ec: ExecutionContext)

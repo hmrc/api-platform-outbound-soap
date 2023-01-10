@@ -16,6 +16,15 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
+import java.time.Instant
+import java.util.UUID
+import java.util.UUID.randomUUID
+import javax.wsdl.WSDLException
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.Future.successful
+import scala.concurrent.duration.Duration
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source.{fromIterator, single}
 import com.mongodb.client.result.InsertOneResult
@@ -29,23 +38,16 @@ import org.xmlunit.builder.DiffBuilder
 import org.xmlunit.builder.DiffBuilder.compare
 import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
+
 import play.api.cache.AsyncCacheApi
 import play.api.http.Status.OK
 import play.api.test.Helpers._
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
-
-import java.time.Instant
-import java.util.UUID
-import java.util.UUID.randomUUID
-import javax.wsdl.WSDLException
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.Future.successful
-import scala.concurrent.duration.Duration
 
 class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
 

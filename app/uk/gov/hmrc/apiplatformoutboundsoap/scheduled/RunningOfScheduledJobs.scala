@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
-import akka.actor.Cancellable
-import org.apache.commons.lang3.time.StopWatch
-import play.api.inject.ApplicationLifecycle
-import play.api.{Application, Logging}
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
+
+import akka.actor.Cancellable
+import org.apache.commons.lang3.time.StopWatch
+
+import play.api.inject.ApplicationLifecycle
+import play.api.{Application, Logging}
 
 /** All implementing classes must be singletons - see https://www.playframework.com/documentation/2.6.x/ScalaDependencyInjection#Stopping/cleaning-up
   */

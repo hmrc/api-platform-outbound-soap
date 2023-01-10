@@ -16,6 +16,16 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
+import java.time.{Duration, Instant}
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
+import javax.wsdl._
+import javax.wsdl.extensions.soap12.SOAP12Address
+import javax.wsdl.xml.WSDLReader
+import javax.xml.namespace.QName
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
+
 import akka.Done
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
@@ -26,26 +36,18 @@ import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.addressing.AddressingConstants.Final.{WSAW_NAMESPACE, WSA_NAMESPACE}
 import org.apache.axis2.addressing.AddressingConstants._
 import org.apache.axis2.wsdl.WSDLUtil
-import play.api.cache.AsyncCacheApi
+
 import play.api.Logging
+import play.api.cache.AsyncCacheApi
 import play.api.http.Status._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, NotFoundException}
+
 import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult
 import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult._
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
-import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, NotFoundException}
-
-import java.time.{Duration, Instant}
-import java.util.UUID
-import javax.inject.{Inject, Singleton}
-import javax.wsdl.extensions.soap12.SOAP12Address
-import javax.wsdl.xml.WSDLReader
-import javax.wsdl.{Definition, Operation, Part, Port, PortType, Service}
-import javax.xml.namespace.QName
-import scala.jdk.CollectionConverters._
-import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class OutboundService @Inject() (

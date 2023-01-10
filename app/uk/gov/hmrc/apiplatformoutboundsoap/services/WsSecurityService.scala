@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
+import java.util.Properties
+import javax.inject.{Inject, Singleton}
+
 import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.util.XMLUtils.toDOM
 import org.apache.wss4j.common.WSS4JConstants
@@ -24,10 +27,8 @@ import org.apache.wss4j.common.crypto.{Crypto, CryptoFactory}
 import org.apache.wss4j.common.util.XMLUtils.prettyDocumentToString
 import org.apache.wss4j.dom.WSConstants
 import org.apache.wss4j.dom.message.{WSSecHeader, WSSecSignature, WSSecUsernameToken}
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
-import java.util.Properties
-import javax.inject.{Inject, Singleton}
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
 @Singleton
 class WsSecurityService @Inject() (appConfig: AppConfig) {

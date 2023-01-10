@@ -16,18 +16,19 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
+import scala.xml.{Node, NodeSeq}
+
 import play.api.Logging
 import play.api.mvc._
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+
 import uk.gov.hmrc.apiplatformoutboundsoap.controllers.actionBuilders.ValidateConfirmationTypeAction
 import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus
 import uk.gov.hmrc.apiplatformoutboundsoap.models.common._
 import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
-import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.{Node, NodeSeq}
-import scala.language.postfixOps
 
 @Singleton
 class ConfirmationController @Inject() (

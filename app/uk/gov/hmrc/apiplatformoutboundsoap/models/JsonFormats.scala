@@ -16,11 +16,12 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
+import java.time.Instant
+
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
-import java.time.Instant
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
 object JsonFormats {
 

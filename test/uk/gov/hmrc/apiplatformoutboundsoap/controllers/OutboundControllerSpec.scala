@@ -16,6 +16,13 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
+import java.time.Instant
+import java.util.UUID
+import javax.wsdl.WSDLException
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.Future.{failed, successful}
+
 import akka.stream.Materializer
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.mockito.scalatest.ResetMocksAfterEachTest
@@ -23,23 +30,18 @@ import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.http.Status.{BAD_REQUEST, OK}
 import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, Helpers}
+import uk.gov.hmrc.http.NotFoundException
+
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.{addressingFormatter, privateHeaderFormatter}
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest, PrivateHeader, SendingStatus, SentOutboundSoapMessage}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
-import uk.gov.hmrc.http.NotFoundException
-
-import java.time.Instant
-import java.util.UUID
-import javax.wsdl.WSDLException
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.Future.{failed, successful}
 
 class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite
     with ArgumentMatchersSugar with ResetMocksAfterEachTest {

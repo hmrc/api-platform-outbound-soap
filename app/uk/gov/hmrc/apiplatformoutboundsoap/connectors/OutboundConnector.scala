@@ -16,17 +16,19 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
-import org.apache.http.HttpStatus
-import play.api.Logging
-import play.api.http.HeaderNames.CONTENT_TYPE
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
-import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HttpClient, _}
-
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+
+import org.apache.http.HttpStatus
+
+import play.api.Logging
+import play.api.http.HeaderNames.CONTENT_TYPE
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HttpClient, _}
+
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
+import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 
 @Singleton
 class OutboundConnector @Inject() (

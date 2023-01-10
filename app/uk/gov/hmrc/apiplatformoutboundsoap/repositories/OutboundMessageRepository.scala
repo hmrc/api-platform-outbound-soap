@@ -16,32 +16,34 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
-import akka.NotUsed
-import akka.stream.alpakka.mongodb.scaladsl.MongoSource
-import akka.stream.scaladsl.Source
-import org.bson.codecs.configuration.CodecRegistries._
-import org.mongodb.scala.{MongoClient, MongoCollection}
-import org.mongodb.scala.ReadPreference.primaryPreferred
-import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.model._
-import org.mongodb.scala.model.Filters.{and, equal, lte, or}
-import org.mongodb.scala.model.Indexes.ascending
-import org.mongodb.scala.model.Sorts.descending
-import org.mongodb.scala.model.Updates.{combine, set}
-import org.mongodb.scala.result.InsertOneResult
-import play.api.Logging
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
-import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.outboundSoapMessageFormatter
-import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
-import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
-
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+
+import akka.NotUsed
+import akka.stream.alpakka.mongodb.scaladsl.MongoSource
+import akka.stream.scaladsl.Source
+import org.bson.codecs.configuration.CodecRegistries._
+import org.mongodb.scala.ReadPreference.primaryPreferred
+import org.mongodb.scala.bson.collection.immutable.Document
+import org.mongodb.scala.model.Filters.{and, equal, lte, or}
+import org.mongodb.scala.model.Indexes.ascending
+import org.mongodb.scala.model.Sorts.descending
+import org.mongodb.scala.model.Updates.{combine, set}
+import org.mongodb.scala.model._
+import org.mongodb.scala.result.InsertOneResult
+import org.mongodb.scala.{MongoClient, MongoCollection}
+
+import play.api.Logging
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
+import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
+
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.outboundSoapMessageFormatter
 
 @Singleton
 class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appConfig: AppConfig)(implicit ec: ExecutionContext)

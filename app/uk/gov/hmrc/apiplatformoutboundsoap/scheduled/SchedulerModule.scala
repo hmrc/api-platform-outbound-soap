@@ -16,13 +16,15 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
-import com.google.inject.AbstractModule
-import play.api.Application
-import play.api.inject.ApplicationLifecycle
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
+
+import com.google.inject.AbstractModule
+
+import play.api.Application
+import play.api.inject.ApplicationLifecycle
+
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
 class SchedulerModule extends AbstractModule {
 

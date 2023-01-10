@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
+import java.util.UUID.randomUUID
+
 import org.apache.axiom.om.OMAbstractFactory.getSOAP12Factory
 import org.apache.axiom.soap.SOAPEnvelope
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
@@ -25,9 +27,8 @@ import org.xmlunit.builder.DiffBuilder
 import org.xmlunit.builder.DiffBuilder.compare
 import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
-import java.util.UUID.randomUUID
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
 class WsSecurityServiceSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
