@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
-import org.joda.time.Duration
-import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
-
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
+
+import org.joda.time.Duration
+
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
 trait LockedScheduledJob {
   case class Result(message: String)
@@ -47,6 +47,6 @@ trait LockedScheduledJob {
       case Some(Result(msg)) => Result(s"Job with $name run and completed with result $msg")
       case None              => Result(s"Job with $name cannot acquire mongo lock, not running")
     }
-  override def toString() = s"$name after $initialDelay every $interval"
+  override def toString()                                          = s"$name after $initialDelay every $interval"
 
 }

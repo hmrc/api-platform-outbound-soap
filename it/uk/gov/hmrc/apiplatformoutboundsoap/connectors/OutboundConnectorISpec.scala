@@ -30,18 +30,17 @@ import uk.gov.hmrc.apiplatformoutboundsoap.support.{Ccn2Service, WireMockSupport
 class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with WireMockSupport with Ccn2Service {
   override implicit lazy val app: Application = appBuilder.build()
 
-  protected  def appBuilder: GuiceApplicationBuilder =
+  protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
       .configure(
-        "metrics.enabled" -> false,
+        "metrics.enabled"  -> false,
         "auditing.enabled" -> false
       )
 
   trait Setup {
     val underTest: OutboundConnector = app.injector.instanceOf[OutboundConnector]
-    val messageId = "messageId"
+    val messageId                    = "messageId"
   }
-
 
   "postMessage" should {
     val message = SoapRequest("<Envelope><Body>foobar</Body></Envelope>", wireMockBaseUrlAsString)
@@ -65,9 +64,7 @@ class OutboundConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppP
     }
 
     "return error status when soap fault is returned by the CCN2 service" in new Setup {
-      Seq(Fault.CONNECTION_RESET_BY_PEER, Fault.EMPTY_RESPONSE, Fault.MALFORMED_RESPONSE_CHUNK,
-        Fault.RANDOM_DATA_THEN_CLOSE) foreach { fault =>
-
+      Seq(Fault.CONNECTION_RESET_BY_PEER, Fault.EMPTY_RESPONSE, Fault.MALFORMED_RESPONSE_CHUNK, Fault.RANDOM_DATA_THEN_CLOSE) foreach { fault =>
         stubCcn2Endpoint(message.soapEnvelope, fault)
         val result: Int = await(underTest.postMessage(messageId, message))
         result shouldBe INTERNAL_SERVER_ERROR

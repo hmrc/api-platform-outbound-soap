@@ -5,6 +5,16 @@ val appName = "api-platform-outbound-soap"
 
 val silencerVersion = "1.7.9"
 
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+
+inThisBuild(
+  List(
+    scalaVersion := "2.13.8",
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision
+  )
+)
+
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
   Seq(

@@ -21,23 +21,24 @@ import play.api.libs.json.{JsObject, Json}
 
 object ErrorCode extends Enumeration {
   type ErrorCode = Value
-  val NOT_FOUND = Value("NOT_FOUND")
-  val BAD_REQUEST = Value("BAD_REQUEST")
+  val NOT_FOUND             = Value("NOT_FOUND")
+  val BAD_REQUEST           = Value("BAD_REQUEST")
   val INTERNAL_SERVER_ERROR = Value("INTERNAL_SERVER_ERROR")
 }
 
 object CcnRequestResult extends Enumeration {
   type CcnRequestResult = Value
   val UNEXPECTED_SUCCESS = Value("UNEXPECTED_SUCCESS")
-  val SUCCESS = Value("SUCCESS")
-  val FAIL_ERROR = Value("FAIL_ERROR")
-  val RETRYABLE_ERROR = Value("RETRYABLE_ERROR")
+  val SUCCESS            = Value("SUCCESS")
+  val FAIL_ERROR         = Value("FAIL_ERROR")
+  val RETRYABLE_ERROR    = Value("RETRYABLE_ERROR")
 }
 
 object JsErrorResponse {
+
   def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
     Json.obj(
-      "code" -> errorCode.toString,
+      "code"    -> errorCode.toString,
       "message" -> message
     )
 }

@@ -16,34 +16,36 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
+import scala.xml.{Node, NodeSeq}
+
 import play.api.Logging
 import play.api.mvc._
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+
 import uk.gov.hmrc.apiplatformoutboundsoap.controllers.actionBuilders.ValidateConfirmationTypeAction
 import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus
 import uk.gov.hmrc.apiplatformoutboundsoap.models.common._
 import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
-import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.{Node, NodeSeq}
-import scala.language.postfixOps
 
 @Singleton
-class ConfirmationController @Inject()(cc: ControllerComponents,
-                                       confirmationService: ConfirmationService,
-                                      validateConfirmationTypeAction: ValidateConfirmationTypeAction)
-                                      (implicit ec: ExecutionContext)
-  extends BackendController(cc) with Logging{
+class ConfirmationController @Inject() (
+    cc: ControllerComponents,
+    confirmationService: ConfirmationService,
+    validateConfirmationTypeAction: ValidateConfirmationTypeAction
+  )(implicit ec: ExecutionContext
+  ) extends BackendController(cc) with Logging {
 
   def message: Action[NodeSeq] = (Action andThen validateConfirmationTypeAction).async(parse.xml) { implicit request =>
     val xml: NodeSeq = request.body
 
     def callService(deliveryStatus: DeliveryStatus, id: String): Future[Result] = {
-      if(id.trim.nonEmpty) {
+      if (id.trim.nonEmpty) {
         confirmationService.processConfirmation(xml, id.trim, deliveryStatus) map {
           case UpdateSuccessResult => Accepted
-          case _ =>
+          case _                   =>
             logger.warn(s"No message found with global ID [$id]. Request is ${xml}")
             NotFound
         }
@@ -57,9 +59,9 @@ class ConfirmationController @Inject()(cc: ControllerComponents,
 
     val id: Option[Node] = (xml \\ "RelatesTo" headOption)
     (confirmationType, id) match {
-      case (Some(DeliveryStatus.COE), Some(id)) =>  callService(DeliveryStatus.COE, id.text)
-      case (Some(DeliveryStatus.COD), Some(id)) =>  callService(DeliveryStatus.COD, id.text)
-      case _ =>
+      case (Some(DeliveryStatus.COE), Some(id)) => callService(DeliveryStatus.COE, id.text)
+      case (Some(DeliveryStatus.COD), Some(id)) => callService(DeliveryStatus.COD, id.text)
+      case _                                    =>
         logger.warn(s"Unable to update message with RelatesTo of [${id}] and x-soap-action value of [${confirmationType}]. Request is ${xml}")
         Future.successful(BadRequest)
     }

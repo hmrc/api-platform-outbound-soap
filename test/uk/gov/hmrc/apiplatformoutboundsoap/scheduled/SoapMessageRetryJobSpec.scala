@@ -16,28 +16,29 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
-import akka.Done
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import play.api.test.Helpers._
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
-import uk.gov.hmrc.mongo.lock.MongoLockRepository
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.{failed, successful}
 import scala.concurrent.duration.Duration
 
+import akka.Done
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+import play.api.test.Helpers._
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
+
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
+import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 
 class SoapMessageRetryJobSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
   trait Setup {
-    val appConfigMock: AppConfig = mock[AppConfig]
+    val appConfigMock: AppConfig             = mock[AppConfig]
     when(appConfigMock.retryJobLockDuration).thenReturn(Duration("1 hour"))
     val outboundServiceMock: OutboundService = mock[OutboundService]
-    val repositoryMock: MongoLockRepository = mock[MongoLockRepository]
-    val underTest: SoapMessageRetryJob = new SoapMessageRetryJob(appConfigMock, repositoryMock, outboundServiceMock)
+    val repositoryMock: MongoLockRepository  = mock[MongoLockRepository]
+    val underTest: SoapMessageRetryJob       = new SoapMessageRetryJob(appConfigMock, repositoryMock, outboundServiceMock)
   }
 
   "executeInLock" should {
@@ -61,8 +62,8 @@ class SoapMessageRetryJobSpec extends AnyWordSpec with Matchers with MockitoSuga
   "execute" should {
     "return response for success" in new Setup {
       when(outboundServiceMock.retryMessages(*)).thenReturn(successful(Done))
-      when(repositoryMock.takeLock(*,*,*)).thenReturn(successful(true))
-      when(repositoryMock.releaseLock(*,*)).thenReturn(successful(()))
+      when(repositoryMock.takeLock(*, *, *)).thenReturn(successful(true))
+      when(repositoryMock.releaseLock(*, *)).thenReturn(successful(()))
 
       val result: underTest.Result = await(underTest.execute)
 

@@ -16,32 +16,37 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import uk.gov.hmrc.apiplatformoutboundsoap.connectors.NotificationCallbackConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
-import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, UpdateSuccessResult, UpdateResult}
-import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
-import uk.gov.hmrc.http.HeaderCarrier
-
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.NodeSeq
 
-@Singleton
-class ConfirmationService @Inject()(outboundMessageRepository: OutboundMessageRepository,
-                                    notificationCallbackConnector: NotificationCallbackConnector)
-                                   (implicit val ec: ExecutionContext) {
- def processConfirmation(confRqst: NodeSeq, msgId: String, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
+import uk.gov.hmrc.http.HeaderCarrier
 
-   def doUpdate(id: String, status: DeliveryStatus, body: String): Future[UpdateSuccessResult.type] = {
+import uk.gov.hmrc.apiplatformoutboundsoap.connectors.NotificationCallbackConnector
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, UpdateResult, UpdateSuccessResult}
+import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
+
+@Singleton
+class ConfirmationService @Inject() (
+    outboundMessageRepository: OutboundMessageRepository,
+    notificationCallbackConnector: NotificationCallbackConnector
+  )(implicit val ec: ExecutionContext
+  ) {
+
+  def processConfirmation(confRqst: NodeSeq, msgId: String, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
+
+    def doUpdate(id: String, status: DeliveryStatus, body: String): Future[UpdateSuccessResult.type] = {
       outboundMessageRepository.updateConfirmationStatus(id, status, body) map { maybeOutboundSoapMessage =>
-        maybeOutboundSoapMessage.map(outboundSoapMessage => notificationCallbackConnector.sendNotification(outboundSoapMessage))} map {
+        maybeOutboundSoapMessage.map(outboundSoapMessage => notificationCallbackConnector.sendNotification(outboundSoapMessage))
+      } map {
         case _ => UpdateSuccessResult
       }
     }
 
     outboundMessageRepository.findById(msgId).flatMap {
-      case None => Future.successful(MessageIdNotFoundResult)
+      case None                         => Future.successful(MessageIdNotFoundResult)
       case Some(_: OutboundSoapMessage) => doUpdate(msgId, delStatus, confRqst.toString())
     }
- }
+  }
 }

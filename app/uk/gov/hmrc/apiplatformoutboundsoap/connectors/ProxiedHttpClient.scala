@@ -16,22 +16,23 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
+import javax.inject.{Inject, Singleton}
+
 import akka.actor.ActorSystem
+
 import play.api.Configuration
 import play.api.libs.ws.{WSClient, WSProxyServer}
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 import uk.gov.hmrc.play.http.ws.{WSProxy, WSProxyConfiguration}
 
-import javax.inject.{Inject, Singleton}
-
 @Singleton
-class ProxiedHttpClient @Inject()(
-           config: Configuration,
-           httpAuditing: HttpAuditing,
-           wsClient: WSClient,
-           actorSystem: ActorSystem
-         ) extends DefaultHttpClient(config, httpAuditing, wsClient, actorSystem) with WSProxy {
+class ProxiedHttpClient @Inject() (
+    config: Configuration,
+    httpAuditing: HttpAuditing,
+    wsClient: WSClient,
+    actorSystem: ActorSystem
+  ) extends DefaultHttpClient(config, httpAuditing, wsClient, actorSystem) with WSProxy {
 
   override def wsProxyServer: Option[WSProxyServer] = WSProxyConfiguration.buildWsProxyServer(config)
 }

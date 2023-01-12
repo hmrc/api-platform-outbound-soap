@@ -16,6 +16,15 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
+import java.time.Instant
+import java.util.UUID
+import java.util.UUID.randomUUID
+import javax.wsdl.WSDLException
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.Future.successful
+import scala.concurrent.duration.Duration
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source.{fromIterator, single}
 import com.mongodb.client.result.InsertOneResult
@@ -29,41 +38,34 @@ import org.xmlunit.builder.DiffBuilder
 import org.xmlunit.builder.DiffBuilder.compare
 import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
+
 import play.api.cache.AsyncCacheApi
 import play.api.http.Status.OK
 import play.api.test.Helpers._
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
-
-import java.time.Instant
-import java.util.UUID
-import java.util.UUID.randomUUID
-import javax.wsdl.WSDLException
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.Future.successful
-import scala.concurrent.duration.Duration
 
 class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
 
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
-  val cache: AsyncCacheApi = app.injector.instanceOf[AsyncCacheApi]
+  val cache: AsyncCacheApi       = app.injector.instanceOf[AsyncCacheApi]
 
   trait Setup {
-    val outboundConnectorMock: OutboundConnector = mock[OutboundConnector]
-    val outboundMessageRepositoryMock: OutboundMessageRepository = mock[OutboundMessageRepository]
-    val wsSecurityServiceMock: WsSecurityService = mock[WsSecurityService]
+    val outboundConnectorMock: OutboundConnector                         = mock[OutboundConnector]
+    val outboundMessageRepositoryMock: OutboundMessageRepository         = mock[OutboundMessageRepository]
+    val wsSecurityServiceMock: WsSecurityService                         = mock[WsSecurityService]
     val notificationCallbackConnectorMock: NotificationCallbackConnector = mock[NotificationCallbackConnector]
-    val appConfigMock: AppConfig = mock[AppConfig]
-    val cacheSpy: AsyncCacheApi = spy[AsyncCacheApi](cache)
-    val httpStatus: Int = 200
+    val appConfigMock: AppConfig                                         = mock[AppConfig]
+    val cacheSpy: AsyncCacheApi                                          = spy[AsyncCacheApi](cache)
+    val httpStatus: Int                                                  = 200
 
     val expectedInstantNow: Instant = Instant.now
-    val expectedGlobalId: UUID = UUID.randomUUID
+    val expectedGlobalId: UUID      = UUID.randomUUID
     when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
     when(appConfigMock.ccn2Host).thenReturn("example.com")
     when(appConfigMock.ccn2Port).thenReturn(1234)
@@ -72,25 +74,27 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     when(appConfigMock.addressingFaultTo).thenReturn("FaultTo")
 
     when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
-    val underTest: OutboundService = new OutboundService(outboundConnectorMock, wsSecurityServiceMock,
-      outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock, cacheSpy) {
-      override def now: Instant = expectedInstantNow
 
-      override def randomUUID: UUID = expectedGlobalId
-    }
+    val underTest: OutboundService =
+      new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock, cacheSpy) {
+        override def now: Instant = expectedInstantNow
+
+        override def randomUUID: UUID = expectedGlobalId
+      }
   }
 
   "sendMessage" should {
-    val messageId = "123"
-    val to = "CCN2"
-    val from = "HMRC"
-    val longPrivateHeaderValue = "value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1valuevlue1value1value1"
-    val privateHeaders = Some(List(PrivateHeader(name = "name1", Some(value = "value1")), PrivateHeader(name = "name2", Some(value = "value2"))))
-    val addressing = Addressing(from, to, "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
+    val messageId                         = "123"
+    val to                                = "CCN2"
+    val from                              = "HMRC"
+    val longPrivateHeaderValue            =
+      "value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1valuevlue1value1value1"
+    val privateHeaders                    = Some(List(PrivateHeader(name = "name1", Some(value = "value1")), PrivateHeader(name = "name2", Some(value = "value2"))))
+    val addressing                        = Addressing(from, to, "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
     // mixin refers to mandatory and default addressing fields
-    val addressingMixinFields = Addressing(from = from, to = to, replyTo = "ReplyTo", faultTo = "FaultTo", messageId = messageId)
+    val addressingMixinFields             = Addressing(from = from, to = to, replyTo = "ReplyTo", faultTo = "FaultTo", messageId = messageId)
     val addressingWithEmptyOptionalFields = Addressing(from = from, to = to, replyTo = " ", faultTo = "", messageId = messageId)
-    val messageRequestFullAddressing = MessageRequest(
+    val messageRequestFullAddressing      = MessageRequest(
       "test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl",
       "IE4N03notifyERiskAnalysisHit",
       """<IE4N03 xmlns="urn:wco:datamodel:WCO:CIS:1"><riskAnalysis>example</riskAnalysis></IE4N03>""",
@@ -127,11 +131,11 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       privateHeaders = privateHeaders
     )
 
-    val messageRequestMinimalAddressing = messageRequestFullAddressing
+    val messageRequestMinimalAddressing            = messageRequestFullAddressing
       .copy(addressing = addressingMixinFields)
     val messageRequestAddressingWithEmptyOptionals = messageRequestFullAddressing
       .copy(addressing = addressingWithEmptyOptionalFields)
-    val expectedStatus: Int = OK
+    val expectedStatus: Int                        = OK
 
     val allAddressingHeaders =
       """<wsa:From><wsa:Address>HMRC</wsa:Address></wsa:From>
@@ -277,7 +281,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(httpCode))
         val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
         when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
-        val expectedInterval = Duration("10s")
+        val expectedInterval                                   = Duration("10s")
         when(appConfigMock.retryInterval).thenReturn(expectedInterval)
 
         await(underTest.sendMessage(messageRequestFullAddressing))
@@ -353,7 +357,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "send the optional addressing headers if present in the request" in new Setup {
-      val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
+      val messageCaptor: ArgumentCaptor[SOAPEnvelope]        = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       val persistCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
@@ -365,7 +369,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "not send the optional addressing headers if they are empty in the request" in new Setup {
-      val messageCaptor: ArgumentCaptor[SOAPEnvelope] = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
+      val messageCaptor: ArgumentCaptor[SOAPEnvelope]        = ArgumentCaptor.forClass(classOf[SOAPEnvelope])
       val persistCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor.capture())).thenReturn(expectedSoapEnvelope(addressingHeadersWithoutOptionals))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
@@ -459,7 +463,9 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
-        await(underTest.sendMessage(messageRequestWithPrivateHeaders.copy(privateHeaders = Some(List(PrivateHeader(name = "name1", value = Some(longPrivateHeaderValue)), PrivateHeader(name = "name2", value = Some("value2")))))))
+        await(underTest.sendMessage(messageRequestWithPrivateHeaders.copy(privateHeaders =
+          Some(List(PrivateHeader(name = "name1", value = Some(longPrivateHeaderValue)), PrivateHeader(name = "name2", value = Some("value2"))))
+        )))
       }
       exception.getMessage should include("privateHeaders value is longer than 1024 characters")
     }
@@ -467,8 +473,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
   "retryMessages" should {
     "retry a message successfully" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
-        "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
@@ -482,17 +487,15 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "abort retrying messages if unexpected exception thrown" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", null, "some url", Instant.now,
-        Instant.now, httpStatus)
-      val anotherRetryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1",
-        "<IE4N03>payload 2</IE4N03>", "another url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage        = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", null, "some url", Instant.now, Instant.now, httpStatus)
+      val anotherRetryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload 2</IE4N03>", "another url", Instant.now, Instant.now, httpStatus)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("1s"))
-      when(outboundConnectorMock.postMessage(anotherRetryingMessage.messageId, SoapRequest(anotherRetryingMessage.soapMessage,
-        anotherRetryingMessage.destinationUrl))).thenReturn(successful(OK))
+      when(outboundConnectorMock.postMessage(anotherRetryingMessage.messageId, SoapRequest(anotherRetryingMessage.soapMessage, anotherRetryingMessage.destinationUrl))).thenReturn(
+        successful(OK)
+      )
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage, anotherRetryingMessage).iterator))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage, anotherRetryingMessage).iterator))
 
       intercept[Exception](await(underTest.retryMessages))
 
@@ -500,16 +503,14 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "retry a message and persist with retrying status when SOAP request returned error status" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
-        "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.updateNextRetryTime(*, *)).thenReturn(successful(None))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
 
       await(underTest.retryMessages)
 
@@ -517,14 +518,12 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "retry a message and mark failed when SOAP request received 1xx status" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
-        "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(CONTINUE))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       await(underTest.retryMessages)
 
@@ -535,14 +534,12 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "retry a message and mark failed when SOAP request received 3xx status" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
-        "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(TEMPORARY_REDIRECT))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       await(underTest.retryMessages)
 
@@ -553,14 +550,12 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "retry a message and mark failed when SOAP request received 4xx status" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
-        "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(NOT_FOUND))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
       await(underTest.retryMessages)
 
@@ -572,15 +567,21 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
     "set a message's status to FAILED when its retryDuration has expired" in new Setup {
       val retryDuration: Duration = Duration("30s")
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
-        "some url", Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)), Instant.now, httpStatus)
+      val retryingMessage         = RetryingOutboundSoapMessage(
+        randomUUID,
+        "MessageId-A1",
+        "<IE4N03>payload</IE4N03>",
+        "some url",
+        Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
+        Instant.now,
+        httpStatus
+      )
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(appConfigMock.retryDuration).thenReturn(retryDuration)
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(None))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
 
       await(underTest.retryMessages)
 
@@ -589,16 +590,14 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "notify the caller on the notification URL supplied that the retrying message is now SENT" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
-        "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage                                     = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
       val sentMessageForNotification: SentOutboundSoapMessage = retryingMessage.toSent
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.updateToSent(*, *)).thenReturn(successful(Some(sentMessageForNotification)))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
 
       await(underTest.retryMessages)
 
@@ -606,17 +605,23 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "notify the caller on the notification URL supplied that the retrying message is now FAILED" in new Setup {
-      val retryDuration: Duration = Duration("30s")
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
-        "some url", Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)), Instant.now, httpStatus)
+      val retryDuration: Duration                                 = Duration("30s")
+      val retryingMessage                                         = RetryingOutboundSoapMessage(
+        randomUUID,
+        "MessageId-A1",
+        "<IE4N03>payload</IE4N03>",
+        "some url",
+        Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
+        Instant.now,
+        httpStatus
+      )
       val failedMessageForNotification: FailedOutboundSoapMessage = retryingMessage.toFailed
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(appConfigMock.retryDuration).thenReturn(retryDuration)
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
 
       await(underTest.retryMessages)
 
@@ -624,17 +629,23 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "update the status of a successfully sent message to SENT even if calling the notification URL fails" in new Setup {
-      val retryDuration: Duration = Duration("30s")
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>",
-        "some url", Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)), Instant.now, httpStatus)
+      val retryDuration: Duration                                 = Duration("30s")
+      val retryingMessage                                         = RetryingOutboundSoapMessage(
+        randomUUID,
+        "MessageId-A1",
+        "<IE4N03>payload</IE4N03>",
+        "some url",
+        Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
+        Instant.now,
+        httpStatus
+      )
       val failedMessageForNotification: FailedOutboundSoapMessage = retryingMessage.toFailed
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(appConfigMock.retryDuration).thenReturn(retryDuration)
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.updateToSent(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).
-        thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
+      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
       when(notificationCallbackConnectorMock.sendNotification(*)(*)).thenReturn(successful(Some(INTERNAL_SERVER_ERROR)))
 
       await(underTest.retryMessages)

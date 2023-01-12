@@ -16,19 +16,19 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
-import play.api.Logging
-import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, SoapMessageStatus}
-import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HttpClient, _}
-
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
+import play.api.Logging
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HttpClient, _}
+
+import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, SoapMessageStatus}
+
 @Singleton
-class NotificationCallbackConnector @Inject()(httpClient: HttpClient)
-                                             (implicit ec: ExecutionContext) extends HttpErrorFunctions with Logging {
+class NotificationCallbackConnector @Inject() (httpClient: HttpClient)(implicit ec: ExecutionContext) extends HttpErrorFunctions with Logging {
 
   def sendNotification(message: OutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Option[Int]] = {
     (message.notificationUrl map { url =>

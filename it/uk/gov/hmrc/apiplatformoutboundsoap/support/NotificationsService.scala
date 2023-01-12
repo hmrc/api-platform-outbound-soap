@@ -20,13 +20,13 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
 trait NotificationsService {
-  def primeNotificationsEndpoint(status : Int): StubMapping = {
+
+  def primeNotificationsEndpoint(status: Int): StubMapping = {
     stubFor(post(urlPathEqualTo("/"))
       .willReturn(
         aResponse()
-        .withStatus(status)
-      )
-    )
+          .withStatus(status)
+      ))
   }
 
   def verifyRequestBody(expectedRequestBody: String): Unit = {

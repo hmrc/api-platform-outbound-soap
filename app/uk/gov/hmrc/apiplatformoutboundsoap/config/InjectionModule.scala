@@ -17,9 +17,11 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.config
 
 import com.google.inject.AbstractModule
+
 import uk.gov.hmrc.apiplatformoutboundsoap.GlobalContext
 
 class InjectionModule extends AbstractModule {
+
   override def configure() = {
 
     // Eager initialize Context singleton

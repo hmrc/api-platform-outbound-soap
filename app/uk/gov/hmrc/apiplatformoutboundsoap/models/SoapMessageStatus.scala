@@ -18,10 +18,11 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import java.util.UUID
 
-case class SoapMessageStatus(globalId: UUID, messageId: String, status:  StatusType, ccnHttpStatus: Int)
+case class SoapMessageStatus(globalId: UUID, messageId: String, status: StatusType, ccnHttpStatus: Int)
 
-object SoapMessageStatus{
-  def fromOutboundSoapMessage(outboundSoapMessage: OutboundSoapMessage): SoapMessageStatus ={
+object SoapMessageStatus {
+
+  def fromOutboundSoapMessage(outboundSoapMessage: OutboundSoapMessage): SoapMessageStatus = {
     SoapMessageStatus(
       outboundSoapMessage.globalId,
       outboundSoapMessage.messageId,
