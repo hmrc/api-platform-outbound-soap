@@ -69,7 +69,7 @@ case class SentOutboundSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: List[PrivateHeader] = List()
+    privateHeaders: List[PrivateHeader]
   ) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.SENT
 }
@@ -85,7 +85,7 @@ case class FailedOutboundSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: List[PrivateHeader] = List()
+    privateHeaders: List[PrivateHeader]
   ) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.FAILED
 }
@@ -101,7 +101,7 @@ case class CoeSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: List[PrivateHeader] = List()
+    privateHeaders: List[PrivateHeader]
   ) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COE
 }
@@ -117,7 +117,7 @@ case class CodSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: List[PrivateHeader] = List()
+    privateHeaders: List[PrivateHeader]
   ) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COD
 }
@@ -134,13 +134,13 @@ case class RetryingOutboundSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: List[PrivateHeader] = List()
+    privateHeaders: List[PrivateHeader]
   ) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.RETRYING
 
-  def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl, codMessage, coeMessage)
+  def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl, codMessage, coeMessage, None, List())
 
-  def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl, codMessage, coeMessage, Some(Instant.now))
+  def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl, codMessage, coeMessage, Some(Instant.now), List())
 }
 
 sealed abstract class StatusType extends EnumEntry
