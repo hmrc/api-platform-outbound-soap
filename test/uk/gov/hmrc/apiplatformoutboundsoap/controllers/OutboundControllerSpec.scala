@@ -128,7 +128,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(messageWithTooManyPrivateHeaders))
       status(result) shouldBe BAD_REQUEST
       (contentAsJson(result) \ "statusCode").as[Int] shouldBe BAD_REQUEST
-      (contentAsJson(result) \ "message").as[String] shouldBe "Maximum 5 private headers are allowed in message request"
+      (contentAsJson(result) \ "message").as[String] shouldBe "A maximum of 5 private headers are allowed in the message but 6 were supplied"
       verifyZeroInteractions(outboundServiceMock)
     }
 
