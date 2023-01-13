@@ -91,7 +91,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       "privateHeaders" -> privateHeadersEmptyValue
     )
 
-    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK)
+    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK, None, None, None, None, List())
 
     "return the response returned by the outbound service" in new Setup {
       when(outboundServiceMock.sendMessage(*)).thenReturn(successful(outboundSoapMessage))

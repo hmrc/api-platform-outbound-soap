@@ -46,10 +46,10 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
     import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.instantFormat
     val fakeRequest                 = FakeRequest("GET", "/retrieve")
     val ccn2HttpStatus              = 200
-    val failedOutboundSoapMessage   = FailedOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", Instant.now, ccn2HttpStatus)
-    val sentOutboundSoapMessage     = SentOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", Instant.now, ccn2HttpStatus)
+    val failedOutboundSoapMessage   = FailedOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", Instant.now, ccn2HttpStatus, None, None, None, None, List())
+    val sentOutboundSoapMessage     = SentOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", Instant.now, ccn2HttpStatus, None, None, None, None, List())
     val retryingOutboundSoapMessage =
-      RetryingOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", Instant.now, Instant.now, ccn2HttpStatus)
+      RetryingOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", Instant.now, Instant.now, ccn2HttpStatus, None, None, None, None, List())
     val codSoapMessage              = CodSoapMessage(
       UUID.randomUUID(),
       "some messageId",
@@ -57,7 +57,8 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       "http://destinat.ion",
       Instant.now,
       ccn2HttpStatus,
-      codMessage = Some("<soap:Body><ccn2:CoD><ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp></ccn2:CoD></soap:Body>")
+      codMessage = Some("<soap:Body><ccn2:CoD><ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp></ccn2:CoD></soap:Body>"),
+      privateHeaders = List()
     )
     val coeSoapMessage              = CoeSoapMessage(
       UUID.randomUUID(),
@@ -66,7 +67,8 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       "http://destinat.ion",
       Instant.now,
       ccn2HttpStatus,
-      coeMessage = Some("<coe><error>failed</error></coe>")
+      coeMessage = Some("<coe><error>failed</error></coe>"),
+      privateHeaders = List()
     )
 
     "return a failed message when supplied with an ID that exists" in new Setup {

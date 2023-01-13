@@ -473,7 +473,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
   "retryMessages" should {
     "retry a message successfully" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus, privateHeaders = List())
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
@@ -487,8 +487,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "abort retrying messages if unexpected exception thrown" in new Setup {
-      val retryingMessage        = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", null, "some url", Instant.now, Instant.now, httpStatus)
-      val anotherRetryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload 2</IE4N03>", "another url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage        = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", null, "some url", Instant.now, Instant.now, httpStatus, privateHeaders = List())
+      val anotherRetryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload 2</IE4N03>", "another url", Instant.now, Instant.now, httpStatus, privateHeaders = List())
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(anotherRetryingMessage.messageId, SoapRequest(anotherRetryingMessage.soapMessage, anotherRetryingMessage.destinationUrl))).thenReturn(
@@ -503,7 +503,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "retry a message and persist with retrying status when SOAP request returned error status" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus, privateHeaders = List())
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
@@ -518,7 +518,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "retry a message and mark failed when SOAP request received 1xx status" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus, privateHeaders = List())
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
@@ -534,7 +534,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "retry a message and mark failed when SOAP request received 3xx status" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus, privateHeaders = List())
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
@@ -550,7 +550,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "retry a message and mark failed when SOAP request received 4xx status" in new Setup {
-      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus, privateHeaders = List())
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryDuration).thenReturn(Duration("5s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
@@ -574,7 +574,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         "some url",
         Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
         Instant.now,
-        httpStatus
+        httpStatus,
+        privateHeaders = List()
       )
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
@@ -590,7 +591,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "notify the caller on the notification URL supplied that the retrying message is now SENT" in new Setup {
-      val retryingMessage                                     = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus)
+      val retryingMessage                                     = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, httpStatus, privateHeaders = List())
       val sentMessageForNotification: SentOutboundSoapMessage = retryingMessage.toSent
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.parallelism).thenReturn(2)
@@ -613,7 +614,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         "some url",
         Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
         Instant.now,
-        httpStatus
+        httpStatus,
+        privateHeaders = List()
       )
       val failedMessageForNotification: FailedOutboundSoapMessage = retryingMessage.toFailed
       when(appConfigMock.parallelism).thenReturn(2)
@@ -637,7 +639,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
         "some url",
         Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
         Instant.now,
-        httpStatus
+        httpStatus,
+        privateHeaders = List()
       )
       val failedMessageForNotification: FailedOutboundSoapMessage = retryingMessage.toFailed
       when(appConfigMock.parallelism).thenReturn(2)

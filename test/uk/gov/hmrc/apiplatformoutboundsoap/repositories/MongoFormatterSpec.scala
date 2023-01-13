@@ -34,13 +34,13 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
     val formatter = MongoFormatter.outboundSoapMessageWrites
     "correctly write a COD message" in {
       val msgJson: JsObject =
-        formatter.writes(CodSoapMessage(UUID.randomUUID(), "12334", "some cod message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg")))
+        formatter.writes(CodSoapMessage(UUID.randomUUID(), "12334", "some cod message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg"), privateHeaders = List()))
       msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("COD"))
     }
     "correctly write a COE message" in {
       val msgJson: JsObject =
-        formatter.writes(CoeSoapMessage(UUID.randomUUID(), "12334", "some coe message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg")))
+        formatter.writes(CoeSoapMessage(UUID.randomUUID(), "12334", "some coe message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg"), privateHeaders = List()))
       msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("COE"))
     }
@@ -57,7 +57,8 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         Some("notify url"),
         Some("msg"),
         None,
-        Some(now)
+        Some(now),
+        privateHeaders = List()
       ))
       msgJson.values.size shouldBe 11
       msgJson.value.get("status") shouldBe Some(JsString("SENT"))
@@ -66,7 +67,7 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
 
     "correctly write a FAILED message" in {
       val msgJson: JsObject =
-        formatter.writes(FailedOutboundSoapMessage(UUID.randomUUID(), "12334", "failed message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg")))
+        formatter.writes(FailedOutboundSoapMessage(UUID.randomUUID(), "12334", "failed message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg"), privateHeaders = List()))
       msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("FAILED"))
     }
@@ -80,7 +81,8 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         Instant.now,
         200,
         Some("notify url"),
-        Some("msg")
+        Some("msg"),
+        privateHeaders = List()
       ))
       msgJson.values.size shouldBe 11
       msgJson.value.get("status") shouldBe Some(JsString("RETRYING"))

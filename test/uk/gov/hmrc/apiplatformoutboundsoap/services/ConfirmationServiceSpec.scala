@@ -81,7 +81,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
         |</soap:Envelope>""".stripMargin.replaceAll("\n", "")
     )
 
-    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK)
+    val outboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", Instant.now, OK, privateHeaders = List())
     val msgId: String       = "abcd1234"
 
     "update a sent message with a CoD" in new Setup {
