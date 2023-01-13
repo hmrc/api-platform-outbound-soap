@@ -89,7 +89,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val from                              = "HMRC"
     val longPrivateHeaderValue            =
       "value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1valuevlue1value1value1"
-    val privateHeaders                    = Some(List(PrivateHeader(name = "name1", Some(value = "value1")), PrivateHeader(name = "name2", Some(value = "value2"))))
+    val privateHeaders                    = Some(List(PrivateHeader(name = "name1", value = "value1"), PrivateHeader(name = "name2", value = "value2")))
     val addressing                        = Addressing(from, to, "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
     // mixin refers to mandatory and default addressing fields
     val addressingMixinFields             = Addressing(from = from, to = to, replyTo = "ReplyTo", faultTo = "FaultTo", messageId = messageId)
@@ -464,7 +464,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(underTest.sendMessage(messageRequestWithPrivateHeaders.copy(privateHeaders =
-          Some(List(PrivateHeader(name = "name1", value = Some(longPrivateHeaderValue)), PrivateHeader(name = "name2", value = Some("value2"))))
+          Some(List(PrivateHeader(name = "name1", value = longPrivateHeaderValue), PrivateHeader(name = "name2", value = "value2")))
         )))
       }
       exception.getMessage should include("privateHeaders value is longer than 1024 characters")

@@ -35,7 +35,7 @@ sealed trait OutboundSoapMessage {
   val coeMessage: Option[String]
   val codMessage: Option[String]
   val sentDateTime: Option[Instant]
-  val privateHeaders: Option[List[PrivateHeader]]
+  val privateHeaders: List[PrivateHeader]
 }
 
 object OutboundSoapMessage {
@@ -69,7 +69,7 @@ case class SentOutboundSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: Option[List[PrivateHeader]] = None
+    privateHeaders: List[PrivateHeader] = List()
   ) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.SENT
 }
@@ -85,7 +85,7 @@ case class FailedOutboundSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: Option[List[PrivateHeader]] = None
+    privateHeaders: List[PrivateHeader] = List()
   ) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.FAILED
 }
@@ -101,7 +101,7 @@ case class CoeSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: Option[List[PrivateHeader]] = None
+    privateHeaders: List[PrivateHeader] = List()
   ) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COE
 }
@@ -117,7 +117,7 @@ case class CodSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: Option[List[PrivateHeader]] = None
+    privateHeaders: List[PrivateHeader] = List()
   ) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COD
 }
@@ -134,7 +134,7 @@ case class RetryingOutboundSoapMessage(
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
-    privateHeaders: Option[List[PrivateHeader]] = None
+    privateHeaders: List[PrivateHeader] = List()
   ) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.RETRYING
 

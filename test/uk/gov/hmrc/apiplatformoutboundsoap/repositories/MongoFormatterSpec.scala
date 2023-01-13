@@ -35,13 +35,13 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
     "correctly write a COD message" in {
       val msgJson: JsObject =
         formatter.writes(CodSoapMessage(UUID.randomUUID(), "12334", "some cod message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg")))
-      msgJson.values.size shouldBe 9
+      msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("COD"))
     }
     "correctly write a COE message" in {
       val msgJson: JsObject =
         formatter.writes(CoeSoapMessage(UUID.randomUUID(), "12334", "some coe message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg")))
-      msgJson.values.size shouldBe 9
+      msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("COE"))
     }
 
@@ -59,7 +59,7 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         None,
         Some(now)
       ))
-      msgJson.values.size shouldBe 10
+      msgJson.values.size shouldBe 11
       msgJson.value.get("status") shouldBe Some(JsString("SENT"))
       msgJson.value.get("sentDateTime") shouldBe Some(MongoJavatimeFormats.instantFormat.writes(now))
     }
@@ -67,7 +67,7 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
     "correctly write a FAILED message" in {
       val msgJson: JsObject =
         formatter.writes(FailedOutboundSoapMessage(UUID.randomUUID(), "12334", "failed message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg")))
-      msgJson.values.size shouldBe 9
+      msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("FAILED"))
     }
     "correctly write a RETRYING message" in {
@@ -82,7 +82,7 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         Some("notify url"),
         Some("msg")
       ))
-      msgJson.values.size shouldBe 10
+      msgJson.values.size shouldBe 11
       msgJson.value.get("status") shouldBe Some(JsString("RETRYING"))
     }
   }

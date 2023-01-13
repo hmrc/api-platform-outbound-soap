@@ -25,7 +25,7 @@ case class MessageRequest(
     addressing: Addressing,
     confirmationOfDelivery: Option[Boolean],
     notificationUrl: Option[String] = None,
-    privateHeaders: Option[List[PrivateHeader]] = None
+    privateHeaders: Option[List[PrivateHeader]] = Some(List())
   )
 
 case class Addressing(from: String, to: String, replyTo: String, faultTo: String, messageId: String, relatesTo: Option[String] = None) {
@@ -34,7 +34,7 @@ case class Addressing(from: String, to: String, replyTo: String, faultTo: String
   validate(from.trim != "", "addressing.from being empty")
 }
 
-case class PrivateHeader(name: String, value: Option[String]) {
+case class PrivateHeader(name: String, value: String) {
   validate(name.trim.length < 1024, "privateHeaders name is longer than 1024 characters")
-  validate(!(value.isDefined && value.get.trim.length > 1024), "privateHeaders value is longer than 1024 characters")
+  validate(value.trim.length < 1024, "privateHeaders value is longer than 1024 characters")
 }

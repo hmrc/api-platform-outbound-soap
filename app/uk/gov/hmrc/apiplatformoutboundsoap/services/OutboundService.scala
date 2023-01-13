@@ -128,7 +128,10 @@ class OutboundService @Inject() (
   private def processSendingResult(message: MessageRequest, soapRequest: SoapRequest, httpStatus: Int): OutboundSoapMessage = {
     val globalId: UUID = randomUUID
     val messageId      = message.addressing.messageId
-
+    val privHeaders = message.privateHeaders match {
+      case Some(headers) => headers
+      case None => List()
+    }
     def succeededMessage = {
       SentOutboundSoapMessage(
         globalId,
@@ -141,7 +144,7 @@ class OutboundService @Inject() (
         None,
         None,
         Some(now),
-        message.privateHeaders
+        privHeaders
       )
     }
 
@@ -157,7 +160,7 @@ class OutboundService @Inject() (
         None,
         None,
         None,
-        message.privateHeaders
+        privHeaders
       )
     }
 
@@ -174,7 +177,7 @@ class OutboundService @Inject() (
         None,
         None,
         None,
-        message.privateHeaders
+        privHeaders
       )
     }
 
