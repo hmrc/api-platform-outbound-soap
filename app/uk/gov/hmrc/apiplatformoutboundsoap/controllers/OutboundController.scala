@@ -43,8 +43,8 @@ class OutboundController @Inject() (cc: ControllerComponents, appConfig: AppConf
       messageRequest.privateHeaders match {
         case Some(privHeaders) =>
           if (privHeaders.length > maxPrivateHeaders) {
-            logger.warn(s"Rejecting request because it has ${privHeaders.length} private headers and the maximum is $maxPrivateHeaders")
-            Future.successful(BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, "Maximum 5 private headers are allowed in message request"))))
+            logger.warn(s"A maximum of $maxPrivateHeaders private headers are allowed in the message but ${privHeaders.length} were supplied")
+            Future.successful(BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, s"A maximum of $maxPrivateHeaders private headers are allowed in the message but ${privHeaders.length} were supplied"))))
           } else {
             sendMessage(messageRequest)
           }
