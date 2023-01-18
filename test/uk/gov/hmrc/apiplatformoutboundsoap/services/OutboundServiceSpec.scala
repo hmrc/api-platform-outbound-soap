@@ -87,9 +87,10 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val messageId                         = "123"
     val to                                = "CCN2"
     val from                              = "HMRC"
-    val longPrivateHeaderValue            =
-      "value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1valuevlue1value1value1"
-    val privateHeaders                    = Some(List(PrivateHeader(name = "name1", Some(value = "value1")), PrivateHeader(name = "name2", Some(value = "value2"))))
+    val longPrivateHeaderValue1023Length = "".padTo(1023, 'a')
+    val longPrivateHeaderValue1024Length = longPrivateHeaderValue1023Length ++ "a"
+    val longPrivateHeaderValue1025Length  = longPrivateHeaderValue1024Length ++ "a"
+    val privateHeaders                    = Some(List(PrivateHeader(name = "name1", value = "value1"), PrivateHeader(name = "name2", value = "value2")))
     val addressing                        = Addressing(from, to, "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
     // mixin refers to mandatory and default addressing fields
     val addressingMixinFields             = Addressing(from = from, to = to, replyTo = "ReplyTo", faultTo = "FaultTo", messageId = messageId)
@@ -464,10 +465,34 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(underTest.sendMessage(messageRequestWithPrivateHeaders.copy(privateHeaders =
-          Some(List(PrivateHeader(name = "name1", value = Some(longPrivateHeaderValue)), PrivateHeader(name = "name2", value = Some("value2"))))
+          Some(List(PrivateHeader(name = "name1", value = longPrivateHeaderValue1025Length), PrivateHeader(name = "name2", value = "value2")))
         )))
       }
       exception.getMessage should include("privateHeaders value is longer than 1024 characters")
+    }
+
+    "persist message when the private headers field parameters size is equals to 1024" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
+      when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
+      val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
+      when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
+      await(underTest.sendMessage(messageRequestWithPrivateHeaders.copy(privateHeaders =
+        Some(List(PrivateHeader(name = "name1", value = longPrivateHeaderValue1024Length), PrivateHeader(name = "name2", value = "value2")))
+      )))
+      messageCaptor.getValue.messageId shouldBe messageId
+    }
+
+    "persist message when the private headers field parameters size is less than 1024" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
+      when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
+      val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
+      when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
+      await(underTest.sendMessage(messageRequestWithPrivateHeaders.copy(privateHeaders =
+        Some(List(PrivateHeader(name = "name1", value = longPrivateHeaderValue1023Length), PrivateHeader(name = "name2", value = "value2")))
+      )))
+      messageCaptor.getValue.messageId shouldBe messageId
     }
   }
 
