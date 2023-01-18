@@ -87,8 +87,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val messageId                         = "123"
     val to                                = "CCN2"
     val from                              = "HMRC"
-    val longPrivateHeaderValue            =
-      "value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1valuevlue1value1value1"
+    val longPrivateHeaderValue1025Length            =
+      "value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1value1valuevlue1"
     val privateHeaders                    = Some(List(PrivateHeader(name = "name1", value = "value1"), PrivateHeader(name = "name2", value = "value2")))
     val addressing                        = Addressing(from, to, "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
     // mixin refers to mandatory and default addressing fields
@@ -464,7 +464,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
 
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(underTest.sendMessage(messageRequestWithPrivateHeaders.copy(privateHeaders =
-          Some(List(PrivateHeader(name = "name1", value = longPrivateHeaderValue), PrivateHeader(name = "name2", value = "value2")))
+          Some(List(PrivateHeader(name = "name1", value = longPrivateHeaderValue1025Length), PrivateHeader(name = "name2", value = "value2")))
         )))
       }
       exception.getMessage should include("privateHeaders value is longer than 1024 characters")
