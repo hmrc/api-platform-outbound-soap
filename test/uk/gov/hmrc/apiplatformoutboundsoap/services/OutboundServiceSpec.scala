@@ -87,8 +87,8 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val messageId                         = "123"
     val to                                = "CCN2"
     val from                              = "HMRC"
-    val longPrivateHeaderValue1023Length = "".padTo(1023, 'a')
-    val longPrivateHeaderValue1024Length = longPrivateHeaderValue1023Length ++ "a"
+    val longPrivateHeaderValue1023Length  = "".padTo(1023, 'a')
+    val longPrivateHeaderValue1024Length  = longPrivateHeaderValue1023Length ++ "a"
     val longPrivateHeaderValue1025Length  = longPrivateHeaderValue1024Length ++ "a"
     val privateHeaders                    = Some(List(PrivateHeader(name = "name1", value = "value1"), PrivateHeader(name = "name2", value = "value2")))
     val addressing                        = Addressing(from, to, "ReplyTo", "FaultTo", messageId, Some("RelatesTo"))
