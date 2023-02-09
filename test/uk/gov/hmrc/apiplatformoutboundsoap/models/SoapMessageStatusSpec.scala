@@ -19,17 +19,16 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-
 import play.api.http.Status.OK
 import play.api.libs.json.Json
-
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats._
+
+import java.time.format.DateTimeFormatter
 
 class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with ArgumentMatchersSugar {
   val now           = Instant.now.truncatedTo(ChronoUnit.MILLIS)
@@ -53,7 +52,7 @@ class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar 
     }
     "include sentDateTime if present" in {
       val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(optionalsOutboundSoapMessage))
-      (json \ "sentDateTime").asOpt[Instant] shouldBe Some(now)
+      (json \ "sentDateTime").asOpt[String] shouldBe Some(DateTimeFormatter.ISO_INSTANT.format(now))
     }
 
     "include privateHeaders if present" in {
