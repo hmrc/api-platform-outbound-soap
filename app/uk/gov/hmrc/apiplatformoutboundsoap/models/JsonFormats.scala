@@ -16,13 +16,11 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-import java.time.format.DateTimeFormatterBuilder
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.{Instant, ZoneId}
 import java.util.UUID
-
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
 object JsonFormats {
@@ -34,7 +32,7 @@ object JsonFormats {
 
   implicit val instantFormat: Format[Instant] = Format(Reads.DefaultInstantReads, Writes.InstantEpochMilliWrites)
 
-  val addressingReads: Reads[Addressing]                                          = (
+  val addressingReads: Reads[Addressing]                = (
     (JsPath \ "from").read[String].orElse(Reads.pure(appConfig.addressingFrom)) and
       (JsPath \ "to").read[String] and
       (JsPath \ "replyTo").read[String].orElse(Reads.pure(appConfig.addressingReplyTo)) and
@@ -42,17 +40,20 @@ object JsonFormats {
       (JsPath \ "messageId").read[String] and
       (JsPath \ "relatesTo").readNullable[String]
   )(Addressing.apply _)
-  implicit val addressingFormatter: OFormat[Addressing]                           = OFormat(addressingReads, Json.writes[Addressing])
+  implicit val addressingFormatter: OFormat[Addressing] = OFormat(addressingReads, Json.writes[Addressing])
+
+  private val fixedToMillisFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
+    .appendPattern("uuuu-MM-dd'T'HH:mm:ss.SSS'Z'")
+    .toFormatter
+    .withZone(ZoneId.of("UTC"))
+  private val fixedToMillisIsoWrites: Writes[Instant] = Writes.temporalWrites(fixedToMillisFormatter)
 
   val statusWrites: Writes[SoapMessageStatus]                                     = (
     (JsPath \ "globalId").write[UUID] and
       (JsPath \ "messageId").write[String] and
       (JsPath \ "status").write[StatusType] and
       (JsPath \ "ccnHttpStatus").write[Int] and
-      (JsPath \ "sentDateTime").writeOptionWithNull[Instant](Writes.temporalWrites(new DateTimeFormatterBuilder()
-        .appendPattern("uuuu-MM-dd'T'HH:mm:ss.SSS'Z'")
-        .toFormatter
-        .withZone(ZoneId.of("UTC")))) and
+      (JsPath \ "sentDateTime").writeOptionWithNull[Instant](fixedToMillisIsoWrites) and
       (JsPath \ "privateHeaders").writeOptionWithNull[List[PrivateHeader]]
   )(unlift(SoapMessageStatus.unapply))
   implicit val soapMessageStatusFormatter: Format[SoapMessageStatus]              = Format(Json.reads[SoapMessageStatus], statusWrites)
