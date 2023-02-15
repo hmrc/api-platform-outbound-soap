@@ -17,29 +17,33 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import java.time.Instant
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.http.Status.OK
 import play.api.libs.json.Json
+
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats._
 
-import java.time.format.DateTimeFormatter
-
 class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with ArgumentMatchersSugar {
-  val now           = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+  val now           = Instant.now
+  val truncatedNow  = now.truncatedTo(ChronoUnit.MILLIS)
   val mockAppConfig = mock[AppConfig]
+  val knownInstant  = Instant.parse("2023-08-10T10:11:12.123456Z")
 
   "from outboundsoapmessage" should {
 
     val noOptionalsOutboundSoapMessage: OutboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", now, OK)
 
     val optionalsOutboundSoapMessage: OutboundSoapMessage =
-      SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", now, OK, None, None, None, Some(now), Some(List(PrivateHeader("test", "value"))))
+      SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", now, OK, None, None, None, Some(knownInstant), Some(List(PrivateHeader("test", "value"))))
 
     "not include sentDateTime if None" in {
       val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(noOptionalsOutboundSoapMessage))
@@ -52,7 +56,33 @@ class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar 
     }
     "include sentDateTime if present" in {
       val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(optionalsOutboundSoapMessage))
-      (json \ "sentDateTime").asOpt[String] shouldBe Some(DateTimeFormatter.ISO_INSTANT.format(now))
+      (json \ "sentDateTime").asOpt[String] shouldBe Some("2023-08-10T10:11:12.123Z")
+    }
+
+    "include sentDateTime if present and only show 3 digits if more" in {
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(
+        SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", now, OK, None, None, None, Some(knownInstant), Some(List(PrivateHeader("test", "value"))))
+      ))
+      (json \ "sentDateTime").asOpt[String] shouldBe Some("2023-08-10T10:11:12.123Z")
+    }
+
+    "include sentDateTime if present and always show 3 digits if less" in {
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(
+        SentOutboundSoapMessage(
+          UUID.randomUUID,
+          "123",
+          "envelope",
+          "some url",
+          now,
+          OK,
+          None,
+          None,
+          None,
+          Some(knownInstant.truncatedTo(ChronoUnit.SECONDS)),
+          Some(List(PrivateHeader("test", "value")))
+        )
+      ))
+      (json \ "sentDateTime").asOpt[String] shouldBe Some("2023-08-10T10:11:12.000Z")
     }
 
     "include privateHeaders if present" in {
