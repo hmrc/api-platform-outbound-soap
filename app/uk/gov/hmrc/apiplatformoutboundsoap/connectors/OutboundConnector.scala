@@ -44,11 +44,11 @@ class OutboundConnector @Inject() (
   def postMessage(messageId: String, soapRequest: SoapRequest): Future[Int] = {
     implicit val hc: HeaderCarrier = HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
 
-    def requestLogMessage(statusCode: Int) = s"Attempted request to ${soapRequest.destinationUrl} with message ID $messageId got status code $statusCode"
+    def requestLogMessage(message: String, statusCode: Int) = s"Attempted request to ${soapRequest.destinationUrl} with message ID $messageId got status code $statusCode and message $message"
 
     postHttpRequest(soapRequest).map {
-      case Left(UpstreamErrorResponse(_, statusCode, _, _)) =>
-        logger.warn(requestLogMessage(statusCode))
+      case Left(UpstreamErrorResponse(message, statusCode, _, _)) =>
+        logger.warn(requestLogMessage(message, statusCode))
         statusCode
       case Right(response: HttpResponse)                    =>
         response.status
