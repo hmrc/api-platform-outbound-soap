@@ -20,7 +20,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.mongodb.scala.MongoWriteException
 import org.mongodb.scala.ReadPreference.primaryPreferred
-import org.mongodb.scala.bson.{BsonBoolean, BsonInt64}
+import org.mongodb.scala.bson.BsonBoolean
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -82,7 +82,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
     "insert a retrying message when it does not exist" in {
       await(serviceRepo.persist(retryingMessage))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find().toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
 
       fetchedRecords.size shouldBe 1
       fetchedRecords.head shouldBe retryingMessage
@@ -92,7 +92,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
     "insert a sent message when it does not exist" in {
       await(serviceRepo.persist(sentMessage))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find().toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
 
       fetchedRecords.size shouldBe 1
       fetchedRecords.head shouldBe sentMessage
@@ -102,7 +102,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
     "insert a failed message when it does not exist" in {
       await(serviceRepo.persist(failedMessage))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find().toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
 
       fetchedRecords.size shouldBe 1
       fetchedRecords.head shouldBe failedMessage
@@ -111,7 +111,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
     "insert a confirmation of exception message when it does not exist" in {
       await(serviceRepo.persist(coeMessage))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find().toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
 
       fetchedRecords.size shouldBe 1
       fetchedRecords.head shouldBe coeMessage
@@ -120,7 +120,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
     "insert a confirmation of delivery message when it does not exist" in {
       await(serviceRepo.persist(codMessage))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find().toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
 
       fetchedRecords.size shouldBe 1
       fetchedRecords.head shouldBe codMessage
@@ -133,7 +133,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       val Some(ttlIndex) = await(serviceRepo.collection.listIndexes().toFuture()).find(i => i.get("name").get.asString().getValue == "ttlIndex")
       ttlIndex.get("unique") shouldBe None
       ttlIndex.get("background").get shouldBe BsonBoolean(true)
-      ttlIndex.get("expireAfterSeconds") shouldBe Some(BsonInt64(60 * 60 * 24 * 30))
+      ttlIndex.get("expireAfterSeconds").get.asNumber().intValue shouldBe 60 * 60 * 24 * 30
     }
 
     "message is persisted with unique ID" in {
@@ -232,7 +232,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       await(serviceRepo.persist(retryingMessage))
       val Some(returnedSoapMessage) = await(serviceRepo.updateSendingStatus(retryingMessage.globalId, SendingStatus.FAILED))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
       fetchedRecords.size shouldBe 1
       fetchedRecords.head.status shouldBe SendingStatus.FAILED
       fetchedRecords.head.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
@@ -244,7 +244,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       await(serviceRepo.persist(retryingMessage))
       val Some(returnedSoapMessage) = await(serviceRepo.updateToSent(retryingMessage.globalId, instantNow))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
       fetchedRecords.size shouldBe 1
       fetchedRecords.head.status shouldBe SendingStatus.SENT
       fetchedRecords.head.isInstanceOf[SentOutboundSoapMessage] shouldBe true
@@ -261,7 +261,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       await(serviceRepo.persist(sentMessage))
       await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COE, expectedConfirmationMessageBody))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
       fetchedRecords.size shouldBe 1
       fetchedRecords.head.status shouldBe DeliveryStatus.COE
       fetchedRecords.head.asInstanceOf[CoeSoapMessage].coeMessage shouldBe Some(expectedConfirmationMessageBody)
@@ -271,7 +271,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
       await(serviceRepo.persist(sentMessage))
       await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COD, expectedConfirmationMessageBody))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
 
       fetchedRecords.size shouldBe 1
       fetchedRecords.head.status shouldBe DeliveryStatus.COD
@@ -285,7 +285,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
 
       await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COE, expectedConfirmationMessageBody))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
 
       fetchedRecords.size shouldBe 2
       fetchedRecords.head.globalId shouldBe sentMessage.globalId
@@ -319,7 +319,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositor
 
       await(serviceRepo.updateConfirmationStatus(sentMessage.messageId, DeliveryStatus.COD, expectedConfirmationMessageBody))
 
-      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred).find.toFuture())
+      val fetchedRecords = await(serviceRepo.collection.withReadPreference(primaryPreferred()).find().toFuture())
 
       fetchedRecords.size shouldBe 2
       fetchedRecords.head.globalId shouldBe sentMessage.globalId

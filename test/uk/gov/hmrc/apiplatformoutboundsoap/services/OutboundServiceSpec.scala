@@ -420,10 +420,10 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
 
       val exception: WSDLException = intercept[WSDLException] {
-        await(underTest.sendMessage(messageRequestFullAddressing.copy(wsdlUrl = "http://example.com/missing")))
+        await(underTest.sendMessage(messageRequestFullAddressing.copy(wsdlUrl = "https://github.com/hmrc/api-platform-outbound-soap/missing")))
       }
 
-      exception.getMessage should include("This file was not found: http://example.com/missing")
+      exception.getMessage should include("This file was not found: https://github.com/hmrc/api-platform-outbound-soap/missing")
     }
 
     "fail when the addressing.to field is empty" in new Setup {
