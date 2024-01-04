@@ -16,28 +16,29 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
+import java.time.Instant.now
+import java.time.temporal.ChronoUnit
+import java.time.{Duration, Instant}
+import java.util.UUID.randomUUID
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.mongodb.scala.MongoWriteException
 import org.mongodb.scala.ReadPreference.primaryPreferred
 import org.mongodb.scala.bson.BsonBoolean
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
 
-import java.time.{Duration, Instant}
-import java.time.Instant.now
-import java.util.UUID.randomUUID
-import org.scalatest.concurrent.IntegrationPatience
-
-import java.time.temporal.ChronoUnit
+import uk.gov.hmrc.apiplatformoutboundsoap.models._
 
 class OutboundMessageRepositoryISpec extends AnyWordSpec with PlayMongoRepositorySupport[OutboundSoapMessage] with Matchers with BeforeAndAfterEach with GuiceOneAppPerSuite
     with IntegrationPatience {

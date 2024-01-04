@@ -20,10 +20,12 @@ import com.github.tomakehurst.wiremock.http.Fault
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers._
+
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 import uk.gov.hmrc.apiplatformoutboundsoap.support.{Ccn2Service, WireMockSupport}
 
