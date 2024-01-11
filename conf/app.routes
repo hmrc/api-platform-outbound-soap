@@ -1,5 +1,5 @@
 # microservice specific routes
 
-POST       /message                 uk.gov.hmrc.apiplatformoutboundsoap.controllers.OutboundController.message
+POST       /message                 uk.gov.hmrc.apiplatformoutboundsoap.controllers.OutboundController.message()
 POST       /acknowledgement         uk.gov.hmrc.apiplatformoutboundsoap.controllers.ConfirmationController.message
 GET        /retrieve/:id            uk.gov.hmrc.apiplatformoutboundsoap.controllers.RetrieveMessageController.message(id: String)

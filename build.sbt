@@ -1,57 +1,48 @@
 import uk.gov.hmrc.DefaultBuildSettings.integrationTestSettings
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
 
 val appName = "api-platform-outbound-soap"
 
 val silencerVersion = "1.7.9"
 
-ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+scalaVersion := "2.13.12"
 
-inThisBuild(
-  List(
-    scalaVersion := "2.13.8",
-    semanticdbEnabled := true,
-    semanticdbVersion := scalafixSemanticdb.revision
-  )
-)
-
-lazy val scoverageSettings = {
-  import scoverage.ScoverageKeys
-  Seq(
-    // Semicolon-separated list of regexs matching classes to exclude
-    ScoverageKeys.coverageExcludedPackages := """uk\.gov\.hmrc\.BuildInfo;.*\.Routes;.*\.RoutesPrefix;.*Filters?;MicroserviceAuditConnector;Module;GraphiteStartUp;.*\.Reverse[^.]*""",
-    ScoverageKeys.coverageMinimumStmtTotal := 90,
-    ScoverageKeys.coverageMinimumBranchTotal := 90,
-    ScoverageKeys.coverageFailOnMinimum := true,
-    ScoverageKeys.coverageHighlighting := true,
-    Test / parallelExecution := false
-  )
-}
+ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 lazy val microservice = Project(appName, file("."))
-  .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin)
+  .enablePlugins(PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin)
   .settings(
     majorVersion                     := 0,
-    scalaVersion                     := "2.13.8",
     PlayKeys.playDefaultPort         := 6703,
     libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test,
     dependencyOverrides              ++= AppDependencies.axiomOverrides,
-    scoverageSettings,
-    // ***************
-    // Use the silencer plugin to suppress warnings
-    scalacOptions += "-P:silencer:pathFilters=routes",
-    libraryDependencies ++= Seq(
-      compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
-      "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
-    )
-    // ***************
   )
+  .settings(ScoverageSettings())
   .configs(IntegrationTest)
   .settings(integrationTestSettings(): _*)
+  .settings(scalafixConfigSettings(IntegrationTest))
   .settings(
     IntegrationTest / unmanagedResourceDirectories += baseDirectory.value / "test" / "resources"
   )
   .settings(
     Compile / unmanagedResourceDirectories += baseDirectory.value / "app" / "resources"
   )
+  .settings(
+    scalacOptions ++= Seq(
+      "-Wconf:cat=unused&src=views/.*\\.scala:s",
+      "-Wconf:cat=unused&src=.*RoutesPrefix\\.scala:s",
+      "-Wconf:cat=unused&src=.*Routes\\.scala:s",
+      "-Wconf:cat=unused&src=.*ReverseRoutes\\.scala:s"
+    )
+  )
+
+commands ++= Seq(
+  Command.command("run-all-tests") { state => "test" :: "it:test" :: state },
+
+  Command.command("clean-and-test") { state => "clean" :: "compile" :: "run-all-tests" :: state },
+
+  // Coverage does not need compile !
+  Command.command("pre-commit") { state => "clean" :: "scalafmtAll" :: "scalafixAll" :: "coverage" :: "run-all-tests" :: "coverageOff" :: "coverageAggregate" :: state }
+)

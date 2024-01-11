@@ -1,5 +1,5 @@
 #!/bin/bash
 
-sm -r --start DATASTREAM API_PLATFORM_TEST
+sm2 --start DATASTREAM API_PLATFORM_TEST
 
-sbt run
+./run_local.sh

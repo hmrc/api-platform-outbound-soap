@@ -17,7 +17,6 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import java.time.Instant
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 

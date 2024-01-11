@@ -19,8 +19,10 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.{Instant, ZoneId}
 import java.util.UUID
+
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
 object JsonFormats {
@@ -46,7 +48,7 @@ object JsonFormats {
     .appendPattern("uuuu-MM-dd'T'HH:mm:ss.SSS'Z'")
     .toFormatter
     .withZone(ZoneId.of("UTC"))
-  private val fixedToMillisIsoWrites: Writes[Instant] = Writes.temporalWrites(fixedToMillisFormatter)
+  private val fixedToMillisIsoWrites: Writes[Instant]   = Writes.temporalWrites(fixedToMillisFormatter)
 
   val statusWrites: Writes[SoapMessageStatus]                                     = (
     (JsPath \ "globalId").write[UUID] and

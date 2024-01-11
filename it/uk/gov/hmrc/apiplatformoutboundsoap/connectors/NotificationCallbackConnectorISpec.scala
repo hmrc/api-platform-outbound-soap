@@ -16,23 +16,25 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+import javax.ws.rs.core.MediaType.APPLICATION_JSON
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers._
+import uk.gov.hmrc.http.HeaderCarrier
+
+import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, RetryingOutboundSoapMessage, SoapMessageStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.support.{NotificationsService, WireMockSupport}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
-
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.UUID
-import javax.ws.rs.core.MediaType.APPLICATION_JSON
 
 class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with WireMockSupport with NotificationsService {
   override implicit lazy val app: Application = appBuilder.build()
