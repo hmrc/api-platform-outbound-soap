@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
+import java.time.Instant
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.{failed, successful}
 import scala.concurrent.duration.Duration
@@ -26,7 +27,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import play.api.test.Helpers._
-import uk.gov.hmrc.mongo.lock.MongoLockRepository
+import uk.gov.hmrc.mongo.lock.{Lock, MongoLockRepository}
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
@@ -62,7 +63,7 @@ class SoapMessageRetryJobSpec extends AnyWordSpec with Matchers with MockitoSuga
   "execute" should {
     "return response for success" in new Setup {
       when(outboundServiceMock.retryMessages(*)).thenReturn(successful(Done))
-      when(repositoryMock.takeLock(*, *, *)).thenReturn(successful(true))
+      when(repositoryMock.takeLock(*, *, *)).thenReturn(successful(Some(Lock("", "", Instant.now, Instant.now))))
       when(repositoryMock.releaseLock(*, *)).thenReturn(successful(()))
 
       val result: underTest.Result = await(underTest.execute)
