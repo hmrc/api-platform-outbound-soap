@@ -18,10 +18,9 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import java.time.Instant
 import java.util.UUID
-import scala.collection.immutable
 import scala.reflect.classTag
 
-import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
+import play.api.libs.json.Format
 
 sealed trait OutboundSoapMessage {
   val globalId: UUID
@@ -143,38 +142,83 @@ case class RetryingOutboundSoapMessage(
   def toSent = SentOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl, codMessage, coeMessage, Some(Instant.now))
 }
 
-sealed abstract class StatusType extends EnumEntry
+sealed abstract trait StatusType
 
-object StatusType extends Enum[StatusType] with PlayJsonEnum[StatusType] {
-  val values: immutable.IndexedSeq[StatusType] = findValues
+object StatusType {
+  val values: Set[StatusType] = Set(DeliveryStatus.COE, DeliveryStatus.COD, SendingStatus.SENT, SendingStatus.FAILED, SendingStatus.RETRYING)
+
+  def apply(text: String): Option[StatusType] = StatusType.values.find(_.toString() == text.toUpperCase)
+
+  implicit val format: Format[StatusType] = SealedTraitJsonFormatting.createFormatFor[StatusType]("Status Type", apply)
 }
+// sealed abstract class StatusType extends EnumEntry
 
-sealed abstract class DeliveryStatus(override val entryName: String) extends StatusType
+// object StatusType extends Enum[StatusType] with PlayJsonEnum[StatusType] {
+//   val values: immutable.IndexedSeq[StatusType] = findValues
+// }
 
-object DeliveryStatus extends Enum[DeliveryStatus] with PlayJsonEnum[DeliveryStatus] {
+sealed trait DeliveryStatus extends StatusType
 
-  def fromAction(action: String): DeliveryStatus   = {
+object DeliveryStatus {
+  case object COE extends DeliveryStatus
+  case object COD extends DeliveryStatus
+  val values: Set[DeliveryStatus] = Set(COE, COD)
+
+  def apply(text: String): Option[DeliveryStatus] = DeliveryStatus.values.find(_.toString() == text.toUpperCase)
+
+  def unsafeApply(text: String): DeliveryStatus = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid Delivery Status"))
+
+  def fromAction(action: String): DeliveryStatus = {
     action match {
       case "CCN2.Service.Platform.AcknowledgementService/CoE" => DeliveryStatus.COE
       case "CCN2.Service.Platform.AcknowledgementService/CoD" => DeliveryStatus.COD
-      case _                                                  => throw new IllegalArgumentException(s"${action} is not a valid DeliveryStatus")
+      case _                                                  => throw new IllegalArgumentException(s"${action} is not a valid Delivery Status")
     }
   }
-  val values: immutable.IndexedSeq[DeliveryStatus] = findValues
 
-  case object COE extends DeliveryStatus("COE")
+  implicit val format: Format[DeliveryStatus] = SealedTraitJsonFormatting.createFormatFor[DeliveryStatus]("Delivery Status", apply)
+}
+// sealed abstract class DeliveryStatus(override val entryName: String) extends StatusType
 
-  case object COD extends DeliveryStatus("COD")
+// object DeliveryStatus extends Enum[DeliveryStatus] with PlayJsonEnum[DeliveryStatus] {
+
+//   def fromAction(action: String): DeliveryStatus   = {
+//     action match {
+//       case "CCN2.Service.Platform.AcknowledgementService/CoE" => DeliveryStatus.COE
+//       case "CCN2.Service.Platform.AcknowledgementService/CoD" => DeliveryStatus.COD
+//       case _                                                  => throw new IllegalArgumentException(s"${action} is not a valid DeliveryStatus")
+//     }
+//   }
+//   val values: immutable.IndexedSeq[DeliveryStatus] = findValues
+
+//   case object COE extends DeliveryStatus("COE")
+
+//   case object COD extends DeliveryStatus("COD")
+// }
+
+sealed trait SendingStatus extends StatusType
+
+object SendingStatus {
+  case object SENT     extends SendingStatus
+  case object FAILED   extends SendingStatus
+  case object RETRYING extends SendingStatus
+  val values: Set[SendingStatus] = Set(SENT, FAILED, RETRYING)
+
+  def apply(text: String): Option[SendingStatus] = SendingStatus.values.find(_.toString() == text.toUpperCase)
+
+  def unsafeApply(text: String): SendingStatus = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid Sending Status"))
+
+  implicit val format: Format[SendingStatus] = SealedTraitJsonFormatting.createFormatFor[SendingStatus]("Sending Status", apply)
 }
 
-sealed abstract class SendingStatus(override val entryName: String) extends StatusType
+// sealed abstract class SendingStatus(override val entryName: String) extends StatusType
 
-object SendingStatus extends Enum[SendingStatus] with PlayJsonEnum[SendingStatus] {
-  val values: immutable.IndexedSeq[SendingStatus] = findValues
+// object SendingStatus extends Enum[SendingStatus] with PlayJsonEnum[SendingStatus] {
+//   val values: immutable.IndexedSeq[SendingStatus] = findValues
 
-  case object SENT extends SendingStatus("SENT")
+//   case object SENT extends SendingStatus("SENT")
 
-  case object FAILED extends SendingStatus("FAILED")
+//   case object FAILED extends SendingStatus("FAILED")
 
-  case object RETRYING extends SendingStatus("RETRYING")
-}
+//   case object RETRYING extends SendingStatus("RETRYING")
+// }

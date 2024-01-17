@@ -27,7 +27,7 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
   implicit val cfg: Aux[Json.MacroOptions]                 = JsonConfiguration(
     discriminator = "status",
     typeNaming = JsonNaming { fullName =>
-      OutboundSoapMessage.typeToStatus(fullName).entryName
+      OutboundSoapMessage.typeToStatus(fullName).toString()
     }
   )
   implicit val privateHeaderReads: Reads[PrivateHeader]    = Json.reads[PrivateHeader]
@@ -40,7 +40,7 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
     Json.reads[RetryingOutboundSoapMessage]
 
   implicit val retryingMessageWrites: OWrites[RetryingOutboundSoapMessage] =
-    Json.writes[RetryingOutboundSoapMessage].transform(_ ++ Json.obj("status" -> SendingStatus.RETRYING.entryName))
+    Json.writes[RetryingOutboundSoapMessage].transform(_ ++ Json.obj("status" -> SendingStatus.RETRYING.toString()))
 
   implicit val retryingSoapMessageFormatter: OFormat[RetryingOutboundSoapMessage] =
     OFormat(retryingMessageReads, retryingMessageWrites)
@@ -49,7 +49,7 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
     Json.reads[SentOutboundSoapMessage]
 
   implicit val sentMessageWrites: OWrites[SentOutboundSoapMessage] =
-    Json.writes[SentOutboundSoapMessage].transform(_ ++ Json.obj("status" -> SendingStatus.SENT.entryName))
+    Json.writes[SentOutboundSoapMessage].transform(_ ++ Json.obj("status" -> SendingStatus.SENT.toString()))
 
   implicit val sentSoapMessageFormatter: OFormat[SentOutboundSoapMessage] =
     OFormat(sentMessageReads, sentMessageWrites)
@@ -58,7 +58,7 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
     Json.reads[FailedOutboundSoapMessage]
 
   implicit val failedMessageWrites: OWrites[FailedOutboundSoapMessage] =
-    Json.writes[FailedOutboundSoapMessage].transform(_ ++ Json.obj("status" -> SendingStatus.FAILED.entryName))
+    Json.writes[FailedOutboundSoapMessage].transform(_ ++ Json.obj("status" -> SendingStatus.FAILED.toString()))
 
   implicit val failedSoapMessageFormatter: OFormat[FailedOutboundSoapMessage] =
     OFormat(failedMessageReads, failedMessageWrites)
@@ -67,7 +67,7 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
     Json.reads[CodSoapMessage]
 
   implicit val codMessageWrites: OWrites[CodSoapMessage] =
-    Json.writes[CodSoapMessage].transform(_ ++ Json.obj("status" -> DeliveryStatus.COD.entryName))
+    Json.writes[CodSoapMessage].transform(_ ++ Json.obj("status" -> DeliveryStatus.COD.toString()))
 
   implicit val codSoapMessageFormatter: OFormat[CodSoapMessage] =
     OFormat(codMessageReads, codMessageWrites)
@@ -76,22 +76,22 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
     Json.reads[CoeSoapMessage]
 
   implicit val coeMessageWrites: OWrites[CoeSoapMessage] =
-    Json.writes[CoeSoapMessage].transform(_ ++ Json.obj("status" -> DeliveryStatus.COE.entryName))
+    Json.writes[CoeSoapMessage].transform(_ ++ Json.obj("status" -> DeliveryStatus.COE.toString()))
 
   implicit val coeSoapMessageFormatter: OFormat[CoeSoapMessage] =
     OFormat(coeMessageReads, coeMessageWrites)
 
   implicit val outboundSoapMessageReads: Reads[OutboundSoapMessage] =
     (JsPath \ "status").read[String].flatMap {
-      case SendingStatus.RETRYING.entryName =>
+      case "RETRYING" =>
         retryingSoapMessageFormatter.widen[OutboundSoapMessage]
-      case SendingStatus.SENT.entryName     =>
+      case "SENT"     =>
         sentSoapMessageFormatter.widen[OutboundSoapMessage]
-      case SendingStatus.FAILED.entryName   =>
+      case "FAILED"   =>
         failedSoapMessageFormatter.widen[OutboundSoapMessage]
-      case DeliveryStatus.COD.entryName     =>
+      case "COD"      =>
         codSoapMessageFormatter.widen[OutboundSoapMessage]
-      case DeliveryStatus.COE.entryName     =>
+      case "COE"      => // TODO: DeliveryStatus.COE.entryName
         coeSoapMessageFormatter.widen[OutboundSoapMessage]
     }
 
@@ -100,23 +100,23 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
     override def writes(soapMessage: OutboundSoapMessage): JsObject = soapMessage match {
       case r @ RetryingOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _, _) =>
         retryingSoapMessageFormatter.writes(r) ++ Json.obj(
-          "status" -> SendingStatus.RETRYING.entryName
+          "status" -> SendingStatus.RETRYING.toString()
         )
       case f @ FailedOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _)      =>
         failedSoapMessageFormatter.writes(f) ++ Json.obj(
-          "status" -> SendingStatus.FAILED.entryName
+          "status" -> SendingStatus.FAILED.toString()
         )
       case s @ SentOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _)        =>
         sentSoapMessageFormatter.writes(s) ++ Json.obj(
-          "status" -> SendingStatus.SENT.entryName
+          "status" -> SendingStatus.SENT.toString()
         )
       case cod @ CodSoapMessage(_, _, _, _, _, _, _, _, _, _, _)               =>
         codSoapMessageFormatter.writes(cod) ++ Json.obj(
-          "status" -> DeliveryStatus.COD.entryName
+          "status" -> DeliveryStatus.COD.toString()
         )
       case coe @ CoeSoapMessage(_, _, _, _, _, _, _, _, _, _, _)               =>
         coeSoapMessageFormatter.writes(coe) ++ Json.obj(
-          "status" -> DeliveryStatus.COE.entryName
+          "status" -> DeliveryStatus.COE.toString()
         )
     }
   }

@@ -69,23 +69,23 @@ object JsonFormats {
   implicit val outboundSoapMessageWrites: OWrites[OutboundSoapMessage]    = {
     case r @ RetryingOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _, _) =>
       retryingSoapMessageFormatter.writes(r) ++ Json.obj(
-        "status" -> SendingStatus.RETRYING.entryName
+        "status" -> SendingStatus.RETRYING.toString()
       )
     case f @ FailedOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _)      =>
       failedSoapMessageFormatter.writes(f) ++ Json.obj(
-        "status" -> SendingStatus.FAILED.entryName
+        "status" -> SendingStatus.FAILED.toString()
       )
     case s @ SentOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _)        =>
       sentSoapMessageFormatter.writes(s) ++ Json.obj(
-        "status" -> SendingStatus.SENT.entryName
+        "status" -> SendingStatus.SENT.toString()
       )
     case cod @ CodSoapMessage(_, _, _, _, _, _, _, _, _, _, _)               =>
       codSoapMessageFormatter.writes(cod) ++ Json.obj(
-        "status" -> DeliveryStatus.COD.entryName
+        "status" -> DeliveryStatus.COD.toString()
       )
     case coe @ CoeSoapMessage(_, _, _, _, _, _, _, _, _, _, _)               =>
       coeSoapMessageFormatter.writes(coe) ++ Json.obj(
-        "status" -> DeliveryStatus.COE.entryName
+        "status" -> DeliveryStatus.COE.toString()
       )
   }
   implicit val outboundSoapMessageFormatter: OFormat[OutboundSoapMessage] = OFormat(Json.reads[OutboundSoapMessage], outboundSoapMessageWrites)

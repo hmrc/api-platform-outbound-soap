@@ -75,9 +75,9 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
             Codecs.playFormatCodec(MongoFormatter.sentSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.codSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.coeSoapMessageFormatter),
-            Codecs.playFormatCodec(StatusType.jsonFormat),
-            Codecs.playFormatCodec(DeliveryStatus.jsonFormat),
-            Codecs.playFormatCodec(SendingStatus.jsonFormat)
+            Codecs.playFormatCodec(StatusType.format),
+            Codecs.playFormatCodec(DeliveryStatus.format),
+            Codecs.playFormatCodec(SendingStatus.format)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
         )
@@ -89,7 +89,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
 
   def retrieveMessagesForRetry: Source[RetryingOutboundSoapMessage, NotUsed] = {
     MongoSource(collection.withReadPreference(primaryPreferred())
-      .find(filter = and(equal("status", SendingStatus.RETRYING.entryName), and(lte("retryDateTime", Codecs.toBson(Instant.now)))))
+      .find(filter = and(equal("status", SendingStatus.RETRYING.toString()), and(lte("retryDateTime", Codecs.toBson(Instant.now)))))
       .sort(ascending("retryDateTime"))
       .map(_.asInstanceOf[RetryingOutboundSoapMessage]))
   }
@@ -107,7 +107,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
     collection.withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),
-        update = set("status", Codecs.toBson(newStatus.entryName)),
+        update = set("status", Codecs.toBson(newStatus.toString())),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
       ).toFutureOption()
   }
@@ -118,7 +118,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
         filter = equal("globalId", Codecs.toBson(globalId)),
         update = combine(
           set("sentDateTime", Codecs.toBson(sentInstant)),
-          set("status", Codecs.toBson(SendingStatus.SENT.entryName))
+          set("status", Codecs.toBson(SendingStatus.SENT.toString()))
         ),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
       ).toFutureOption()
@@ -132,7 +132,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
 
     for {
       _           <- collection.bulkWrite(
-                       List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.entryName)), set(field, confirmationMsg)))),
+                       List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.toString())), set(field, confirmationMsg)))),
                        BulkWriteOptions().ordered(false)
                      ).toFuture()
       findUpdated <- findById(messageId)

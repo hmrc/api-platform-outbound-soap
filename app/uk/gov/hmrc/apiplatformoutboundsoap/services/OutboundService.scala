@@ -281,7 +281,7 @@ class OutboundService @Inject() (
     envelope.getBody.addChild(payload)
   }
 
-  private def mapHttpStatusCode(httpStatusCode: Int): CcnRequestResult.Value = {
+  private def mapHttpStatusCode(httpStatusCode: Int): CcnRequestResult = {
     if (isSuccessful(httpStatusCode)) {
       httpStatusCode match {
         case ACCEPTED => SUCCESS
