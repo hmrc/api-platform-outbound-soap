@@ -91,7 +91,7 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
         failedSoapMessageFormatter.widen[OutboundSoapMessage]
       case "COD"      =>
         codSoapMessageFormatter.widen[OutboundSoapMessage]
-      case "COE"      => // TODO: DeliveryStatus.COE.entryName
+      case "COE"      =>
         coeSoapMessageFormatter.widen[OutboundSoapMessage]
     }
 

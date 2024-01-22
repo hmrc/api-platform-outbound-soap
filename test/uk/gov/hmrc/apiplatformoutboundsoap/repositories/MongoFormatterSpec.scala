@@ -17,20 +17,21 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit.MILLIS
 import java.util.UUID
 
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import play.api.libs.json.{JsObject, JsString}
+import play.api.libs.json.{JsObject, JsString, Json}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 
 class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
-  "format" should {
+  "format writes" should {
     val formatter = MongoFormatter.outboundSoapMessageWrites
     "correctly write a COD message" in {
       val msgJson: JsObject =
@@ -84,6 +85,143 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       ))
       msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("RETRYING"))
+    }
+  }
+
+  "format reads" should {
+    val formatter = MongoFormatter.outboundSoapMessageReads
+
+    "correctly read a COD message" in {
+
+      val messageId             = "ISALIVE-1703124554-V1"
+      val createDateTimeInstant = Instant.now.truncatedTo(MILLIS)
+      val createDateTimeJsValue = MongoJavatimeFormats.instantWrites.writes(createDateTimeInstant)
+
+      val msgJson = Json.obj(
+        "globalId"       -> "6fa2d156-5b35-4c0b-8f31-e3a7d4fe278a",
+        "messageId"      -> messageId,
+        "soapMessage"    -> "soap message",
+        "destinationUrl" -> "https://ccn.conf.hmrc.gov.uk:443/CCN2.Service.Customs.EU.ICS.ENSLifecycleManagementBASV2",
+        "createDateTime" -> createDateTimeJsValue,
+        "ccnHttpStatus"  -> 202,
+        "status"         -> "COD",
+        "codMessage"     -> "cod message"
+      )
+
+      val msg = formatter.reads(msgJson)
+
+      msg.isSuccess shouldBe true
+      msg.get.isInstanceOf[CodSoapMessage] shouldBe true
+      msg.get.messageId shouldBe messageId
+      msg.get.createDateTime shouldBe createDateTimeInstant
+      msg.get.codMessage shouldBe Some("cod message")
+    }
+
+    "correctly read a SENT message" in {
+
+      val messageId             = "ISALIVE-1703124554-V1"
+      val createDateTimeInstant = Instant.now.truncatedTo(MILLIS)
+      val createDateTimeJsValue = MongoJavatimeFormats.instantWrites.writes(createDateTimeInstant)
+
+      val msgJson = Json.obj(
+        "globalId"       -> "6fa2d156-5b35-4c0b-8f31-e3a7d4fe278a",
+        "messageId"      -> messageId,
+        "soapMessage"    -> "soap message",
+        "destinationUrl" -> "https://ccn.conf.hmrc.gov.uk:443/CCN2.Service.Customs.EU.ICS.ENSLifecycleManagementBASV2",
+        "createDateTime" -> createDateTimeJsValue,
+        "ccnHttpStatus"  -> 202,
+        "status"         -> "SENT",
+        "codMessage"     -> "cod message"
+      )
+
+      val msg = formatter.reads(msgJson)
+
+      msg.isSuccess shouldBe true
+      msg.get.isInstanceOf[SentOutboundSoapMessage] shouldBe true
+      msg.get.messageId shouldBe messageId
+      msg.get.createDateTime shouldBe createDateTimeInstant
+    }
+
+    "correctly read a FAILED message" in {
+
+      val messageId             = "ISALIVE-1703124554-V1"
+      val createDateTimeInstant = Instant.now.truncatedTo(MILLIS)
+      val createDateTimeJsValue = MongoJavatimeFormats.instantWrites.writes(createDateTimeInstant)
+
+      val msgJson = Json.obj(
+        "globalId"       -> "6fa2d156-5b35-4c0b-8f31-e3a7d4fe278a",
+        "messageId"      -> messageId,
+        "soapMessage"    -> "soap message",
+        "destinationUrl" -> "https://ccn.conf.hmrc.gov.uk:443/CCN2.Service.Customs.EU.ICS.ENSLifecycleManagementBASV2",
+        "createDateTime" -> createDateTimeJsValue,
+        "ccnHttpStatus"  -> 202,
+        "status"         -> "FAILED",
+        "codMessage"     -> "cod message"
+      )
+
+      val msg = formatter.reads(msgJson)
+
+      msg.isSuccess shouldBe true
+      msg.get.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
+      msg.get.messageId shouldBe messageId
+      msg.get.createDateTime shouldBe createDateTimeInstant
+    }
+
+    "correctly read a COE message" in {
+
+      val messageId             = "ISALIVE-1703124554-V1"
+      val createDateTimeInstant = Instant.now.truncatedTo(MILLIS)
+      val createDateTimeJsValue = MongoJavatimeFormats.instantWrites.writes(createDateTimeInstant)
+
+      val msgJson = Json.obj(
+        "globalId"       -> "6fa2d156-5b35-4c0b-8f31-e3a7d4fe278a",
+        "messageId"      -> messageId,
+        "soapMessage"    -> "soap message",
+        "destinationUrl" -> "https://ccn.conf.hmrc.gov.uk:443/CCN2.Service.Customs.EU.ICS.ENSLifecycleManagementBASV2",
+        "createDateTime" -> createDateTimeJsValue,
+        "ccnHttpStatus"  -> 202,
+        "status"         -> "COE",
+        "codMessage"     -> "cod message",
+        "coeMessage"     -> "coe message"
+      )
+
+      val msg = formatter.reads(msgJson)
+
+      msg.isSuccess shouldBe true
+      msg.get.isInstanceOf[CoeSoapMessage] shouldBe true
+      msg.get.messageId shouldBe messageId
+      msg.get.createDateTime shouldBe createDateTimeInstant
+      msg.get.coeMessage shouldBe Some("coe message")
+    }
+
+    "correctly read a RETRYING message" in {
+
+      val messageId             = "ISALIVE-1703124554-V1"
+      val createDateTimeInstant = Instant.now.truncatedTo(MILLIS)
+      val createDateTimeJsValue = MongoJavatimeFormats.instantWrites.writes(createDateTimeInstant)
+      val retryDateTimeInstant  = Instant.now.truncatedTo(MILLIS)
+      val retryDateTimeJsValue  = MongoJavatimeFormats.instantWrites.writes(retryDateTimeInstant)
+
+      val msgJson = Json.obj(
+        "globalId"       -> "6fa2d156-5b35-4c0b-8f31-e3a7d4fe278a",
+        "messageId"      -> messageId,
+        "soapMessage"    -> "soap message",
+        "destinationUrl" -> "https://ccn.conf.hmrc.gov.uk:443/CCN2.Service.Customs.EU.ICS.ENSLifecycleManagementBASV2",
+        "createDateTime" -> createDateTimeJsValue,
+        "retryDateTime"  -> retryDateTimeJsValue,
+        "ccnHttpStatus"  -> 202,
+        "status"         -> "RETRYING",
+        "codMessage"     -> "cod message",
+        "coeMessage"     -> "coe message"
+      )
+
+      val msg = formatter.reads(msgJson)
+
+      msg.isSuccess shouldBe true
+      msg.get.isInstanceOf[RetryingOutboundSoapMessage] shouldBe true
+      msg.get.messageId shouldBe messageId
+      msg.get.createDateTime shouldBe createDateTimeInstant
+      msg.get.coeMessage shouldBe Some("coe message")
     }
   }
 }

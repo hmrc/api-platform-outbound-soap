@@ -145,17 +145,12 @@ case class RetryingOutboundSoapMessage(
 sealed abstract trait StatusType
 
 object StatusType {
-  val values: Set[StatusType] = Set(DeliveryStatus.COE, DeliveryStatus.COD, SendingStatus.SENT, SendingStatus.FAILED, SendingStatus.RETRYING)
+  val values: Set[StatusType] = DeliveryStatus.values ++ SendingStatus.values
 
   def apply(text: String): Option[StatusType] = StatusType.values.find(_.toString() == text.toUpperCase)
 
   implicit val format: Format[StatusType] = SealedTraitJsonFormatting.createFormatFor[StatusType]("Status Type", apply)
 }
-// sealed abstract class StatusType extends EnumEntry
-
-// object StatusType extends Enum[StatusType] with PlayJsonEnum[StatusType] {
-//   val values: immutable.IndexedSeq[StatusType] = findValues
-// }
 
 sealed trait DeliveryStatus extends StatusType
 
@@ -178,23 +173,6 @@ object DeliveryStatus {
 
   implicit val format: Format[DeliveryStatus] = SealedTraitJsonFormatting.createFormatFor[DeliveryStatus]("Delivery Status", apply)
 }
-// sealed abstract class DeliveryStatus(override val entryName: String) extends StatusType
-
-// object DeliveryStatus extends Enum[DeliveryStatus] with PlayJsonEnum[DeliveryStatus] {
-
-//   def fromAction(action: String): DeliveryStatus   = {
-//     action match {
-//       case "CCN2.Service.Platform.AcknowledgementService/CoE" => DeliveryStatus.COE
-//       case "CCN2.Service.Platform.AcknowledgementService/CoD" => DeliveryStatus.COD
-//       case _                                                  => throw new IllegalArgumentException(s"${action} is not a valid DeliveryStatus")
-//     }
-//   }
-//   val values: immutable.IndexedSeq[DeliveryStatus] = findValues
-
-//   case object COE extends DeliveryStatus("COE")
-
-//   case object COD extends DeliveryStatus("COD")
-// }
 
 sealed trait SendingStatus extends StatusType
 
@@ -210,15 +188,3 @@ object SendingStatus {
 
   implicit val format: Format[SendingStatus] = SealedTraitJsonFormatting.createFormatFor[SendingStatus]("Sending Status", apply)
 }
-
-// sealed abstract class SendingStatus(override val entryName: String) extends StatusType
-
-// object SendingStatus extends Enum[SendingStatus] with PlayJsonEnum[SendingStatus] {
-//   val values: immutable.IndexedSeq[SendingStatus] = findValues
-
-//   case object SENT extends SendingStatus("SENT")
-
-//   case object FAILED extends SendingStatus("FAILED")
-
-//   case object RETRYING extends SendingStatus("RETRYING")
-// }
