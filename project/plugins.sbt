@@ -6,7 +6,7 @@ resolvers ++= Seq(
 
 resolvers += Resolver.typesafeRepo("releases")
 
-addSbtPlugin("uk.gov.hmrc"       %  "sbt-auto-build"        % "3.19.0")
+addSbtPlugin("uk.gov.hmrc"       %  "sbt-auto-build"        % "3.20.0")
 addSbtPlugin("uk.gov.hmrc"       %  "sbt-distributables"    % "2.4.0")
 addSbtPlugin("com.typesafe.play" %  "sbt-plugin"            % "2.8.21")
 addSbtPlugin("org.scoverage"     %  "sbt-scoverage"         % "2.0.9")
