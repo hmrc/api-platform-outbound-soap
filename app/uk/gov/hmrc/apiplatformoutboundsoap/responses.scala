@@ -19,24 +19,38 @@ package uk.gov.hmrc.apiplatformoutboundsoap
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{JsObject, Json}
 
-object ErrorCode extends Enumeration {
-  type ErrorCode = Value
-  val NOT_FOUND             = Value("NOT_FOUND")
-  val BAD_REQUEST           = Value("BAD_REQUEST")
-  val INTERNAL_SERVER_ERROR = Value("INTERNAL_SERVER_ERROR")
+sealed trait ErrorCode
+
+object ErrorCode {
+  case object NOT_FOUND             extends ErrorCode
+  case object BAD_REQUEST           extends ErrorCode
+  case object INTERNAL_SERVER_ERROR extends ErrorCode
+
+  val values: Set[ErrorCode] = Set(NOT_FOUND, BAD_REQUEST, INTERNAL_SERVER_ERROR)
+
+  def apply(text: String): Option[ErrorCode] = ErrorCode.values.find(_.toString() == text.toUpperCase)
+
+  def unsafeApply(text: String): ErrorCode = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid Error Code"))
 }
 
-object CcnRequestResult extends Enumeration {
-  type CcnRequestResult = Value
-  val UNEXPECTED_SUCCESS = Value("UNEXPECTED_SUCCESS")
-  val SUCCESS            = Value("SUCCESS")
-  val FAIL_ERROR         = Value("FAIL_ERROR")
-  val RETRYABLE_ERROR    = Value("RETRYABLE_ERROR")
+sealed trait CcnRequestResult
+
+object CcnRequestResult {
+  case object UNEXPECTED_SUCCESS extends CcnRequestResult
+  case object SUCCESS            extends CcnRequestResult
+  case object FAIL_ERROR         extends CcnRequestResult
+  case object RETRYABLE_ERROR    extends CcnRequestResult
+
+  val values: Set[CcnRequestResult] = Set(UNEXPECTED_SUCCESS, SUCCESS, FAIL_ERROR, RETRYABLE_ERROR)
+
+  def apply(text: String): Option[CcnRequestResult] = CcnRequestResult.values.find(_.toString() == text.toUpperCase)
+
+  def unsafeApply(text: String): CcnRequestResult = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid CCN Request Result"))
 }
 
 object JsErrorResponse {
 
-  def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
+  def apply(errorCode: ErrorCode, message: JsValueWrapper): JsObject =
     Json.obj(
       "code"    -> errorCode.toString,
       "message" -> message

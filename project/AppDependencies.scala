@@ -4,7 +4,7 @@ import sbt._
 
 object AppDependencies {
   val bootstrapPlayVersion = "7.12.0"
-  val mongoVersion         = "0.74.0"
+  val mongoVersion         = "1.7.0"
 
   val compile = Seq(
     "uk.gov.hmrc"        %% "bootstrap-backend-play-28"   % bootstrapPlayVersion,
@@ -13,7 +13,6 @@ object AppDependencies {
     "com.lightbend.akka" %% "akka-stream-alpakka-mongodb" % "3.0.4",
     "org.apache.axis2"   %  "axis2-kernel"                % "1.8.0",
     "org.apache.wss4j"   %  "wss4j-ws-security-dom"       % "2.4.1",
-    "com.beachape"       %% "enumeratum-play-json"        % "1.7.0",
     caffeine
   )
 
