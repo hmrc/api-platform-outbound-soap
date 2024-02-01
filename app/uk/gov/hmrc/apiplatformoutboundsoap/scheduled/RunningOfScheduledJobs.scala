@@ -19,7 +19,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-import akka.actor.Cancellable
+import akka.actor.{Cancellable, Scheduler}
 import org.apache.commons.lang3.time.StopWatch
 
 import play.api.inject.ApplicationLifecycle
@@ -30,7 +30,7 @@ import play.api.{Application, Logging}
 trait RunningOfScheduledJobs extends Logging {
 
   implicit val ec: ExecutionContext
-  lazy val scheduler: akka.actor.Scheduler = application.actorSystem.scheduler
+  lazy val scheduler: Scheduler = application.actorSystem.scheduler
   val application: Application
   val scheduledJobs: Seq[LockedScheduledJob]
 

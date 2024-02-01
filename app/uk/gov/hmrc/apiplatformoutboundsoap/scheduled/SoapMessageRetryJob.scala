@@ -17,10 +17,8 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
-
-import org.joda.time.Duration
 
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.lock.MongoLockRepository
@@ -31,7 +29,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 @Singleton
 class SoapMessageRetryJob @Inject() (appConfig: AppConfig, override val lockRepository: MongoLockRepository, outboundService: OutboundService)
     extends LockedScheduledJob {
-  override val releaseLockAfter: Duration = Duration.standardSeconds(appConfig.retryJobLockDuration.toSeconds)
+  override val releaseLockAfter: Duration = appConfig.retryJobLockDuration
 
   override def name: String = "SoapMessageRetryJob"
 
