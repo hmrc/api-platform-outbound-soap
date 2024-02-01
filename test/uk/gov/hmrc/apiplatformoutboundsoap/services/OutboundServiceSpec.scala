@@ -25,10 +25,10 @@ import scala.concurrent.Future
 import scala.concurrent.Future.successful
 import scala.concurrent.duration.Duration
 
-import akka.stream.Materializer
-import akka.stream.scaladsl.Source.{fromIterator, single}
 import com.mongodb.client.result.InsertOneResult
 import org.apache.axiom.soap.SOAPEnvelope
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Source.{fromIterator, single}
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.mongodb.scala.bson.BsonNumber
 import org.scalatest.matchers.should.Matchers

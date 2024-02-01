@@ -19,8 +19,8 @@ package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-import akka.actor.{Cancellable, Scheduler}
 import org.apache.commons.lang3.time.StopWatch
+import org.apache.pekko.actor.{Cancellable, Scheduler}
 
 import play.api.inject.ApplicationLifecycle
 import play.api.{Application, Logging}
