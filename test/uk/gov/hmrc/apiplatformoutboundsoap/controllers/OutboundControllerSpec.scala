@@ -23,7 +23,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 
-import akka.stream.Materializer
+import org.apache.pekko.stream.Materializer
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.mockito.scalatest.ResetMocksAfterEachTest
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}

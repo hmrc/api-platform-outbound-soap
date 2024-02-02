@@ -16,10 +16,8 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
-
-import org.joda.time.Duration
 
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 

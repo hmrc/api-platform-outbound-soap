@@ -26,9 +26,6 @@ import javax.xml.namespace.QName
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
-import akka.Done
-import akka.stream.Materializer
-import akka.stream.scaladsl.Sink
 import org.apache.axiom.om.OMAbstractFactory.{getOMFactory, getSOAP12Factory}
 import org.apache.axiom.om._
 import org.apache.axiom.om.util.AXIOMUtil.stringToOM
@@ -36,6 +33,9 @@ import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.addressing.AddressingConstants.Final.{WSAW_NAMESPACE, WSA_NAMESPACE}
 import org.apache.axis2.addressing.AddressingConstants._
 import org.apache.axis2.wsdl.WSDLUtil
+import org.apache.pekko.Done
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Sink
 
 import play.api.Logging
 import play.api.cache.AsyncCacheApi

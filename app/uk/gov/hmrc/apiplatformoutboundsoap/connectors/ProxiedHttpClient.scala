@@ -18,7 +18,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
 import javax.inject.{Inject, Singleton}
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 
 import play.api.Configuration
 import play.api.libs.ws.{WSClient, WSProxyServer}
