@@ -22,9 +22,8 @@ import java.util.UUID.randomUUID
 import javax.wsdl.WSDLException
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.Future.successful
+import scala.concurrent.Future.{failed, successful}
 import scala.concurrent.duration.Duration
-
 import com.mongodb.client.result.InsertOneResult
 import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.pekko.stream.Materializer
@@ -38,12 +37,10 @@ import org.xmlunit.builder.DiffBuilder
 import org.xmlunit.builder.DiffBuilder.compare
 import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
-
 import play.api.cache.AsyncCacheApi
 import play.api.http.Status.OK
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
-
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
@@ -60,6 +57,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     val outboundMessageRepositoryMock: OutboundMessageRepository         = mock[OutboundMessageRepository]
     val wsSecurityServiceMock: WsSecurityService                         = mock[WsSecurityService]
     val notificationCallbackConnectorMock: NotificationCallbackConnector = mock[NotificationCallbackConnector]
+    val wsdlParser: WsdlParser                                           = mock[WsdlParser]
     val appConfigMock: AppConfig                                         = mock[AppConfig]
     val cacheSpy: AsyncCacheApi                                          = spy[AsyncCacheApi](cache)
     val httpStatus: Int                                                  = 200
@@ -76,7 +74,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
 
     val underTest: OutboundService =
-      new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock, notificationCallbackConnectorMock, appConfigMock, cacheSpy) {
+      new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock, notificationCallbackConnectorMock, wsdlParser, appConfigMock, cacheSpy) {
         override def now: Instant = expectedInstantNow
 
         override def randomUUID: UUID = expectedGlobalId
@@ -418,12 +416,13 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     "fail when the given WSDL does not exist" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
+      when(wsdlParser.parseWsdl(*)).thenReturn(failed(new WSDLException(WSDLException.INVALID_WSDL, "This file was not found: http://localhost:3001/")))
 
       val exception: WSDLException = intercept[WSDLException] {
-        await(underTest.sendMessage(messageRequestFullAddressing.copy(wsdlUrl = "https://github.com/hmrc/api-platform-outbound-soap/missing")))
+        await(underTest.sendMessage(messageRequestFullAddressing.copy(wsdlUrl = "http://localhost:3001/")))
       }
 
-      exception.getMessage should include("This file was not found: https://github.com/hmrc/api-platform-outbound-soap/missing")
+      exception.getMessage should include("This file was not found: http://localhost:3001/")
     }
 
     "fail when the addressing.to field is empty" in new Setup {
