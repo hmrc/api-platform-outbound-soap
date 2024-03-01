@@ -21,6 +21,7 @@ import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import javax.wsdl._
 import javax.wsdl.extensions.soap12.SOAP12Address
+import javax.wsdl.xml.WSDLReader
 import javax.xml.namespace.QName
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
@@ -53,7 +54,7 @@ class OutboundService @Inject() (
     wsSecurityService: WsSecurityService,
     outboundMessageRepository: OutboundMessageRepository,
     notificationCallbackConnector: NotificationCallbackConnector,
-    wsdlParser: WsdlParser,
+    wsdlReader: WSDLReader,
     appConfig: AppConfig,
     cache: AsyncCacheApi
   )(implicit val ec: ExecutionContext,
@@ -187,7 +188,7 @@ class OutboundService @Inject() (
 
   private def buildSoapRequest(message: MessageRequest): Future[SoapRequest] = {
     cache.getOrElseUpdate[Definition](message.wsdlUrl, appConfig.cacheDuration) {
-      wsdlParser.parseWsdl(message.wsdlUrl)
+      parseWsdl(message.wsdlUrl)
     } map { wsdlDefinition: Definition =>
       val portType             = wsdlDefinition.getAllPortTypes.asScala.values.head.asInstanceOf[PortType]
       val operation: Operation = portType.getOperations.asScala.map(_.asInstanceOf[Operation])
@@ -205,6 +206,10 @@ class OutboundService @Inject() (
       val soapWsdlUrl: String      = url.replace("{ccn2Host}", appConfig.ccn2Host).replace("{ccn2Port}", appConfig.ccn2Port.toString)
       SoapRequest(enrichedEnvelope, soapWsdlUrl)
     }
+  }
+
+  private def parseWsdl(wsdlUrl: String): Future[Definition]                                          = {
+    Future.successful(wsdlReader.readWSDL(wsdlUrl))
   }
 
   private def addHeaders(message: MessageRequest, operation: Operation, envelope: SOAPEnvelope): Unit = {

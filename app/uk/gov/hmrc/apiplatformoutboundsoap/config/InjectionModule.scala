@@ -16,7 +16,10 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.config
 
+import javax.wsdl.xml.WSDLReader
+
 import com.google.inject.AbstractModule
+import org.apache.axis2.wsdl.WSDLUtil
 
 import uk.gov.hmrc.apiplatformoutboundsoap.GlobalContext
 
@@ -24,7 +27,9 @@ class InjectionModule extends AbstractModule {
 
   override def configure() = {
 
-    // Eager initialize Context singleton
     bind(classOf[GlobalContext]).asEagerSingleton()
+    val reader: WSDLReader = WSDLUtil.newWSDLReaderWithPopulatedExtensionRegistry
+    reader.setFeature("javax.wsdl.importDocuments", true)
+    bind(classOf[WSDLReader]).toInstance(reader)
   }
 }
