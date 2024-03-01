@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import org.apache.axis2.wsdl.WSDLUtil
-
 import javax.wsdl.Definition
 import javax.wsdl.xml.WSDLReader
 import scala.concurrent.Future
+
+import org.apache.axis2.wsdl.WSDLUtil
 
 // Turned off coverage for this as it was just one line and no need to test WSDLUtil code as it is not
 // ours. However if this ever expands in future, tests will be needed and scoverage ignore removed.

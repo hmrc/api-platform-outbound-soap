@@ -20,12 +20,15 @@ import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.wsdl.WSDLException
+import javax.wsdl.xml.WSDLReader
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 import scala.concurrent.duration.Duration
+
 import com.mongodb.client.result.InsertOneResult
 import org.apache.axiom.soap.SOAPEnvelope
+import org.apache.axis2.wsdl.WSDLUtil
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source.{fromIterator, single}
 import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
@@ -37,10 +40,12 @@ import org.xmlunit.builder.DiffBuilder
 import org.xmlunit.builder.DiffBuilder.compare
 import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
+
 import play.api.cache.AsyncCacheApi
 import play.api.http.Status.OK
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
@@ -72,6 +77,12 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     when(appConfigMock.addressingFaultTo).thenReturn("FaultTo")
 
     when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
+
+    val reader: WSDLReader    = WSDLUtil.newWSDLReaderWithPopulatedExtensionRegistry
+    reader.setFeature("javax.wsdl.importDocuments", true)
+    val definition            = reader.readWSDL("test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl")
+    val definitionUrlResolver = reader.readWSDL("test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_URLResolver.wsdl")
+    when(wsdlParser.parseWsdl(*)).thenReturn(successful(definition))
 
     val underTest: OutboundService =
       new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock, notificationCallbackConnectorMock, wsdlParser, appConfigMock, cacheSpy) {
@@ -310,6 +321,7 @@ class OutboundServiceSpec extends AnyWordSpec with Matchers with GuiceOneAppPerS
     }
 
     "resolve destination url not having port when sending the SOAP envelope returned from the security service to the connector" in new Setup {
+      when(wsdlParser.parseWsdl(*)).thenReturn(successful(definitionUrlResolver))
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
       val messageCaptor: ArgumentCaptor[SoapRequest] = ArgumentCaptor.forClass(classOf[SoapRequest])

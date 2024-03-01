@@ -21,7 +21,6 @@ import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import javax.wsdl._
 import javax.wsdl.extensions.soap12.SOAP12Address
-import javax.wsdl.xml.WSDLReader
 import javax.xml.namespace.QName
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
@@ -32,7 +31,6 @@ import org.apache.axiom.om.util.AXIOMUtil.stringToOM
 import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.addressing.AddressingConstants.Final.{WSAW_NAMESPACE, WSA_NAMESPACE}
 import org.apache.axis2.addressing.AddressingConstants._
-import org.apache.axis2.wsdl.WSDLUtil
 import org.apache.pekko.Done
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
