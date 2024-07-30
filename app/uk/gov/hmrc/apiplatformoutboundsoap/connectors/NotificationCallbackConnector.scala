@@ -21,18 +21,22 @@ import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.Logging
+import play.api.libs.json.Json
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.HttpClientV2
 
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, SoapMessageStatus}
 
 @Singleton
-class NotificationCallbackConnector @Inject() (httpClient: HttpClient)(implicit ec: ExecutionContext) extends HttpErrorFunctions with Logging {
+class NotificationCallbackConnector @Inject() (httpClient: HttpClientV2)(implicit ec: ExecutionContext) extends HttpErrorFunctions with Logging {
 
   def sendNotification(message: OutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Option[Int]] = {
     (message.notificationUrl map { url =>
-      httpClient.POST[SoapMessageStatus, HttpResponse](url, SoapMessageStatus.fromOutboundSoapMessage(message)) map { response =>
+      httpClient.post(url"${url}")
+        .withBody(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(message)))
+        .execute[HttpResponse] map { response =>
         logger.info(s"Notification to $url with global ID ${message.globalId} and message ID ${message.messageId} responded with HTTP code ${response.status}")
         Some(response.status)
       } recover {

@@ -25,7 +25,8 @@ import org.apache.http.HttpStatus
 import play.api.Logging
 import play.api.http.HeaderNames.CONTENT_TYPE
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
@@ -33,13 +34,11 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 @Singleton
 class OutboundConnector @Inject() (
     appConfig: AppConfig,
-    defaultHttpClient: HttpClient,
-    proxiedHttpClient: ProxiedHttpClient
+    httpClient: HttpClientV2
   )(implicit ec: ExecutionContext
   ) extends HttpErrorFunctions with Logging {
 
-  lazy val httpClient: HttpClient = if (useProxy) proxiedHttpClient else defaultHttpClient
-  val useProxy: Boolean           = useProxyForEnv()
+  val useProxy: Boolean = useProxyForEnv()
 
   def postMessage(messageId: String, soapRequest: SoapRequest): Future[Int] = {
     implicit val hc: HeaderCarrier = HeaderCarrier().withExtraHeaders(CONTENT_TYPE -> "application/soap+xml")
@@ -61,10 +60,18 @@ class OutboundConnector @Inject() (
   }
 
   def postHttpRequest(soapRequest: SoapRequest)(implicit hc: HeaderCarrier) = {
-    httpClient.POSTString[Either[UpstreamErrorResponse, HttpResponse]](soapRequest.destinationUrl, soapRequest.soapEnvelope)
+    addProxy(httpClient.post(url"${soapRequest.destinationUrl}"))
+      .withBody(soapRequest.soapEnvelope)
+      .execute[Either[UpstreamErrorResponse, HttpResponse]]
   }
 
   def useProxyForEnv(): Boolean = {
     appConfig.proxyRequiredForThisEnvironment
+  }
+
+  protected def addProxy(requestBuilder: RequestBuilder): RequestBuilder = if (useProxy) {
+    requestBuilder.withProxy
+  } else {
+    requestBuilder
   }
 }
