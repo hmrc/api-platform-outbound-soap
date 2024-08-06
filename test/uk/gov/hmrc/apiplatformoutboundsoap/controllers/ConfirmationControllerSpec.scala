@@ -136,8 +136,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       msgIdCaptor.getValue shouldBe msgIdCod
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COD
-      verify(confirmationServiceMock).processConfirmation(refEq(requestBodyXml), refEq(msgIdCod), refEq(DeliveryStatus.COD))(*)
-
+      verify(confirmationServiceMock).processConfirmation(eqTo(requestBodyXml), eqTo(msgIdCod), eqTo(DeliveryStatus.COD))(*)
     }
 
     "handle an XML request with no RelatesTo element" in new Setup {
@@ -171,7 +170,7 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
       msgIdCaptor.getValue shouldBe msgIdCoe
       confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COE
-      verify(confirmationServiceMock).processConfirmation(refEq(requestBodyXml), refEq(msgIdCoe), refEq(DeliveryStatus.COE))(*)
+      verify(confirmationServiceMock).processConfirmation(eqTo(requestBodyXml), eqTo(msgIdCoe), eqTo(DeliveryStatus.COE))(*)
     }
 
     "call the confirmation service with RelatesTo id that is unknown" in new Setup {
