@@ -9,7 +9,8 @@ object AppDependencies {
     "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-30"        % mongoVersion,
     "org.apache.pekko"  %% "pekko-connectors-mongodb"  % "1.0.2",
     "org.apache.axis2"   % "axis2-kernel"              % "1.8.2",
-    "org.apache.wss4j"   % "wss4j-ws-security-dom"     % "3.0.3",
+    "org.apache.wss4j"   % "wss4j-ws-security-dom"     % "3.0.4",
+    "commons-io"         % "commons-io"                % "2.18.0",
     "com.sun.activation" % "javax.activation"          % "1.2.0",
     caffeine
   )
