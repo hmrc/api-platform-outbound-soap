@@ -28,7 +28,7 @@ object SoapMessageStatus {
       outboundSoapMessage.globalId,
       outboundSoapMessage.messageId,
       outboundSoapMessage.status,
-      outboundSoapMessage.ccnHttpStatus,
+      outboundSoapMessage.ccnHttpStatus.getOrElse(0),
       outboundSoapMessage.sentDateTime,
       outboundSoapMessage.privateHeaders
     )

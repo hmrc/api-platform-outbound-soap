@@ -23,13 +23,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import play.api.Logging
 import play.api.libs.json._
 import play.api.mvc._
-import uk.gov.hmrc.http.NotFoundException
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.backend.http.ErrorResponse
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.{messageRequestFormatter, soapMessageStatusFormatter}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, SoapMessageStatus}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{MessageRequest, OutboundSoapMessage, SoapMessageStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 
 @Singleton
@@ -56,13 +56,15 @@ class OutboundController @Inject() (cc: ControllerComponents, appConfig: AppConf
     }
   }
 
-  private def sendMessage(messageRequest: MessageRequest): Future[Result] = {
+  private def sendMessage(messageRequest: MessageRequest)(implicit hc: HeaderCarrier): Future[Result] = {
     val codValue = messageRequest.confirmationOfDelivery match {
       case Some(cod) => cod
       case None      => appConfig.confirmationOfDelivery
     }
-    outboundService.sendMessage(messageRequest.copy(confirmationOfDelivery = Some(codValue)))
-      .map(outboundSoapMessage => Ok(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(outboundSoapMessage))))
+    outboundService.sendMessage(messageRequest.copy(confirmationOfDelivery = Some(codValue))).map {
+      case Left(value: String)                             => Ok(Json.obj("Unexpected outcome" -> JsString(value)))
+      case Right(outboundSoapMessage: OutboundSoapMessage) => Ok(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(outboundSoapMessage)))
+    }
       .recover(recovery)
   }
 

@@ -71,6 +71,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
         fromRegistries(
           fromCodecs(
             Codecs.playFormatCodec(domainFormat),
+            Codecs.playFormatCodec(MongoFormatter.pendingSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.retryingSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.failedSoapMessageFormatter),
             Codecs.playFormatCodec(MongoFormatter.sentSoapMessageFormatter),
@@ -90,7 +91,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
 
   def retrieveMessagesForRetry: Source[RetryingOutboundSoapMessage, NotUsed] = {
     MongoSource(collection.withReadPreference(primaryPreferred())
-      .find(filter = and(equal("status", SendingStatus.RETRYING.toString()), and(lte("retryDateTime", Codecs.toBson(Instant.now)))))
+      .find(filter = and(equal("status", SendingStatus.RETRYING.toString), and(lte("retryDateTime", Codecs.toBson(Instant.now)))))
       .sort(ascending("retryDateTime"))
       .map(_.asInstanceOf[RetryingOutboundSoapMessage]))
   }
@@ -104,25 +105,42 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
       ).map(_.asInstanceOf[RetryingOutboundSoapMessage]).headOption()
   }
 
-  def updateSendingStatus(globalId: UUID, newStatus: SendingStatus): Future[Option[OutboundSoapMessage]] = {
+  def updateSendingStatus(globalId: UUID, newStatus: SendingStatus, responseCode: Int = 0): Future[Option[OutboundSoapMessage]] = {
     collection.withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),
-        update = set("status", Codecs.toBson(newStatus.toString())),
+        update = combine(set("status", Codecs.toBson(newStatus.toString)), set("ccnHttpStatus", Codecs.toBson(responseCode))),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
       ).toFutureOption()
   }
 
-  def updateToSent(globalId: UUID, sentInstant: Instant): Future[Option[OutboundSoapMessage]] = {
+  private def updateToSent(globalId: UUID, sentInstant: Instant): Future[Option[OutboundSoapMessage]] = {
     collection.withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),
         update = combine(
           set("sentDateTime", Codecs.toBson(sentInstant)),
-          set("status", Codecs.toBson(SendingStatus.SENT.toString()))
+          set("status", Codecs.toBson(SendingStatus.SENT.toString))
         ),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
       ).toFutureOption()
+  }
+
+  def updateToSentWhereNotConfirmed(globalId: UUID, sentInstant: Instant): Future[Option[OutboundSoapMessage]] = {
+    val maybeUpdateCandidate = findById(globalId.toString)
+    maybeUpdateCandidate.flatMap(updateCandidate =>
+      updateCandidate.map(m =>
+        m.status match {
+          case DeliveryStatus.COE =>
+            logger.warn(s"CoE already received for message with globalId ${m.globalId} so not updating to SENT")
+            maybeUpdateCandidate
+          case DeliveryStatus.COD =>
+            logger.warn(s"CoD already received for message with globalId ${m.globalId} so not updating to SENT")
+            maybeUpdateCandidate
+          case _                  => updateToSent(globalId, sentInstant)
+        }
+      ).head
+    )
   }
 
   def updateConfirmationStatus(messageId: String, newStatus: DeliveryStatus, confirmationMsg: String): Future[Option[OutboundSoapMessage]] = {
@@ -133,7 +151,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
 
     for {
       _           <- collection.bulkWrite(
-                       List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.toString())), set(field, confirmationMsg)))),
+                       List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.toString)), set(field, confirmationMsg)))),
                        BulkWriteOptions().ordered(false)
                      ).toFuture()
       findUpdated <- findById(messageId)

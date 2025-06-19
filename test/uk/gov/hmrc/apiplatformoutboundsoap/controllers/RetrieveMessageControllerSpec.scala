@@ -34,8 +34,9 @@ import play.api.test.{FakeRequest, Helpers}
 
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
+import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
-class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
+class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar with TestDataFactory {
 
   trait Setup {
     val repositoryMock: OutboundMessageRepository = mock[OutboundMessageRepository]
@@ -44,30 +45,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
 
   "message" should {
     import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.instantFormat
-    val fakeRequest                 = FakeRequest("GET", "/retrieve")
-    val ccn2HttpStatus              = 200
-    val failedOutboundSoapMessage   = FailedOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", Instant.now, ccn2HttpStatus)
-    val sentOutboundSoapMessage     = SentOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", Instant.now, ccn2HttpStatus)
-    val retryingOutboundSoapMessage =
-      RetryingOutboundSoapMessage(UUID.randomUUID(), "some messageId", "<xml><e>thing</e></xml>", "http://destinat.ion", Instant.now, Instant.now, ccn2HttpStatus)
-    val codSoapMessage              = CodSoapMessage(
-      UUID.randomUUID(),
-      "some messageId",
-      "<xml><e>thing</e></xml>",
-      "http://destinat.ion",
-      Instant.now,
-      ccn2HttpStatus,
-      codMessage = Some("<soap:Body><ccn2:CoD><ccn2:EventTimestamp>2021-03-10T09:30:10Z</ccn2:EventTimestamp></ccn2:CoD></soap:Body>")
-    )
-    val coeSoapMessage              = CoeSoapMessage(
-      UUID.randomUUID(),
-      "some messageId",
-      "<xml><e>thing</e></xml>",
-      "http://destinat.ion",
-      Instant.now,
-      ccn2HttpStatus,
-      coeMessage = Some("<coe><error>failed</error></coe>")
-    )
+    val fakeRequest = FakeRequest("GET", "/retrieve")
 
     "return a failed message when supplied with an ID that exists" in new Setup {
       when(repositoryMock.findById(*)).thenReturn(Future.successful(Some(failedOutboundSoapMessage)))
@@ -80,8 +58,22 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe failedOutboundSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe failedOutboundSoapMessage.destinationUrl
       (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe failedOutboundSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
-      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe failedOutboundSoapMessage.ccnHttpStatus
+      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe failedOutboundSoapMessage.ccnHttpStatus.getOrElse(0)
       (contentAsJson(result) \ "status").as[SendingStatus] shouldBe SendingStatus.FAILED
+    }
+
+    "return a pending message when supplied with an ID that exists" in new Setup {
+      when(repositoryMock.findById(*)).thenReturn(Future.successful(Some(pendingOutboundSoapMessage)))
+
+      val result: Future[Result] = underTest.message("1234")(fakeRequest)
+
+      status(result) shouldBe OK
+      (contentAsJson(result) \ "globalId").as[UUID] shouldBe pendingOutboundSoapMessage.globalId
+      (contentAsJson(result) \ "messageId").as[String] shouldBe pendingOutboundSoapMessage.messageId
+      (contentAsJson(result) \ "soapMessage").as[String] shouldBe pendingOutboundSoapMessage.soapMessage
+      (contentAsJson(result) \ "destinationUrl").as[String] shouldBe pendingOutboundSoapMessage.destinationUrl
+      (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe pendingOutboundSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
+      (contentAsJson(result) \ "status").as[SendingStatus] shouldBe SendingStatus.PENDING
     }
 
     "return a retrying message when supplied with an ID that exists" in new Setup {
@@ -95,7 +87,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe retryingOutboundSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe retryingOutboundSoapMessage.destinationUrl
       (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe retryingOutboundSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
-      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe retryingOutboundSoapMessage.ccnHttpStatus
+      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe retryingOutboundSoapMessage.ccnHttpStatus.getOrElse(0)
       (contentAsJson(result) \ "status").as[SendingStatus] shouldBe SendingStatus.RETRYING
     }
 
@@ -110,7 +102,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe sentOutboundSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe sentOutboundSoapMessage.destinationUrl
       (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe sentOutboundSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
-      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe sentOutboundSoapMessage.ccnHttpStatus
+      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe sentOutboundSoapMessage.ccnHttpStatus.getOrElse(0)
       (contentAsJson(result) \ "status").as[SendingStatus] shouldBe SendingStatus.SENT
     }
 
@@ -125,10 +117,11 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe coeSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe coeSoapMessage.destinationUrl
       (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe coeSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
-      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe coeSoapMessage.ccnHttpStatus
+      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe coeSoapMessage.ccnHttpStatus.getOrElse(0)
       Some((contentAsJson(result) \ "coeMessage").as[String]) shouldBe coeSoapMessage.coeMessage
       (contentAsJson(result) \ "status").as[DeliveryStatus] shouldBe DeliveryStatus.COE
     }
+
     "return a CoD message when supplied with an ID that exists" in new Setup {
       when(repositoryMock.findById(*)).thenReturn(Future.successful(Some(codSoapMessage)))
 
@@ -140,7 +133,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       (contentAsJson(result) \ "soapMessage").as[String] shouldBe codSoapMessage.soapMessage
       (contentAsJson(result) \ "destinationUrl").as[String] shouldBe codSoapMessage.destinationUrl
       (contentAsJson(result) \ "createDateTime").as[Instant] shouldBe codSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
-      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe codSoapMessage.ccnHttpStatus
+      (contentAsJson(result) \ "ccnHttpStatus").as[Int] shouldBe codSoapMessage.ccnHttpStatus.getOrElse(0)
       Some((contentAsJson(result) \ "codMessage").as[String]) shouldBe codSoapMessage.codMessage
       (contentAsJson(result) \ "status").as[DeliveryStatus] shouldBe DeliveryStatus.COD
     }

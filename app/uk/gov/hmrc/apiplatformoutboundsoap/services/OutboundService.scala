@@ -44,6 +44,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult
 import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult._
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.{FAILED, RETRYING, SENT}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 
@@ -64,33 +65,48 @@ class OutboundService @Inject() (
 
   def randomUUID: UUID = UUID.randomUUID
 
-  def sendMessage(message: MessageRequest): Future[OutboundSoapMessage] = {
+  def sendMessage(message: MessageRequest)(implicit hc: HeaderCarrier): Future[Either[String, OutboundSoapMessage]] = {
     for {
-      soapRequest        <- buildSoapRequest(message)
-      httpStatus         <- outboundConnector.postMessage(message.addressing.messageId, soapRequest)
-      outboundSoapMessage = processSendingResult(message, soapRequest, httpStatus)
-      _                  <- logCcnSendResult(outboundSoapMessage, httpStatus)
-      _                  <- outboundMessageRepository.persist(outboundSoapMessage)
-    } yield outboundSoapMessage
+      soapRequest             <- buildSoapRequest(message)
+      pendingMessage           = convertSoapRequestToPendingSoapMessage(message, soapRequest)
+      _                       <- outboundMessageRepository.persist(pendingMessage)
+      httpStatus              <- outboundConnector.postMessage(message.addressing.messageId, soapRequest)
+      messageWithResponseCode <- updateStatusAndNotify(pendingMessage.globalId, sendingStatus(mapHttpStatusCode(httpStatus)), httpStatus)
+      _                       <- logCcnSendResult(pendingMessage, httpStatus)
+    } yield messageWithResponseCode match {
+      case Some(soapMessage) =>
+        Right(soapMessage)
+      case None              => Left(s"Unable to update message with globalId of ${pendingMessage.globalId}")
+    }
+  }
+
+  def sendingStatus(ccn2Status: CcnRequestResult) = {
+    ccn2Status match {
+      case SUCCESS            => SENT
+      case UNEXPECTED_SUCCESS => SENT
+      case RETRYABLE_ERROR    => RETRYING
+      case FAIL_ERROR         => FAILED
+    }
   }
 
   def retryMessages(implicit hc: HeaderCarrier): Future[Done] = {
     outboundMessageRepository.retrieveMessagesForRetry.runWith(Sink.foreachAsync[RetryingOutboundSoapMessage](appConfig.parallelism)(retryMessage))
   }
 
-  private def retryMessage(message: RetryingOutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Unit] = {
-    val nextRetryInstant: Instant                                                   = now.plus(Duration.ofMillis(appConfig.retryInterval.toMillis))
-    val globalId                                                                    = message.globalId
-    val messageId                                                                   = message.messageId
-    def updateStatusAndNotify(newStatus: SendingStatus)(implicit hc: HeaderCarrier) = {
-      outboundMessageRepository.updateSendingStatus(globalId, newStatus) map { updatedMessage =>
-        updatedMessage.map(notificationCallbackConnector.sendNotification)
-        ()
-      }
+  private def updateStatusAndNotify(globalId: UUID, newStatus: SendingStatus, responseCode: Int)(implicit hc: HeaderCarrier) = {
+    outboundMessageRepository.updateSendingStatus(globalId, newStatus, responseCode) map { updatedMessage =>
+      updatedMessage.map(notificationCallbackConnector.sendNotification)
+      updatedMessage
     }
+  }
+
+  private def retryMessage(message: RetryingOutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Unit] = {
+    val nextRetryInstant: Instant = now.plus(Duration.ofMillis(appConfig.retryInterval.toMillis))
+    val globalId                  = message.globalId
+    val messageId                 = message.messageId
 
     def updateToSentAndNotify(sentInstant: Instant)(implicit hc: HeaderCarrier) = {
-      outboundMessageRepository.updateToSent(globalId, sentInstant) map { updatedMessage =>
+      outboundMessageRepository.updateToSentWhereNotConfirmed(globalId, sentInstant) map { updatedMessage =>
         updatedMessage.map(notificationCallbackConnector.sendNotification)
         ()
       }
@@ -110,11 +126,13 @@ class OutboundService @Inject() (
           updateToSentAndNotify(now)
         case FAIL_ERROR         =>
           logSendingFailure(httpStatus, message.globalId, message.messageId)
-          updateStatusAndNotify(SendingStatus.FAILED)
+          updateStatusAndNotify(globalId, SendingStatus.FAILED, httpStatus)
+          Future.unit
         case RETRYABLE_ERROR    =>
           if (retryDurationExpired) {
             logRetryingTimedOut(httpStatus, globalId, messageId)
-            updateStatusAndNotify(SendingStatus.FAILED)
+            updateStatusAndNotify(globalId, SendingStatus.FAILED, httpStatus)
+            Future.unit
           } else {
             logContinuingRetrying(httpStatus, globalId, messageId)
             outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryInstant).map(_ => ())
@@ -124,8 +142,24 @@ class OutboundService @Inject() (
     }
   }
 
-  private def processSendingResult(message: MessageRequest, soapRequest: SoapRequest, httpStatus: Int): OutboundSoapMessage = {
-    val globalId: UUID = randomUUID
+  private def convertSoapRequestToPendingSoapMessage(message: MessageRequest, soapRequest: SoapRequest): PendingOutboundSoapMessage = {
+    PendingOutboundSoapMessage(
+      randomUUID,
+      message.addressing.messageId,
+      soapRequest.soapEnvelope,
+      soapRequest.destinationUrl,
+      now,
+      None,
+      message.notificationUrl,
+      None,
+      None,
+      Some(now),
+      message.privateHeaders
+    )
+  }
+
+  /* private def processSendingResult(message: MessageRequest, soapRequest: SoapRequest, httpStatus: Int, globalId:UUID): OutboundSoapMessage = {
+//    val globalId: UUID = randomUUID
     val messageId      = message.addressing.messageId
 
     def succeededMessage = {
@@ -135,7 +169,7 @@ class OutboundService @Inject() (
         soapRequest.soapEnvelope,
         soapRequest.destinationUrl,
         now,
-        httpStatus,
+        Some(httpStatus),
         message.notificationUrl,
         None,
         None,
@@ -151,7 +185,7 @@ class OutboundService @Inject() (
         soapRequest.soapEnvelope,
         soapRequest.destinationUrl,
         now,
-        httpStatus,
+        Some(httpStatus),
         message.notificationUrl,
         None,
         None,
@@ -168,7 +202,7 @@ class OutboundService @Inject() (
         soapRequest.destinationUrl,
         now,
         now.plus(Duration.ofMillis(appConfig.retryInterval.toMillis)),
-        httpStatus,
+        Some(httpStatus),
         message.notificationUrl,
         None,
         None,
@@ -183,7 +217,7 @@ class OutboundService @Inject() (
       case FAIL_ERROR         => failedMessage
       case RETRYABLE_ERROR    => retryingMessage
     }
-  }
+  }*/
 
   private def buildSoapRequest(message: MessageRequest): Future[SoapRequest] = {
     cache.getOrElseUpdate[Definition](message.wsdlUrl, appConfig.cacheDuration) {
@@ -202,7 +236,7 @@ class OutboundService @Inject() (
         .getPorts.asScala.values.head.asInstanceOf[Port]
         .getExtensibilityElements.asScala.filter(_.isInstanceOf[SOAP12Address]).head.asInstanceOf[SOAP12Address]
         .getLocationURI
-      val soapWsdlUrl: String      = url.replace("{ccn2Host}", appConfig.ccn2Host).replace("{ccn2Port}", appConfig.ccn2Port.toString)
+      val soapWsdlUrl: String      = url.replace("{ccn2Host}", appConfig.ccn2Host).replace("{ccn2Port}", appConfig.ccn2Port.toString).replace("https", "http")
       SoapRequest(enrichedEnvelope, soapWsdlUrl)
     }
   }

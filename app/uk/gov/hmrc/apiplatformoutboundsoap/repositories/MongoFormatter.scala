@@ -27,7 +27,7 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
   implicit val cfg: Aux[Json.MacroOptions]                 = JsonConfiguration(
     discriminator = "status",
     typeNaming = JsonNaming { fullName =>
-      OutboundSoapMessage.typeToStatus(fullName).toString()
+      OutboundSoapMessage.typeToStatus(fullName).toString
     }
   )
   implicit val privateHeaderReads: Reads[PrivateHeader]    = Json.reads[PrivateHeader]
@@ -35,6 +35,15 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
 
   implicit val privateHeaderFormatter: OFormat[PrivateHeader] =
     OFormat(privateHeaderReads, privateHeaderWrites)
+
+  implicit val pendingMessageReads: Reads[PendingOutboundSoapMessage] =
+    Json.reads[PendingOutboundSoapMessage]
+
+  implicit val pendingMessageWrites: OWrites[PendingOutboundSoapMessage] =
+    Json.writes[PendingOutboundSoapMessage].transform(_ ++ Json.obj("status" -> SendingStatus.PENDING.toString()))
+
+  implicit val pendingSoapMessageFormatter: OFormat[PendingOutboundSoapMessage] =
+    OFormat(pendingMessageReads, pendingMessageWrites)
 
   implicit val retryingMessageReads: Reads[RetryingOutboundSoapMessage] =
     Json.reads[RetryingOutboundSoapMessage]
@@ -83,6 +92,8 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
 
   implicit val outboundSoapMessageReads: Reads[OutboundSoapMessage] =
     (JsPath \ "status").read[String].flatMap {
+      case "PENDING"  =>
+        pendingSoapMessageFormatter.widen[OutboundSoapMessage]
       case "RETRYING" =>
         retryingSoapMessageFormatter.widen[OutboundSoapMessage]
       case "SENT"     =>
@@ -98,6 +109,10 @@ private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implici
   implicit val outboundSoapMessageWrites: OWrites[OutboundSoapMessage] = new OWrites[OutboundSoapMessage] {
 
     override def writes(soapMessage: OutboundSoapMessage): JsObject = soapMessage match {
+      case p @ PendingOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _)     =>
+        pendingSoapMessageFormatter.writes(p) ++ Json.obj(
+          "status" -> SendingStatus.PENDING.toString()
+        )
       case r @ RetryingOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _, _) =>
         retryingSoapMessageFormatter.writes(r) ++ Json.obj(
           "status" -> SendingStatus.RETRYING.toString()

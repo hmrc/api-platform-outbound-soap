@@ -59,6 +59,7 @@ object JsonFormats {
       (JsPath \ "privateHeaders").writeOptionWithNull[List[PrivateHeader]]
   )(unlift(SoapMessageStatus.unapply))
   implicit val soapMessageStatusFormatter: Format[SoapMessageStatus]              = Format(Json.reads[SoapMessageStatus], statusWrites)
+  implicit val pendingSoapMessageFormatter: OFormat[PendingOutboundSoapMessage]   = Json.format[PendingOutboundSoapMessage]
   implicit val retryingSoapMessageFormatter: OFormat[RetryingOutboundSoapMessage] = Json.format[RetryingOutboundSoapMessage]
   implicit val failedSoapMessageFormatter: OFormat[FailedOutboundSoapMessage]     = Json.format[FailedOutboundSoapMessage]
   implicit val sentSoapMessageFormatter: OFormat[SentOutboundSoapMessage]         = Json.format[SentOutboundSoapMessage]
@@ -67,6 +68,10 @@ object JsonFormats {
   implicit val messageRequestFormatter: OFormat[MessageRequest]                   = Json.format[MessageRequest]
 
   implicit val outboundSoapMessageWrites: OWrites[OutboundSoapMessage]    = {
+    case p @ PendingOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _)     =>
+      pendingSoapMessageFormatter.writes(p) ++ Json.obj(
+        "status" -> SendingStatus.PENDING.toString()
+      )
     case r @ RetryingOutboundSoapMessage(_, _, _, _, _, _, _, _, _, _, _, _) =>
       retryingSoapMessageFormatter.writes(r) ++ Json.obj(
         "status" -> SendingStatus.RETRYING.toString()
