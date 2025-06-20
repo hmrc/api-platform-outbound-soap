@@ -174,7 +174,7 @@ class OutboundService @Inject() (
         .getPorts.asScala.values.head.asInstanceOf[Port]
         .getExtensibilityElements.asScala.filter(_.isInstanceOf[SOAP12Address]).head.asInstanceOf[SOAP12Address]
         .getLocationURI
-      val soapWsdlUrl: String      = url.replace("{ccn2Host}", appConfig.ccn2Host).replace("{ccn2Port}", appConfig.ccn2Port.toString).replace("https", "http")
+      val soapWsdlUrl: String      = url.replace("{ccn2Host}", appConfig.ccn2Host).replace("{ccn2Port}", appConfig.ccn2Port.toString)
       SoapRequest(enrichedEnvelope, soapWsdlUrl)
     }
   }
