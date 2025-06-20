@@ -24,7 +24,6 @@ import javax.wsdl.extensions.soap12.SOAP12Address
 import javax.xml.namespace.QName
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
-
 import org.apache.axiom.om.OMAbstractFactory.{getOMFactory, getSOAP12Factory}
 import org.apache.axiom.om._
 import org.apache.axiom.om.util.AXIOMUtil.stringToOM
@@ -34,12 +33,10 @@ import org.apache.axis2.addressing.AddressingConstants._
 import org.apache.pekko.Done
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
-
 import play.api.Logging
 import play.api.cache.AsyncCacheApi
 import play.api.http.Status._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, NotFoundException}
-
 import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult
 import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult._
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
@@ -47,6 +44,8 @@ import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConne
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.{FAILED, RETRYING, SENT}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
+
+import scala.concurrent.Future.successful
 
 @Singleton
 class OutboundService @Inject() (
@@ -135,7 +134,7 @@ class OutboundService @Inject() (
             Future.unit
           } else {
             logContinuingRetrying(httpStatus, globalId, messageId)
-            outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryInstant).map(_ => ())
+            outboundMessageRepository.updateNextRetryTime(message.globalId, nextRetryInstant).flatMap(_ => successful())
           }
         case _                  => Future.unit
       }
