@@ -24,6 +24,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 import scala.concurrent.duration.Duration
+
 import com.mongodb.client.result.InsertOneResult
 import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.wsdl.WSDLUtil
@@ -38,10 +39,12 @@ import org.xmlunit.builder.DiffBuilder
 import org.xmlunit.builder.DiffBuilder.compare
 import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
+
 import play.api.cache.AsyncCacheApi
 import play.api.http.Status.OK
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.{FAILED, PENDING, RETRYING, SENT}
@@ -65,8 +68,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
     val cacheSpy: AsyncCacheApi                                          = spy[AsyncCacheApi](cache)
     val httpStatus: Int                                                  = 200
 
-//    val expectedInstantNow: Instant = Instant.now
-//    val globalId: UUID = UUID.randomUUID
     when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
     when(appConfigMock.ccn2Host).thenReturn("example.com")
     when(appConfigMock.ccn2Port).thenReturn(1234)
