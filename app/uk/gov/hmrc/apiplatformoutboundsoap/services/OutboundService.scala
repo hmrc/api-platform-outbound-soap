@@ -74,8 +74,7 @@ class OutboundService @Inject() (
       messageWithResponseCode <- updateStatusAndNotify(pendingMessage.globalId, sendingStatus(mapHttpStatusCode(httpStatus)), httpStatus)
       _                       <- logCcnSendResult(pendingMessage, httpStatus)
     } yield messageWithResponseCode match {
-      case Some(soapMessage) =>
-        Right(soapMessage)
+      case Some(soapMessage) => Right(soapMessage)
       case None              => Left(s"Unable to update message with globalId of ${pendingMessage.globalId}")
     }
   }
