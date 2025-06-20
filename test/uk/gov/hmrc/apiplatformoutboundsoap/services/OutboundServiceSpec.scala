@@ -68,6 +68,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
     val cacheSpy: AsyncCacheApi                                          = spy[AsyncCacheApi](cache)
     val httpStatus: Int                                                  = 200
 
+    when(appConfigMock.retryDuration).thenReturn(retryDuration)
     when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
     when(appConfigMock.ccn2Host).thenReturn("example.com")
     when(appConfigMock.ccn2Port).thenReturn(1234)
@@ -85,9 +86,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
 
     val underTest: OutboundService =
       new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock, notificationCallbackConnectorMock, wsdlParser, appConfigMock, cacheSpy) {
-//        override def now: Instant = expectedInstantNow
-
-//        override def randomUUID: UUID = expectedGlobalId
       }
   }
 
@@ -579,7 +577,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       val retryingMessage        = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", null, "some url", Instant.now, Instant.now, Some(httpStatus))
       val anotherRetryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload 2</IE4N03>", "another url", Instant.now, Instant.now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
-      when(appConfigMock.retryDuration).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(anotherRetryingMessage.messageId, SoapRequest(anotherRetryingMessage.soapMessage, anotherRetryingMessage.destinationUrl))).thenReturn(
         successful(OK)
       )
@@ -595,7 +592,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       val testScopedGlobalId = globalId
       val retryingMessage    = RetryingOutboundSoapMessage(testScopedGlobalId, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", now, now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
-      when(appConfigMock.retryDuration).thenReturn(Duration("30s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
@@ -610,7 +606,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
     "retry a message and mark failed when SOAP request received 1xx status" in new Setup {
       val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
-      when(appConfigMock.retryDuration).thenReturn(Duration("30s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(CONTINUE))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
@@ -626,7 +621,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
     "retry a message and mark failed when SOAP request received 3xx status" in new Setup {
       val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
-      when(appConfigMock.retryDuration).thenReturn(Duration("30s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(TEMPORARY_REDIRECT))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
@@ -642,7 +636,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
     "retry a message and mark failed when SOAP request received 4xx status" in new Setup {
       val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
-      when(appConfigMock.retryDuration).thenReturn(Duration("30s"))
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(NOT_FOUND))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
@@ -668,7 +661,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       )
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
-      when(appConfigMock.retryDuration).thenReturn(retryDuration)
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
@@ -708,7 +700,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       val failedMessageForNotification: FailedOutboundSoapMessage = retryingMessage.toFailed
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
-      when(appConfigMock.retryDuration).thenReturn(retryDuration)
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *, *)).thenReturn(successful(Some(failedMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
@@ -733,7 +724,6 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       val failedMessageForNotification: FailedOutboundSoapMessage = retryingMessage.toFailed
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
-      when(appConfigMock.retryDuration).thenReturn(retryDuration)
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.updateToSentWhereNotConfirmed(*, *)).thenReturn(successful(Some(failedMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))

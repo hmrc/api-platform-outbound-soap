@@ -37,6 +37,7 @@ trait TestDataFactory {
     randomUUID
   }
   val expectedInterval     = Duration("10s")
+  val retryDuration = Duration("30s")
   val expectedRetryAt      = knownInstant.plus(java.time.Duration.ofMillis(expectedInterval.toMillis))
   val distantFutureRetryAt = now.plus(java.time.Duration.ofHours(1))
   val messageId            = "123"
