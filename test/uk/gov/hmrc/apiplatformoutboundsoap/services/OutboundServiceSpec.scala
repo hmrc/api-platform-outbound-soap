@@ -85,8 +85,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
     when(wsdlParser.parseWsdl(*)).thenReturn(successful(definition))
 
     val underTest: OutboundService =
-      new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock, notificationCallbackConnectorMock, wsdlParser, appConfigMock, cacheSpy) {
-      }
+      new OutboundService(outboundConnectorMock, wsSecurityServiceMock, outboundMessageRepositoryMock, notificationCallbackConnectorMock, wsdlParser, appConfigMock, cacheSpy) {}
   }
 
   "sendMessage" should {

@@ -54,7 +54,7 @@ object JsonFormats {
     (JsPath \ "globalId").write[UUID] and
       (JsPath \ "messageId").write[String] and
       (JsPath \ "status").write[StatusType] and
-      (JsPath \ "ccnHttpStatus").write[Int] and
+      (JsPath \ "ccnHttpStatus").writeOptionWithNull[Int] and
       (JsPath \ "sentDateTime").writeOptionWithNull[Instant](fixedToMillisIsoWrites) and
       (JsPath \ "privateHeaders").writeOptionWithNull[List[PrivateHeader]]
   )(unlift(SoapMessageStatus.unapply))

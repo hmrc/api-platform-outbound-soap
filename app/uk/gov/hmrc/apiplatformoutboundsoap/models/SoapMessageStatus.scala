@@ -19,7 +19,14 @@ package uk.gov.hmrc.apiplatformoutboundsoap.models
 import java.time.Instant
 import java.util.UUID
 
-case class SoapMessageStatus(globalId: UUID, messageId: String, status: StatusType, ccnHttpStatus: Int, sentDateTime: Option[Instant], privateHeaders: Option[List[PrivateHeader]])
+case class SoapMessageStatus(
+    globalId: UUID,
+    messageId: String,
+    status: StatusType,
+    ccnHttpStatus: Option[Int],
+    sentDateTime: Option[Instant],
+    privateHeaders: Option[List[PrivateHeader]]
+  )
 
 object SoapMessageStatus {
 
@@ -28,7 +35,7 @@ object SoapMessageStatus {
       outboundSoapMessage.globalId,
       outboundSoapMessage.messageId,
       outboundSoapMessage.status,
-      outboundSoapMessage.ccnHttpStatus.getOrElse(0),
+      outboundSoapMessage.ccnHttpStatus,
       outboundSoapMessage.sentDateTime,
       outboundSoapMessage.privateHeaders
     )

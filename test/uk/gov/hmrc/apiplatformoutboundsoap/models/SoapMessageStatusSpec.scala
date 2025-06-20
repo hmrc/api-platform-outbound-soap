@@ -42,6 +42,16 @@ class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar 
       (json \ "sentDateTime").asOpt[Instant] shouldBe None
     }
 
+    "not include ccnHttpStatus if None" in {
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessage.copy(ccnHttpStatus = Option.empty)))
+      (json \ "ccnHttpStatus").asOpt[Int] shouldBe None
+    }
+
+    "include ccnHttpStatus if present" in {
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessage.copy(ccnHttpStatus = Some(200))))
+      (json \ "ccnHttpStatus").asOpt[Int] shouldBe Some(200)
+    }
+
     "not include privateHeaders if None" in {
       val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessage))
       (json \ "privateHeaders").asOpt[List[PrivateHeader]] shouldBe None
