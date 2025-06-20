@@ -28,20 +28,29 @@ import play.api.libs.json.{JsObject, JsString, Json}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
-class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
+class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar with TestDataFactory {
 
   "format writes" should {
     val formatter = MongoFormatter.outboundSoapMessageWrites
+
+    "correctly write a PENDING message" in {
+      val msgJson: JsObject = formatter.writes(pendingOutboundSoapMessage)
+      msgJson.values.size shouldBe 6
+      msgJson.value.get("status") shouldBe Some(JsString("PENDING"))
+    }
+
     "correctly write a COD message" in {
       val msgJson: JsObject =
-        formatter.writes(CodSoapMessage(UUID.randomUUID(), "12334", "some cod message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg")))
+        formatter.writes(CodSoapMessage(UUID.randomUUID(), "12334", "some cod message", "some destination url", Instant.now, Some(200), Some("notify url"), Some("msg")))
       msgJson.values.size shouldBe 9
       msgJson.value.get("status") shouldBe Some(JsString("COD"))
     }
+
     "correctly write a COE message" in {
       val msgJson: JsObject =
-        formatter.writes(CoeSoapMessage(UUID.randomUUID(), "12334", "some coe message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg")))
+        formatter.writes(CoeSoapMessage(UUID.randomUUID(), "12334", "some coe message", "some destination url", Instant.now, Some(200), Some("notify url"), Some("msg")))
       msgJson.values.size shouldBe 9
       msgJson.value.get("status") shouldBe Some(JsString("COE"))
     }
@@ -54,7 +63,7 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         "sent message",
         "some destination url",
         Instant.now,
-        200,
+        Some(200),
         Some("notify url"),
         Some("msg"),
         None,
@@ -67,7 +76,7 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
 
     "correctly write a FAILED message" in {
       val msgJson: JsObject =
-        formatter.writes(FailedOutboundSoapMessage(UUID.randomUUID(), "12334", "failed message", "some destination url", Instant.now, 200, Some("notify url"), Some("msg")))
+        formatter.writes(FailedOutboundSoapMessage(UUID.randomUUID(), "12334", "failed message", "some destination url", Instant.now, Some(200), Some("notify url"), Some("msg")))
       msgJson.values.size shouldBe 9
       msgJson.value.get("status") shouldBe Some(JsString("FAILED"))
     }
@@ -79,7 +88,7 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         "some destination url",
         Instant.now,
         Instant.now,
-        200,
+        Some(200),
         Some("notify url"),
         Some("msg")
       ))
@@ -138,6 +147,31 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
 
       msg.isSuccess shouldBe true
       msg.get.isInstanceOf[SentOutboundSoapMessage] shouldBe true
+      msg.get.messageId shouldBe messageId
+      msg.get.createDateTime shouldBe createDateTimeInstant
+    }
+
+    "correctly read a PENDING message" in {
+
+      val messageId             = "ISALIVE-1703124554-V1"
+      val createDateTimeInstant = Instant.now.truncatedTo(MILLIS)
+      val createDateTimeJsValue = MongoJavatimeFormats.instantWrites.writes(createDateTimeInstant)
+
+      val msgJson = Json.obj(
+        "globalId"       -> "6fa2d156-5b35-4c0b-8f31-e3a7d4fe278a",
+        "messageId"      -> messageId,
+        "soapMessage"    -> "soap message",
+        "destinationUrl" -> "https://ccn.conf.hmrc.gov.uk:443/CCN2.Service.Customs.EU.ICS.ENSLifecycleManagementBASV2",
+        "createDateTime" -> createDateTimeJsValue,
+        "status"         -> "PENDING",
+        "codMessage"     -> "cod message"
+      )
+
+      val msg = formatter.reads(msgJson)
+
+      msg.isSuccess shouldBe true
+      msg.get.isInstanceOf[PendingOutboundSoapMessage] shouldBe true
+      msg.get.ccnHttpStatus shouldBe Option.empty
       msg.get.messageId shouldBe messageId
       msg.get.createDateTime shouldBe createDateTimeInstant
     }

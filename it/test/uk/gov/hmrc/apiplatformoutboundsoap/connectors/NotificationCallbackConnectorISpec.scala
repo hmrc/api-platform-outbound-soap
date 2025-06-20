@@ -33,10 +33,11 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, RetryingOutboundSoapMessage, SoapMessageStatus}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, PendingOutboundSoapMessage, RetryingOutboundSoapMessage, SoapMessageStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.support.{NotificationsService, WireMockSupport}
+import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
-class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with WireMockSupport with NotificationsService {
+class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with WireMockSupport with NotificationsService with TestDataFactory {
   override implicit lazy val app: Application = appBuilder.build()
 
   protected def appBuilder: GuiceApplicationBuilder =
@@ -64,7 +65,24 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
         "some url",
         now,
         now,
-        httpStatus,
+        Some(httpStatus),
+        Some(wireMockBaseUrlAsString)
+      )
+      val expectedStatus: Int          = OK
+      primeNotificationsEndpoint(expectedStatus)
+
+      val Some(result) = await(underTest.sendNotification(message))
+
+      result shouldBe expectedStatus
+    }
+    "successfully send a status update to the caller's notification URL when message is PENDING" in new Setup {
+      val message: OutboundSoapMessage = PendingOutboundSoapMessage(
+        globalId,
+        messageId,
+        "<Envelope><Body>foobar</Body></Envelope>",
+        "some url",
+        now,
+        Some(httpStatus),
         Some(wireMockBaseUrlAsString)
       )
       val expectedStatus: Int          = OK
@@ -83,7 +101,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
         "some url",
         now,
         now,
-        httpStatus,
+        Some(httpStatus),
         None
       )
 
@@ -100,7 +118,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
         "some url",
         now,
         now,
-        httpStatus,
+        Some(httpStatus),
         Some(wireMockBaseUrlAsString)
       )
       val expectedStatus: Int              = OK
@@ -119,7 +137,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
         "some url",
         now,
         now,
-        httpStatus,
+        Some(httpStatus),
         Some(wireMockBaseUrlAsString)
       )
       val expectedStatus: Int          = OK
@@ -137,7 +155,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
         "some url",
         now,
         now,
-        httpStatus,
+        Some(httpStatus),
         Some(wireMockBaseUrlAsString)
       )
       val expectedStatus: Int          = INTERNAL_SERVER_ERROR
@@ -156,7 +174,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
         "some url",
         now,
         now,
-        httpStatus,
+        Some(httpStatus),
         Some("https://invalidUrl")
       )
 

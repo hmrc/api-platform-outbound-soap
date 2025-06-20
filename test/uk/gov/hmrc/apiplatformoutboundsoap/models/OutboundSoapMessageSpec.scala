@@ -16,44 +16,40 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
-import java.time.Instant
-import java.util.UUID
-
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class OutboundSoapMessageSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
+import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
-  private val ccnHttpStatus: Int = 200
-  private val now                = Instant.now
-  val retryingMessage            = RetryingOutboundSoapMessage(UUID.randomUUID(), "11111", "some retrying message", "some destination url", now, now, ccnHttpStatus)
-  val failedMessage              = FailedOutboundSoapMessage(UUID.randomUUID(), "22222", "failed message", "some destination url", now, ccnHttpStatus)
-  val sentMessage                = SentOutboundSoapMessage(UUID.randomUUID(), "33333", "sent message", "some destination url", now, ccnHttpStatus)
-  val coeMessage                 = CoeSoapMessage(UUID.randomUUID(), "44444", "coe message", "some destination url", now, ccnHttpStatus)
-  val codMessage                 = CodSoapMessage(UUID.randomUUID(), "55555", "cod message", "some destination url", now, ccnHttpStatus)
+class OutboundSoapMessageSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar with TestDataFactory {
 
   "typeNaming" should {
     "return correct type for RetryingOutboundSoapMessage" in {
-      val typeName = OutboundSoapMessage.typeToStatus(retryingMessage.getClass.getCanonicalName)
+      val typeName = OutboundSoapMessage.typeToStatus(retryingOutboundSoapMessage.getClass.getCanonicalName)
       typeName shouldBe SendingStatus.RETRYING
     }
 
+    "return correct type for PendingOutboundSoapMessage" in {
+      val typeName = OutboundSoapMessage.typeToStatus(pendingOutboundSoapMessage.getClass.getCanonicalName)
+      typeName shouldBe SendingStatus.PENDING
+    }
+
     "return correct type for FailedOutboundSoapMessage" in {
-      val typeName = OutboundSoapMessage.typeToStatus(failedMessage.getClass.getCanonicalName)
+      val typeName = OutboundSoapMessage.typeToStatus(failedOutboundSoapMessage.getClass.getCanonicalName)
       typeName shouldBe SendingStatus.FAILED
     }
 
     "return correct type for SentOutboundSoapMessage" in {
-      val typeName = OutboundSoapMessage.typeToStatus(sentMessage.getClass.getCanonicalName)
+      val typeName = OutboundSoapMessage.typeToStatus(sentOutboundSoapMessage.getClass.getCanonicalName)
       typeName shouldBe SendingStatus.SENT
     }
     "return correct type for CoeSoapMessage" in {
-      val typeName = OutboundSoapMessage.typeToStatus(coeMessage.getClass.getCanonicalName)
+      val typeName = OutboundSoapMessage.typeToStatus(coeSoapMessage.getClass.getCanonicalName)
       typeName shouldBe DeliveryStatus.COE
     }
     "return correct type for CodSoapMessage" in {
-      val typeName = OutboundSoapMessage.typeToStatus(codMessage.getClass.getCanonicalName)
+      val typeName = OutboundSoapMessage.typeToStatus(codSoapMessage.getClass.getCanonicalName)
       typeName shouldBe DeliveryStatus.COD
     }
     "throw exception for invalid type" in {
