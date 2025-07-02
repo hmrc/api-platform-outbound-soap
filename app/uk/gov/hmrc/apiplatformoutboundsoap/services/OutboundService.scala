@@ -93,14 +93,17 @@ class OutboundService @Inject() (
   }
 
   private def updateStatusAndNotify(globalId: UUID, newStatus: SendingStatus, responseCode: Int)(implicit hc: HeaderCarrier) = {
-    outboundMessageRepository.updateSendingStatus(globalId, newStatus, responseCode) map { updatedMessage =>
+    (newStatus match {
+      case RETRYING => outboundMessageRepository.updateSendingStatusWithRetryDateTime(globalId, newStatus, responseCode, getNextRetryAt)
+      case SENT | FAILED => outboundMessageRepository.updateSendingStatus(globalId, newStatus, responseCode)
+    }).map { updatedMessage =>
       updatedMessage.map(notificationCallbackConnector.sendNotification)
       updatedMessage
     }
   }
 
   private def retryMessage(message: RetryingOutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Unit] = {
-    val nextRetryInstant: Instant = now.plus(Duration.ofMillis(appConfig.retryInterval.toMillis))
+    val nextRetryInstant: Instant = getNextRetryAt
     val globalId                  = message.globalId
     val messageId                 = message.messageId
 
@@ -139,6 +142,10 @@ class OutboundService @Inject() (
         case _                  => Future.unit
       }
     }
+  }
+
+  private def getNextRetryAt: Instant = {
+    now.plus(Duration.ofMillis(appConfig.retryInterval.toMillis))
   }
 
   private def convertSoapRequestToPendingSoapMessage(message: MessageRequest, soapRequest: SoapRequest): PendingOutboundSoapMessage = {
