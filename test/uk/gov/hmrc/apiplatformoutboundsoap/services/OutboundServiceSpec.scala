@@ -17,6 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
 import java.time.Instant
+import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.wsdl.WSDLException
 import javax.wsdl.xml.WSDLReader
@@ -47,7 +48,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
-import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.{FAILED, PENDING, RETRYING, SENT}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.{FAILED, PENDING, SENT}
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
@@ -310,7 +311,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
         when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(httpCode))
         val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
         when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
-        when(outboundMessageRepositoryMock.updateSendingStatus(*, *, *)).thenReturn(Future(Some(retryingOutboundSoapMessage.copy(ccnHttpStatus =
+        when(outboundMessageRepositoryMock.updateSendingStatusWithRetryDateTime(*, *, *, *)).thenReturn(Future(Some(retryingOutboundSoapMessage.copy(ccnHttpStatus =
           Some(httpCode)
         ))))
         when(appConfigMock.retryInterval).thenReturn(expectedInterval)
@@ -328,7 +329,8 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
           msg.destinationUrl shouldBe destinationUrl
         }
         verify(outboundMessageRepositoryMock).persist(*)
-        verify(outboundMessageRepositoryMock).updateSendingStatus(messageCaptor.getValue.globalId, RETRYING, httpCode)
+        verify(outboundMessageRepositoryMock).updateSendingStatusWithRetryDateTime(*[UUID], *[SendingStatus], *[Int], *[Instant])
+        verifyNoMoreInteractions(outboundMessageRepositoryMock)
         reset(outboundMessageRepositoryMock)
       }
     }
@@ -442,7 +444,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
       when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
-      when(outboundMessageRepositoryMock.updateSendingStatus(*, *, *)).thenReturn(Future(Some(sentOutboundSoapMessage)))
+      when(outboundMessageRepositoryMock.updateSendingStatusWithRetryDateTime(*, *, *, *)).thenReturn(Future(Some(sentOutboundSoapMessage)))
 
       await(underTest.sendMessage(messageRequestMinimalAddressing))
 

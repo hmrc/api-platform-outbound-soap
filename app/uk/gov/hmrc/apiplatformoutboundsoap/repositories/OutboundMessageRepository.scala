@@ -114,7 +114,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
       ).toFutureOption()
   }
 
-   def updateSendingStatusWithRetryDateTime(globalId: UUID, newStatus: SendingStatus, responseCode: Int = 0, retryDateTime: Instant): Future[Option[OutboundSoapMessage]] = {
+  def updateSendingStatusWithRetryDateTime(globalId: UUID, newStatus: SendingStatus, responseCode: Int = 0, retryDateTime: Instant): Future[Option[OutboundSoapMessage]] = {
     collection.withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),

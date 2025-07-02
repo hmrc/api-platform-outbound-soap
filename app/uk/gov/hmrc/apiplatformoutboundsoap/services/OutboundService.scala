@@ -94,7 +94,7 @@ class OutboundService @Inject() (
 
   private def updateStatusAndNotify(globalId: UUID, newStatus: SendingStatus, responseCode: Int)(implicit hc: HeaderCarrier) = {
     (newStatus match {
-      case RETRYING => outboundMessageRepository.updateSendingStatusWithRetryDateTime(globalId, newStatus, responseCode, getNextRetryAt)
+      case RETRYING      => outboundMessageRepository.updateSendingStatusWithRetryDateTime(globalId, newStatus, responseCode, getNextRetryAt)
       case SENT | FAILED => outboundMessageRepository.updateSendingStatus(globalId, newStatus, responseCode)
     }).map { updatedMessage =>
       updatedMessage.map(notificationCallbackConnector.sendNotification)

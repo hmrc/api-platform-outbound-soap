@@ -37,6 +37,7 @@ import play.api.test.Helpers.{await, defaultAwaitTimeout}
 import play.mvc.Http.Status
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
+import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.RETRYING
 import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
@@ -214,6 +215,17 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
     }
   }
 
+  "updateSendingStatusWithRetryDateTime" should {
+    "update sending status and retry date-time for an existing message" in {
+      val retryAt       = now
+      await(repository.persist(pendingOutboundSoapMessage))
+      val Some(updated) = await(repository.updateSendingStatusWithRetryDateTime(pendingOutboundSoapMessage.globalId, RETRYING, 503, retryAt))
+
+      updated.status shouldBe RETRYING
+      updated.asInstanceOf[RetryingOutboundSoapMessage].retryDateTime shouldBe retryAt.truncatedTo(ChronoUnit.MILLIS)
+    }
+  }
+
   "updateStatus" should {
     "update the message to have a status of FAILED" in {
       val expectedHttpResponseCode  = Status.BAD_GATEWAY
@@ -276,6 +288,16 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
       fetchedRecords.size shouldBe 1
       fetchedRecords.head.status shouldBe DeliveryStatus.COD
       fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
+    }
+
+    "not update a message to SENT when a CoE has already been received" in {
+      await(repository.persist(coeSoapMessage))
+
+      repository.updateToSentWhereNotConfirmed(coeSoapMessage.globalId, now)
+      val fetchedRecords = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe DeliveryStatus.COE
+      fetchedRecords.head.asInstanceOf[CoeSoapMessage].coeMessage shouldBe Some(expectedConfirmationMessageBody)
     }
 
     "update all records with the same messageId when a CoE is received" in {
