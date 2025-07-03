@@ -159,7 +159,7 @@ class OutboundService @Inject() (
       message.notificationUrl,
       None,
       None,
-      Some(now),
+      None,
       message.privateHeaders
     )
   }
