@@ -30,7 +30,7 @@ sealed trait OutboundSoapMessage {
   val status: StatusType
   val createDateTime: Instant
   val notificationUrl: Option[String]
-  val ccnHttpStatus: Int
+  val ccnHttpStatus: Option[Int]
   val coeMessage: Option[String]
   val codMessage: Option[String]
   val sentDateTime: Option[Instant]
@@ -40,8 +40,9 @@ sealed trait OutboundSoapMessage {
 object OutboundSoapMessage {
 
   def typeToStatus(fullyQualifiedName: String): StatusType = {
-
-    if (fullyQualifiedName == classTag[SentOutboundSoapMessage].runtimeClass.getCanonicalName) {
+    if (fullyQualifiedName == classTag[PendingOutboundSoapMessage].runtimeClass.getCanonicalName) {
+      SendingStatus.PENDING
+    } else if (fullyQualifiedName == classTag[SentOutboundSoapMessage].runtimeClass.getCanonicalName) {
       SendingStatus.SENT
     } else if (fullyQualifiedName == classTag[FailedOutboundSoapMessage].runtimeClass.getCanonicalName) {
       SendingStatus.FAILED
@@ -57,13 +58,29 @@ object OutboundSoapMessage {
   }
 }
 
+case class PendingOutboundSoapMessage(
+    globalId: UUID,
+    messageId: String,
+    soapMessage: String,
+    destinationUrl: String,
+    createDateTime: Instant,
+    ccnHttpStatus: Option[Int] = None,
+    notificationUrl: Option[String] = None,
+    codMessage: Option[String] = None,
+    coeMessage: Option[String] = None,
+    sentDateTime: Option[Instant] = None,
+    privateHeaders: Option[List[PrivateHeader]] = None
+  ) extends OutboundSoapMessage {
+  override val status: SendingStatus = SendingStatus.PENDING
+}
+
 case class SentOutboundSoapMessage(
     globalId: UUID,
     messageId: String,
     soapMessage: String,
     destinationUrl: String,
     createDateTime: Instant,
-    ccnHttpStatus: Int,
+    ccnHttpStatus: Option[Int] = None,
     notificationUrl: Option[String] = None,
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
@@ -79,7 +96,7 @@ case class FailedOutboundSoapMessage(
     soapMessage: String,
     destinationUrl: String,
     createDateTime: Instant,
-    ccnHttpStatus: Int,
+    ccnHttpStatus: Option[Int],
     notificationUrl: Option[String] = None,
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
@@ -95,7 +112,7 @@ case class CoeSoapMessage(
     soapMessage: String,
     destinationUrl: String,
     createDateTime: Instant,
-    ccnHttpStatus: Int,
+    ccnHttpStatus: Option[Int],
     notificationUrl: Option[String] = None,
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
@@ -111,7 +128,7 @@ case class CodSoapMessage(
     soapMessage: String,
     destinationUrl: String,
     createDateTime: Instant,
-    ccnHttpStatus: Int,
+    ccnHttpStatus: Option[Int],
     notificationUrl: Option[String] = None,
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
@@ -128,7 +145,7 @@ case class RetryingOutboundSoapMessage(
     destinationUrl: String,
     createDateTime: Instant,
     retryDateTime: Instant,
-    ccnHttpStatus: Int,
+    ccnHttpStatus: Option[Int],
     notificationUrl: Option[String] = None,
     codMessage: Option[String] = None,
     coeMessage: Option[String] = None,
@@ -147,7 +164,7 @@ sealed abstract trait StatusType
 object StatusType {
   val values: Set[StatusType] = DeliveryStatus.values ++ SendingStatus.values
 
-  def apply(text: String): Option[StatusType] = StatusType.values.find(_.toString() == text.toUpperCase)
+  def apply(text: String): Option[StatusType] = StatusType.values.find(_.toString == text.toUpperCase)
 
   implicit val format: Format[StatusType] = SealedTraitJsonFormatting.createFormatFor[StatusType]("Status Type", apply)
 }
@@ -159,7 +176,7 @@ object DeliveryStatus {
   case object COD extends DeliveryStatus
   val values: Set[DeliveryStatus] = Set(COE, COD)
 
-  def apply(text: String): Option[DeliveryStatus] = DeliveryStatus.values.find(_.toString() == text.toUpperCase)
+  def apply(text: String): Option[DeliveryStatus] = DeliveryStatus.values.find(_.toString == text.toUpperCase)
 
   def unsafeApply(text: String): DeliveryStatus = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid Delivery Status"))
 
@@ -177,12 +194,13 @@ object DeliveryStatus {
 sealed trait SendingStatus extends StatusType
 
 object SendingStatus {
-  case object SENT     extends SendingStatus
   case object FAILED   extends SendingStatus
+  case object PENDING  extends SendingStatus
   case object RETRYING extends SendingStatus
-  val values: Set[SendingStatus] = Set(SENT, FAILED, RETRYING)
+  case object SENT     extends SendingStatus
+  val values: Set[SendingStatus] = Set(FAILED, PENDING, RETRYING, SENT)
 
-  def apply(text: String): Option[SendingStatus] = SendingStatus.values.find(_.toString() == text.toUpperCase)
+  def apply(text: String): Option[SendingStatus] = SendingStatus.values.find(_.toString == text.toUpperCase)
 
   def unsafeApply(text: String): SendingStatus = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid Sending Status"))
 

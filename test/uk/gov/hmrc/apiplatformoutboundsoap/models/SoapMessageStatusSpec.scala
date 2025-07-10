@@ -17,75 +17,67 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.UUID
+import java.time.temporal.ChronoUnit._
 
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
-import play.api.http.Status.OK
 import play.api.libs.json.Json
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats._
+import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
-class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with ArgumentMatchersSugar {
-  val now           = Instant.now
-  val truncatedNow  = now.truncatedTo(ChronoUnit.MILLIS)
-  val mockAppConfig = mock[AppConfig]
+class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with ArgumentMatchersSugar with TestDataFactory {
   val knownInstant  = Instant.parse("2023-08-10T10:11:12.123456Z")
+  val truncatedNow  = now.truncatedTo(MILLIS)
+  val mockAppConfig = mock[AppConfig]
 
   "from outboundsoapmessage" should {
 
-    val noOptionalsOutboundSoapMessage: OutboundSoapMessage = SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", now, OK)
-
-    val optionalsOutboundSoapMessage: OutboundSoapMessage =
-      SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", now, OK, None, None, None, Some(knownInstant), Some(List(PrivateHeader("test", "value"))))
-
     "not include sentDateTime if None" in {
-      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(noOptionalsOutboundSoapMessage))
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessage.copy(sentDateTime = Option.empty)))
       (json \ "sentDateTime").asOpt[Instant] shouldBe None
     }
 
+    "not include ccnHttpStatus if None" in {
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessage.copy(ccnHttpStatus = Option.empty)))
+      (json \ "ccnHttpStatus").asOpt[Int] shouldBe None
+    }
+
+    "include ccnHttpStatus if present" in {
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessage.copy(ccnHttpStatus = Some(200))))
+      (json \ "ccnHttpStatus").asOpt[Int] shouldBe Some(200)
+    }
+
     "not include privateHeaders if None" in {
-      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(noOptionalsOutboundSoapMessage))
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessage))
       (json \ "privateHeaders").asOpt[List[PrivateHeader]] shouldBe None
     }
+
     "include sentDateTime if present" in {
-      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(optionalsOutboundSoapMessage))
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessageWithAllFields))
       (json \ "sentDateTime").asOpt[String] shouldBe Some("2023-08-10T10:11:12.123Z")
     }
 
-    "include sentDateTime if present and only show 3 digits if more" in {
+    "include sentDateTime if present and truncate fractions of a second to millis" in {
       val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(
-        SentOutboundSoapMessage(UUID.randomUUID, "123", "envelope", "some url", now, OK, None, None, None, Some(knownInstant), Some(List(PrivateHeader("test", "value"))))
+        sentOutboundSoapMessageWithAllFields
       ))
       (json \ "sentDateTime").asOpt[String] shouldBe Some("2023-08-10T10:11:12.123Z")
     }
 
-    "include sentDateTime if present and always show 3 digits if less" in {
+    "include sentDateTime if present and always include milliseconds" in {
       val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(
-        SentOutboundSoapMessage(
-          UUID.randomUUID,
-          "123",
-          "envelope",
-          "some url",
-          now,
-          OK,
-          None,
-          None,
-          None,
-          Some(knownInstant.truncatedTo(ChronoUnit.SECONDS)),
-          Some(List(PrivateHeader("test", "value")))
-        )
+        sentOutboundSoapMessageWithAllFields.copy(sentDateTime = Some(knownInstant.truncatedTo(SECONDS)))
       ))
       (json \ "sentDateTime").asOpt[String] shouldBe Some("2023-08-10T10:11:12.000Z")
     }
 
     "include privateHeaders if present" in {
-      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(optionalsOutboundSoapMessage))
+      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessageWithAllFields))
       (json \ "privateHeaders").asOpt[List[PrivateHeader]] shouldBe Some(List(PrivateHeader("test", "value")))
     }
   }

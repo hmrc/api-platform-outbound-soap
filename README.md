@@ -213,10 +213,8 @@ HTTP Status: 200 (OK) with a body similar to the following:
 
 ### Running locally
 The service can be tested locally as follows:
- - run the service using its `run_local_with_dependencies.sh` script. This starts it on port 6703
- - start the `api-platform-test` service using its `run_local.sh` script or using Service Manager. This service acts to host the WSDL
- referred to in the `wsdlUrl` parameter in the following curl command.
- - choose one of the WSDLs published by `api-platform-test` (these are found in its `public` directory) and one of the WSDL operations therein
+ - run the service using its `run_local_with_dependencies.sh` script. This starts it on port 6703. It also starts `import-control-wsdls` which acts to serve WSDLs.
+ - choose one of the WSDLs published by `import-control-wsdls` (these are found in its `public` directory) and one of the WSDL operations therein
  - use these to build a curl request using the following as a template:
  ```
 curl -k 'http://localhost:6703/message' -H 'Content-Type: application/json' 
@@ -227,9 +225,10 @@ curl -k 'http://localhost:6703/message' -H 'Content-Type: application/json'
 
 An example using real values is:
 ```
-curl -k 'http://localhost:6703/message' -H 'Content-Type: application/json' -d 
-'{ "wsdlUrl":"http://localhost:9604/assets/wsdl//V2/ICS2-MS-TSCs_Sep2021/./MS/2.CR-for-NES-Services/2.CR-for-NES-Services/BusinessActivityService/ICS/ReferralManagementBAS/V2/CCN2.Service.Customs.EU.ICS.ReferralManagementBAS_2.0.0_CCN2_2.0.0.wsdl",
- "wsdlOperation":"IE4R02provideAdditionalInformation", "messageBody":"", "confirmationOfDelivery": true, "addressing":{"to":"partner:CCN2.Partner.EU.Customs.TAXUD/ICS_CR.PROD","messageId":"some_id","from":"caller"}}'
+curl -k 'http://localhost:6703/message' -H 'Content-Type: application/json' -d '{
+"wsdlUrl":"http://localhost:7208/assets/eu/outbound/CR-for-NES-Services-V2/BusinessActivityService/ICS/RiskAnalysisOrchestrationBAS/V2/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS_2.0.0_CCN2_2.0.0.wsdl",
+"wsdlOperation":"IE4N03notifyERiskAnalysisHit", "messageBody":"", "confirmationOfDelivery": true,
+"addressing":{"to":"partner:CCN2.Partner.EU.Customs.TAXUD/ICS_CR.PROD","messageId":"some_id","from":"caller"}}'
 ```
 ### License
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
