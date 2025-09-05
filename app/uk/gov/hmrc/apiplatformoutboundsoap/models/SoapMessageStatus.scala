@@ -35,7 +35,10 @@ object SoapMessageStatus {
       outboundSoapMessage.globalId,
       outboundSoapMessage.messageId,
       outboundSoapMessage.status,
-      outboundSoapMessage.ccnHttpStatus,
+      outboundSoapMessage.ccnHttpStatus match {
+        case Some(s) => Some(s)
+        case None    => Some(0)
+      },
       outboundSoapMessage.sentDateTime,
       outboundSoapMessage.privateHeaders
     )
