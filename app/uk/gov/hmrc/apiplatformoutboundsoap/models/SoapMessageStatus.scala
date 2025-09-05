@@ -23,7 +23,7 @@ case class SoapMessageStatus(
     globalId: UUID,
     messageId: String,
     status: StatusType,
-    ccnHttpStatus: Option[Int],
+    ccnHttpStatus: Int,
     sentDateTime: Option[Instant],
     privateHeaders: Option[List[PrivateHeader]]
   )
@@ -36,8 +36,8 @@ object SoapMessageStatus {
       outboundSoapMessage.messageId,
       outboundSoapMessage.status,
       outboundSoapMessage.ccnHttpStatus match {
-        case Some(s) => Some(s)
-        case None    => Some(0)
+        case Some(s) => s
+        case None    => 0
       },
       outboundSoapMessage.sentDateTime,
       outboundSoapMessage.privateHeaders

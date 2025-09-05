@@ -44,7 +44,7 @@ class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar 
 
     "include ccnHttpStatus set to zero if not present" in {
       val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(sentOutboundSoapMessage.copy(ccnHttpStatus = Option.empty)))
-      (json \ "ccnHttpStatus").asOpt[Int] shouldBe Some(0)
+      (json \ "ccnHttpStatus").as[Int] shouldBe 0
     }
 
     "include ccnHttpStatus if present" in {
