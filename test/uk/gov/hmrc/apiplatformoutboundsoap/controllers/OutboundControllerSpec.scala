@@ -163,7 +163,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       ))
 
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/privateHeaders(0)/name,List(JsonValidationError(List(error.path.missing),List()))), (/privateHeaders(0)/value,List(JsonValidationError(List(error.path.missing),List()))))"
+      (contentAsJson(result) \ "message").as[String] shouldBe "Invalid MessageRequest payload: List((/privateHeaders(0)/name,List(JsonValidationError(List(error.path.missing),List()))), (/privateHeaders(0)/value,List(JsonValidationError(List(error.path.missing),List()))))"
       verifyZeroInteractions(outboundServiceMock)
     }
 
@@ -197,7 +197,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       )))
 
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe
+      (contentAsJson(result) \ "message").as[String] shouldBe
         "Could not parse body due to addressing.from being empty"
     }
 
@@ -209,7 +209,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       ))
 
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/wsdlUrl,List(JsonValidationError(List(error.path.missing),List()))))"
+      (contentAsJson(result) \ "message").as[String] shouldBe "Invalid MessageRequest payload: List((/wsdlUrl,List(JsonValidationError(List(error.path.missing),List()))))"
     }
 
     "return bad request when the request json body is missing messageBody field" in new Setup {
@@ -220,7 +220,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       ))
 
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe "Invalid MessageRequest payload: List((/messageBody,List(JsonValidationError(List(error.path.missing),List()))))"
+      (contentAsJson(result) \ "message").as[String] shouldBe "Invalid MessageRequest payload: List((/messageBody,List(JsonValidationError(List(error.path.missing),List()))))"
     }
 
     "return bad request when the request json body addressing section is missing to field" in new Setup {
@@ -235,7 +235,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       )))
 
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe
+      (contentAsJson(result) \ "message").as[String] shouldBe
         "Invalid MessageRequest payload: List((/addressing/to,List(JsonValidationError(List(error.path.missing),List()))))"
     }
 
@@ -251,7 +251,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
       )))
 
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe
+      (contentAsJson(result) \ "message").as[String] shouldBe
         "Invalid MessageRequest payload: List((/addressing/messageId,List(JsonValidationError(List(error.path.missing),List()))))"
     }
 
