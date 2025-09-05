@@ -23,7 +23,6 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 import org.apache.pekko.NotUsed
-import org.apache.pekko.stream.connectors.mongodb.scaladsl.MongoSource
 import org.apache.pekko.stream.scaladsl.Source
 import org.bson.codecs.configuration.CodecRegistries._
 import org.mongodb.scala.ReadPreference.primaryPreferred
@@ -90,7 +89,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
   }
 
   def retrieveMessagesForRetry: Source[RetryingOutboundSoapMessage, NotUsed] = {
-    MongoSource(collection.withReadPreference(primaryPreferred())
+    Source.fromPublisher(collection.withReadPreference(primaryPreferred())
       .find(filter = and(equal("status", SendingStatus.RETRYING.toString), and(lte("retryDateTime", Codecs.toBson(Instant.now)))))
       .sort(ascending("retryDateTime"))
       .map(_.asInstanceOf[RetryingOutboundSoapMessage]))
