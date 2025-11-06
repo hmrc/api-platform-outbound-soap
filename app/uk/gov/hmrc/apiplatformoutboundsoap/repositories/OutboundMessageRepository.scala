@@ -160,9 +160,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
     collection.bulkWrite(
       List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.toString)), set(field, confirmationMsg)))),
       BulkWriteOptions().ordered(false)
-    ).toFuture() flatMap (_ =>
-      findById(messageId)
-    )
+    ).toFuture().flatMap(_ => findById(messageId))
   }
 
   def findById(searchForId: String): Future[Option[OutboundSoapMessage]] = {
