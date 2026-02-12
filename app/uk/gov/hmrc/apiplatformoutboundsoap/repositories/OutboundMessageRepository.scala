@@ -27,7 +27,7 @@ import org.apache.pekko.stream.scaladsl.Source
 import org.bson.codecs.configuration.CodecRegistries._
 import org.mongodb.scala.ReadPreference.primaryPreferred
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.model.Filters.{and, equal, lte, or}
+import org.mongodb.scala.model.Filters.{and, equal, lte, not, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Sorts.descending
 import org.mongodb.scala.model.Updates.{combine, set}
@@ -157,17 +157,18 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
       case DeliveryStatus.COE => "coeMessage"
     }
 
-    for {
-      _           <- collection.bulkWrite(
-                       List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.toString)), set(field, confirmationMsg)))),
-                       BulkWriteOptions().ordered(false)
-                     ).toFuture()
-      findUpdated <- findById(messageId)
-    } yield findUpdated
+    collection.bulkWrite(
+      List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.toString)), set(field, confirmationMsg)))),
+      BulkWriteOptions().ordered(false)
+    ).toFuture().flatMap(_ => findById(messageId))
   }
 
   def findById(searchForId: String): Future[Option[OutboundSoapMessage]] = {
-    val findQuery = or(Document("messageId" -> searchForId), Document("globalId" -> searchForId))
+    val queryFilterMsgId  = or(Document("messageId" -> searchForId), Document("globalId" -> searchForId))
+    // PENDING status exists only for the brief period between sending a message being requested and CCN2 responding.
+    // This status should never be exposed to any external service so we ignore it here
+    val queryFilterStatus = not(Document("status" -> "PENDING"))
+    val findQuery         = and(queryFilterMsgId, queryFilterStatus)
     collection.find(findQuery).sort(descending("createDateTime")).headOption()
       .recover {
         case e: Exception =>
