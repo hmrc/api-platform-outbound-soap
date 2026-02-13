@@ -380,6 +380,13 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
       found shouldBe truncateSentMessageInstants(messageToPersist)
     }
 
+    "not return message with PENDING state" in {
+      val messageToPersist                   = pendingOutboundSoapMessage
+      await(repository.persist(messageToPersist))
+      val found: Option[OutboundSoapMessage] = await(repository.findById(messageToPersist.messageId))
+      found shouldBe None
+    }
+
     "return message when globalId matches" in {
       await(repository.persist(sentOutboundSoapMessage))
       val Some(found): Option[OutboundSoapMessage] = await(repository.findById(sentOutboundSoapMessage.globalId.toString))

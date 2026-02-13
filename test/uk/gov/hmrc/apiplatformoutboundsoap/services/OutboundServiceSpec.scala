@@ -438,6 +438,18 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       messageCaptor.getValue.messageId shouldBe messageId
     }
 
+    "handle failure to retrieve message from database after status update" in new Setup {
+      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
+      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
+      val messageCaptor: ArgumentCaptor[OutboundSoapMessage] = ArgumentCaptor.forClass(classOf[OutboundSoapMessage])
+      when(outboundMessageRepositoryMock.persist(messageCaptor.capture())).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
+      when(outboundMessageRepositoryMock.updateSendingStatus(*, *, *)).thenReturn(Future(Option.empty))
+
+      await(underTest.sendMessage(messageRequestMinimalAddressing))
+
+      verify(notificationCallbackConnectorMock, times(0)).sendNotification(*)(*)
+    }
+
     "persist message ID if present in the request for failure" in new Setup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
