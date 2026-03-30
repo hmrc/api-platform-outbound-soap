@@ -19,8 +19,8 @@ package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import javax.ws.rs.core.MediaType.APPLICATION_JSON
 
+import org.eclipse.jetty.http.MimeTypes.Type.APPLICATION_JSON
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -33,7 +33,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
-import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, PendingOutboundSoapMessage, RetryingOutboundSoapMessage, SoapMessageStatus}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, RetryingOutboundSoapMessage, SentOutboundSoapMessage, SoapMessageStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.support.{NotificationsService, WireMockSupport}
 import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
@@ -75,8 +75,8 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
 
       result shouldBe expectedStatus
     }
-    "successfully send a status update to the caller's notification URL when message is PENDING" in new Setup {
-      val message: OutboundSoapMessage = PendingOutboundSoapMessage(
+    "successfully send a status update to the caller's notification URL when message is SENT" in new Setup {
+      val message: OutboundSoapMessage = SentOutboundSoapMessage(
         globalId,
         messageId,
         "<Envelope><Body>foobar</Body></Envelope>",
@@ -144,7 +144,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
       primeNotificationsEndpoint(expectedStatus)
 
       await(underTest.sendNotification(message))
-      verifyHeader(CONTENT_TYPE, APPLICATION_JSON)
+      verifyHeader(CONTENT_TYPE, APPLICATION_JSON.toString)
     }
 
     "handle failed requests to the notification URL" in new Setup {

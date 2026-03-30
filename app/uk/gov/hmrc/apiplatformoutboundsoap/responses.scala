@@ -28,7 +28,7 @@ object ErrorCode {
 
   val values: Set[ErrorCode] = Set(NOT_FOUND, BAD_REQUEST, INTERNAL_SERVER_ERROR)
 
-  def apply(text: String): Option[ErrorCode] = ErrorCode.values.find(_.toString() == text.toUpperCase)
+  def apply(text: String): Option[ErrorCode] = ErrorCode.values.find(_.toString == text.toUpperCase)
 
   def unsafeApply(text: String): ErrorCode = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid Error Code"))
 }
