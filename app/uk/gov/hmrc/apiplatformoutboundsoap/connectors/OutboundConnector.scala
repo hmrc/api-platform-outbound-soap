@@ -17,13 +17,13 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-import org.apache.http.HttpStatus
-
 import play.api.Logging
 import play.api.http.HeaderNames.CONTENT_TYPE
+import play.api.http.Status
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
@@ -55,7 +55,7 @@ class OutboundConnector @Inject() (
       .recoverWith {
         case NonFatal(e) =>
           logger.warn(s"NonFatal error ${e.getMessage} while requesting message with message ID $messageId", e)
-          Future.successful(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+          successful(Status.INTERNAL_SERVER_ERROR)
       }
   }
 
