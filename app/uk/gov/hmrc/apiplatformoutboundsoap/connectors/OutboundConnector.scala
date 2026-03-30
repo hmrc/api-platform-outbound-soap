@@ -60,7 +60,7 @@ class OutboundConnector @Inject() (
   }
 
   def postHttpRequest(soapRequest: SoapRequest)(implicit hc: HeaderCarrier) = {
-    addProxy(httpClient.post(url"${soapRequest.destinationUrl.replace("https", "http")}"))
+    addProxy(httpClient.post(url"${soapRequest.destinationUrl}"))
       .withBody(soapRequest.soapEnvelope)
       .execute[Either[UpstreamErrorResponse, HttpResponse]]
   }
