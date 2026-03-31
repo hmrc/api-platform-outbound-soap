@@ -27,7 +27,7 @@ import org.apache.pekko.stream.scaladsl.Source
 import org.bson.codecs.configuration.CodecRegistries._
 import org.mongodb.scala.ReadPreference.primaryPreferred
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.model.Filters.{and, equal, lte, not, or}
+import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Sorts.descending
 import org.mongodb.scala.model.Updates.{combine, set}
@@ -122,19 +122,20 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
       ).toFutureOption()
   }
 
-  private def updateToSent(globalId: UUID, sentInstant: Instant): Future[Option[OutboundSoapMessage]] = {
+  def updateToSent(globalId: UUID, sentInstant: Instant, responseCode: Int): Future[Option[OutboundSoapMessage]] = {
     collection.withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),
         update = combine(
           set("sentDateTime", Codecs.toBson(sentInstant)),
+          set("ccnHttpStatus", Codecs.toBson(responseCode)),
           set("status", Codecs.toBson(SendingStatus.SENT.toString))
         ),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
       ).toFutureOption()
   }
 
-  def updateToSentWhereNotConfirmed(globalId: UUID, sentInstant: Instant): Future[Option[OutboundSoapMessage]] = {
+  def updateToSentWhereNotConfirmed(globalId: UUID, sentInstant: Instant, responseCode: Int = 0): Future[Option[OutboundSoapMessage]] = {
     val maybeUpdateCandidate = findById(globalId.toString)
     maybeUpdateCandidate.flatMap(updateCandidate =>
       updateCandidate.map(m =>
@@ -145,7 +146,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
           case DeliveryStatus.COD =>
             logger.warn(s"CoD already received for message with globalId ${m.globalId} so not updating to SENT")
             maybeUpdateCandidate
-          case _                  => updateToSent(globalId, sentInstant)
+          case _                  => updateToSent(globalId, sentInstant, responseCode)
         }
       ).head
     )
@@ -164,11 +165,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
   }
 
   def findById(searchForId: String): Future[Option[OutboundSoapMessage]] = {
-    val queryFilterMsgId  = or(Document("messageId" -> searchForId), Document("globalId" -> searchForId))
-    // PENDING status exists only for the brief period between sending a message being requested and CCN2 responding.
-    // This status should never be exposed to any external service so we ignore it here
-    val queryFilterStatus = not(Document("status" -> "PENDING"))
-    val findQuery         = and(queryFilterMsgId, queryFilterStatus)
+    val findQuery = or(Document("messageId" -> searchForId), Document("globalId" -> searchForId))
     collection.find(findQuery).sort(descending("createDateTime")).headOption()
       .recover {
         case e: Exception =>

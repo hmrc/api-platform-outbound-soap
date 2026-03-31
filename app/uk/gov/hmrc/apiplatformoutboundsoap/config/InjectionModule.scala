@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.config
 
+import java.time.Clock
+
 import com.google.inject.AbstractModule
 
 import uk.gov.hmrc.apiplatformoutboundsoap.GlobalContext
@@ -23,8 +25,7 @@ import uk.gov.hmrc.apiplatformoutboundsoap.GlobalContext
 class InjectionModule extends AbstractModule {
 
   override def configure() = {
-
-    // Eager initialize Context singleton
     bind(classOf[GlobalContext]).asEagerSingleton()
+    bind(classOf[Clock]).toInstance(Clock.systemUTC())
   }
 }
