@@ -150,7 +150,7 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
       updateCandidate.map(m =>
         m.status match {
           case DeliveryStatus.COE =>
-            logger.warn(s"CoE already received for message with globalId ${m.globalId} so not updating to SENT. Time of receiving SENT status will be recorded")
+            logger.warn(s"CoE already received for message with globalId ${m.globalId} so not updating status to SENT. Time of receiving SENT status will be recorded")
             updateSentDateTime(globalId, sentInstant)
           case DeliveryStatus.COD =>
             logger.warn(s"CoD already received for message with globalId ${m.globalId} so not updating status to SENT. Time of receiving SENT status will be recorded")
