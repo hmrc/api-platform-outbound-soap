@@ -2,8 +2,8 @@ import play.sbt.PlayImport.caffeine
 import sbt.*
 
 object AppDependencies {
-  val bootstrapPlayVersion = "10.7.0"
-  val mongoVersion         = "2.12.0"
+  val bootstrapPlayVersion = "10.8.0"
+  val mongoVersion         = "2.13.0"
 
   val compile              = Seq(
     "uk.gov.hmrc"               %% "bootstrap-backend-play-30" % bootstrapPlayVersion,

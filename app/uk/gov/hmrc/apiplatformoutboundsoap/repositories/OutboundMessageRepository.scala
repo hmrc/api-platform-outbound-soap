@@ -135,17 +135,26 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
       ).toFutureOption()
   }
 
+  private def updateSentDateTime(globalId: UUID, sentInstant: Instant): Future[Option[OutboundSoapMessage]] = {
+    collection.withReadPreference(primaryPreferred())
+      .findOneAndUpdate(
+        filter = equal("globalId", Codecs.toBson(globalId)),
+        update = set("sentDateTime", Codecs.toBson(sentInstant)),
+        options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+      ).toFutureOption()
+  }
+
   def updateToSentWhereNotConfirmed(globalId: UUID, sentInstant: Instant, responseCode: Int = 0): Future[Option[OutboundSoapMessage]] = {
     val maybeUpdateCandidate = findById(globalId.toString)
     maybeUpdateCandidate.flatMap(updateCandidate =>
       updateCandidate.map(m =>
         m.status match {
           case DeliveryStatus.COE =>
-            logger.warn(s"CoE already received for message with globalId ${m.globalId} so not updating to SENT")
-            maybeUpdateCandidate
+            logger.warn(s"CoE already received for message with globalId ${m.globalId} so not updating to SENT. Time of receiving SENT status will be recorded")
+            updateSentDateTime(globalId, sentInstant)
           case DeliveryStatus.COD =>
-            logger.warn(s"CoD already received for message with globalId ${m.globalId} so not updating to SENT")
-            maybeUpdateCandidate
+            logger.warn(s"CoD already received for message with globalId ${m.globalId} so not updating status to SENT. Time of receiving SENT status will be recorded")
+            updateSentDateTime(globalId, sentInstant)
           case _                  => updateToSent(globalId, sentInstant, responseCode)
         }
       ).head
