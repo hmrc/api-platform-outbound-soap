@@ -282,21 +282,28 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
 
     "not update a message to SENT when a CoD has already been received" in {
       await(repository.persist(codSoapMessage))
-
-      repository.updateToSentWhereNotConfirmed(codSoapMessage.globalId, now)
+      await(repository.updateToSentWhereNotConfirmed(codSoapMessage.globalId, knownInstantAfterMongo))
       val fetchedRecords = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
       fetchedRecords.size shouldBe 1
       fetchedRecords.head.status shouldBe DeliveryStatus.COD
+      fetchedRecords.head.sentDateTime match {
+        case Some(instant: Instant) => instant.compareTo(knownInstantAfterMongo) shouldBe 0
+        case other                  => fail(s"sentDateTime should not be $other")
+      }
       fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
     }
 
     "not update a message to SENT when a CoE has already been received" in {
       await(repository.persist(coeSoapMessage))
 
-      repository.updateToSentWhereNotConfirmed(coeSoapMessage.globalId, now)
+      await(repository.updateToSentWhereNotConfirmed(coeSoapMessage.globalId, knownInstantAfterMongo))
       val fetchedRecords = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
       fetchedRecords.size shouldBe 1
       fetchedRecords.head.status shouldBe DeliveryStatus.COE
+      fetchedRecords.head.sentDateTime match {
+        case Some(instant: Instant) => instant.compareTo(knownInstantAfterMongo) shouldBe 0
+        case other                  => fail(s"sentDateTime should not be $other")
+      }
       fetchedRecords.head.asInstanceOf[CoeSoapMessage].coeMessage shouldBe Some(expectedConfirmationMessageBody)
     }
 
