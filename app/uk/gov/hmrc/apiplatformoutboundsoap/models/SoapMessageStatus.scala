@@ -26,7 +26,7 @@ case class SoapMessageStatus(
     ccnHttpStatus: Int,
     sentDateTime: Option[Instant],
     privateHeaders: Option[List[PrivateHeader]]
-  )
+)
 
 object SoapMessageStatus {
 

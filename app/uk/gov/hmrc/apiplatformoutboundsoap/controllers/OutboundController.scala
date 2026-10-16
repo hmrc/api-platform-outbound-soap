@@ -21,8 +21,8 @@ import javax.wsdl.WSDLException
 import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.Logging
-import play.api.libs.json._
-import play.api.mvc._
+import play.api.libs.json.*
+import play.api.mvc.*
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -34,7 +34,8 @@ import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 
 @Singleton
 class OutboundController @Inject() (cc: ControllerComponents, appConfig: AppConfig, outboundService: OutboundService)(implicit ec: ExecutionContext)
-    extends BackendController(cc) with Logging {
+    extends BackendController(cc)
+    with Logging {
 
   def message(): Action[JsValue] = Action.async(parse.json) { implicit request =>
     val maxPrivateHeaders = 5
@@ -44,10 +45,16 @@ class OutboundController @Inject() (cc: ControllerComponents, appConfig: AppConf
         case Some(privHeaders) =>
           if (privHeaders.length > maxPrivateHeaders) {
             logger.warn(s"A maximum of $maxPrivateHeaders private headers are allowed in the message but ${privHeaders.length} were supplied")
-            Future.successful(BadRequest(Json.toJson(ErrorResponse(
-              BAD_REQUEST,
-              s"A maximum of $maxPrivateHeaders private headers are allowed in the message but ${privHeaders.length} were supplied"
-            ))))
+            Future.successful(
+              BadRequest(
+                Json.toJson(
+                  ErrorResponse(
+                    BAD_REQUEST,
+                    s"A maximum of $maxPrivateHeaders private headers are allowed in the message but ${privHeaders.length} were supplied"
+                  )
+                )
+              )
+            )
           } else {
             sendMessage(messageRequest)
           }
@@ -61,10 +68,12 @@ class OutboundController @Inject() (cc: ControllerComponents, appConfig: AppConf
       case Some(cod) => cod
       case None      => appConfig.confirmationOfDelivery
     }
-    outboundService.sendMessage(messageRequest.copy(confirmationOfDelivery = Some(codValue))).map {
-      case Left(value: String)                             => Ok(Json.obj("Unexpected outcome" -> JsString(value)))
-      case Right(outboundSoapMessage: OutboundSoapMessage) => Ok(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(outboundSoapMessage)))
-    }
+    outboundService
+      .sendMessage(messageRequest.copy(confirmationOfDelivery = Some(codValue)))
+      .map {
+        case Left(value: String)                             => Ok(Json.obj("Unexpected outcome" -> JsString(value)))
+        case Right(outboundSoapMessage: OutboundSoapMessage) => Ok(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(outboundSoapMessage)))
+      }
       .recover(recovery)
   }
 

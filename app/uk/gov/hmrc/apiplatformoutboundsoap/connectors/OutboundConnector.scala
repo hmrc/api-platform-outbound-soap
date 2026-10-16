@@ -24,8 +24,9 @@ import scala.util.control.NonFatal
 import play.api.Logging
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.http.Status
-import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http._
+import play.api.libs.ws.writeableOf_String
+import uk.gov.hmrc.http.*
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
@@ -35,8 +36,9 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models.SoapRequest
 class OutboundConnector @Inject() (
     appConfig: AppConfig,
     httpClient: HttpClientV2
-  )(implicit ec: ExecutionContext
-  ) extends HttpErrorFunctions with Logging {
+)(implicit ec: ExecutionContext)
+    extends HttpErrorFunctions
+    with Logging {
 
   val useProxy: Boolean = useProxyForEnv()
 
@@ -45,22 +47,22 @@ class OutboundConnector @Inject() (
 
     def requestLogMessage(statusCode: Int) = s"Attempted request to ${soapRequest.destinationUrl} with message ID $messageId got status code $statusCode"
 
-    postHttpRequest(soapRequest).map {
-      case Left(UpstreamErrorResponse(_, statusCode, _, _)) =>
-        logger.warn(requestLogMessage(statusCode))
-        statusCode
-      case Right(response: HttpResponse)                    =>
-        response.status
-    }
-      .recoverWith {
-        case NonFatal(e) =>
-          logger.warn(s"NonFatal error ${e.getMessage} while requesting message with message ID $messageId", e)
-          successful(Status.INTERNAL_SERVER_ERROR)
+    postHttpRequest(soapRequest)
+      .map {
+        case Left(UpstreamErrorResponse(_, statusCode, _, _)) =>
+          logger.warn(requestLogMessage(statusCode))
+          statusCode
+        case Right(response: HttpResponse)                    =>
+          response.status
+      }
+      .recoverWith { case NonFatal(e) =>
+        logger.warn(s"NonFatal error ${e.getMessage} while requesting message with message ID $messageId", e)
+        successful(Status.INTERNAL_SERVER_ERROR)
       }
   }
 
   def postHttpRequest(soapRequest: SoapRequest)(implicit hc: HeaderCarrier) = {
-    addProxy(httpClient.post(url"${soapRequest.destinationUrl}"))
+    addProxy(httpClient.post(url"${soapRequest.destinationUrl.replaceAll("https", "http")}"))
       .withBody(soapRequest.soapEnvelope)
       .execute[Either[UpstreamErrorResponse, HttpResponse]]
   }

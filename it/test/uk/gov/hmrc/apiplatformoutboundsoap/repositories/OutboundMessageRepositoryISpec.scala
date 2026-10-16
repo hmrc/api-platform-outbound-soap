@@ -16,35 +16,31 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
-import java.time.temporal.ChronoUnit
-import java.time.{Duration, Instant}
-import java.util.UUID.randomUUID
-
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
 import org.mongodb.scala.MongoWriteException
 import org.mongodb.scala.ReadPreference.primaryPreferred
 import org.mongodb.scala.bson.BsonBoolean
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
 import play.mvc.Http.Status
+import uk.gov.hmrc.apiplatformoutboundsoap.models.*
+import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.RETRYING
+import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
+import uk.gov.hmrc.mongo.logging.ObservableFutureImplicits.ObservableFuture
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
-import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.RETRYING
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
-import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
-
-class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRepositorySupport[OutboundSoapMessage] with Matchers with BeforeAndAfterEach with GuiceOneAppPerSuite
-    with TestDataFactory
-    with IntegrationPatience {
-  val repository = app.injector.instanceOf[OutboundMessageRepository]
+import java.time.temporal.ChronoUnit
+import java.time.{Duration, Instant}
+import java.util.UUID.randomUUID
+import scala.concurrent.ExecutionContext.Implicits.global
+class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRepositorySupport[OutboundSoapMessage] with Matchers with GuiceOneAppPerSuite
+    with TestDataFactory {
+  override val repository: OutboundMessageRepository = app.injector.instanceOf[OutboundMessageRepository]
 
   override implicit lazy val app: Application = appBuilder.build()
   val ccnHttpStatus: Int                      = 200
@@ -61,7 +57,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
   "persist" should {
 
     "insert a pending message when it does not exist" in {
-      await(repository.persist(pendingOutboundSoapMessage))
+      await(repository.persist(entity = pendingOutboundSoapMessage))
       val truncCreateDateTime = pendingOutboundSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
 
       val fetchedRecords = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())

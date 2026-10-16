@@ -26,7 +26,7 @@ case class MessageRequest(
     confirmationOfDelivery: Option[Boolean],
     notificationUrl: Option[String] = None,
     privateHeaders: Option[List[PrivateHeader]] = None
-  )
+)
 
 case class Addressing(from: String, to: String, replyTo: String, faultTo: String, messageId: String, relatesTo: Option[String] = None) {
   validate(to.trim != "", "addressing.to being empty")

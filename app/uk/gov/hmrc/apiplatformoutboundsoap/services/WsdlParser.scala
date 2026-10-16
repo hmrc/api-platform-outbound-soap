@@ -19,6 +19,7 @@ package uk.gov.hmrc.apiplatformoutboundsoap.services
 import javax.wsdl.Definition
 import javax.wsdl.xml.WSDLReader
 import scala.concurrent.Future
+import scala.concurrent.Future.successful
 
 import org.apache.axis2.wsdl.WSDLUtil
 
@@ -30,8 +31,7 @@ class WsdlParser {
   def parseWsdl(wsdlUrl: String): Future[Definition] = {
     val reader: WSDLReader = WSDLUtil.newWSDLReaderWithPopulatedExtensionRegistry
     reader.setFeature("javax.wsdl.importDocuments", true)
-    Future.successful(reader.readWSDL(wsdlUrl))
+    successful(reader.readWSDL(wsdlUrl))
   }
-
 }
 // $COVERAGE-ON$

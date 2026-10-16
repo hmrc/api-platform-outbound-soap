@@ -17,7 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.config
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -39,19 +39,20 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val keystorePassword: String       = config.get[String]("keystorePassword")
   val enableMessageSigning: Boolean  = config.get[Boolean]("enableMessageSigning")
 
-  val retryInterval: Duration        = Duration(config.getOptional[String]("retry.interval").getOrElse("60 sec"))
-  val retryDuration: Duration        = Duration(config.getOptional[String]("retry.duration").getOrElse("5 min"))
-  val retryInitialDelay: Duration    = Duration(config.getOptional[String]("retry.initial.delay").getOrElse("30 sec"))
-  val retryEnabled: Boolean          = config.getOptional[Boolean]("retry.enabled").getOrElse(false)
-  val retryJobLockDuration: Duration = Duration(config.getOptional[String]("retry.lock.duration").getOrElse("1 hr"))
-  val retryMessagesTtl: Duration     = Duration(config.getOptional[String]("retry.messages.ttl").getOrElse("30 day"))
+  val retryInterval: FiniteDuration        = Duration(config.getOptional[String]("retry.interval").getOrElse("60 sec")).asInstanceOf[FiniteDuration]
+  val retryDuration: FiniteDuration        = Duration(config.getOptional[String]("retry.duration").getOrElse("5 min")).asInstanceOf[FiniteDuration]
+  val retryInitialDelay: FiniteDuration    = Duration(config.getOptional[String]("retry.initial.delay").getOrElse("30 sec")).asInstanceOf[FiniteDuration]
+  val retryEnabled: Boolean                = config.getOptional[Boolean]("retry.enabled").getOrElse(false)
+  val retryJobLockDuration: FiniteDuration = Duration(config.getOptional[String]("retry.lock.duration").getOrElse("1 hr")).asInstanceOf[FiniteDuration]
+  val retryMessagesTtl: FiniteDuration     = Duration(config.getOptional[String]("retry.messages.ttl").getOrElse("30 day")).asInstanceOf[FiniteDuration]
+  val scheduledJobsEnabled: Boolean        = config.getOptional[Boolean]("scheduledJobsEnabled").getOrElse(false)
 
-  val parallelism: Int                = config.getOptional[Int]("retry.parallelism").getOrElse(5)
-  val cacheDuration: Duration         = Duration(config.getOptional[String]("cache.duration").getOrElse("1 day"))
-  val addressingFrom: String          = config.getOptional[String]("addressing.from").getOrElse("")
-  val addressingReplyTo: String       = config.getOptional[String]("addressing.replyTo").getOrElse("")
-  val addressingFaultTo: String       = config.getOptional[String]("addressing.faultTo").getOrElse("")
-  val confirmationOfDelivery: Boolean = config.getOptional[Boolean]("confirmationOfDelivery").getOrElse(false)
-  val proxyRequiredForThisEnvironment = config.getOptional[Boolean]("proxy.proxyRequiredForThisEnvironment").getOrElse(false)
+  val parallelism: Int                         = config.getOptional[Int]("retry.parallelism").getOrElse(5)
+  val cacheDuration: FiniteDuration            = Duration(config.getOptional[String]("cache.duration").getOrElse("1 day")).asInstanceOf[FiniteDuration]
+  val addressingFrom: String                   = config.getOptional[String]("addressing.from").getOrElse("")
+  val addressingReplyTo: String                = config.getOptional[String]("addressing.replyTo").getOrElse("")
+  val addressingFaultTo: String                = config.getOptional[String]("addressing.faultTo").getOrElse("")
+  val confirmationOfDelivery: Boolean          = config.getOptional[Boolean]("confirmationOfDelivery").getOrElse(false)
+  val proxyRequiredForThisEnvironment: Boolean = config.getOptional[Boolean]("proxy.proxyRequiredForThisEnvironment").getOrElse(false)
 
 }

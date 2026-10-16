@@ -22,12 +22,12 @@ import scala.language.postfixOps
 import scala.xml.{Node, NodeSeq}
 
 import play.api.Logging
-import play.api.mvc._
+import play.api.mvc.*
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import uk.gov.hmrc.apiplatformoutboundsoap.controllers.actionBuilders.ValidateConfirmationTypeAction
 import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus
-import uk.gov.hmrc.apiplatformoutboundsoap.models.common._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.common.*
 import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
 
 @Singleton
@@ -35,8 +35,9 @@ class ConfirmationController @Inject() (
     cc: ControllerComponents,
     confirmationService: ConfirmationService,
     validateConfirmationTypeAction: ValidateConfirmationTypeAction
-  )(implicit ec: ExecutionContext
-  ) extends BackendController(cc) with Logging {
+)(implicit ec: ExecutionContext)
+    extends BackendController(cc)
+    with Logging {
 
   def message: Action[NodeSeq] = (Action andThen validateConfirmationTypeAction).async(parse.xml) { implicit request =>
     val xml: NodeSeq = request.body

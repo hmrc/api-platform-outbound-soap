@@ -6,7 +6,7 @@ val appName = "api-platform-outbound-soap"
 Global / bloopAggregateSourceDependencies := true
 Global / bloopExportJarClassifiers := Some(Set("sources"))
 
-ThisBuild / scalaVersion := "2.13.18"
+ThisBuild / scalaVersion := "3.7.4"
 ThisBuild / majorVersion := 0
 ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 ThisBuild / semanticdbEnabled := true
@@ -25,10 +25,10 @@ lazy val microservice = Project(appName, file("."))
     scalacOptions += "-Wconf:src=routes/.*:s"
   )
   .settings(ScoverageSettings())
-  .settings(
-    Compile / unmanagedResourceDirectories += baseDirectory.value / "app" / "resources",
-    Test / unmanagedResourceDirectories += baseDirectory.value / "test" / "resources"
-  )
+  //.settings(
+   // Compile / unmanagedResourceDirectories += baseDirectory.value / "app" / "resources",
+   // Test / unmanagedResourceDirectories += baseDirectory.value / "test" / "resources"
+ // )
 
 lazy val it = (project in file("it"))
   .enablePlugins(PlayScala)

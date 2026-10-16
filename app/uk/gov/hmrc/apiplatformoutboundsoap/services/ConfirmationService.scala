@@ -23,7 +23,7 @@ import scala.xml.NodeSeq
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.NotificationCallbackConnector
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.*
 import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, UpdateResult, UpdateSuccessResult}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 
@@ -31,16 +31,15 @@ import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepositor
 class ConfirmationService @Inject() (
     outboundMessageRepository: OutboundMessageRepository,
     notificationCallbackConnector: NotificationCallbackConnector
-  )(implicit val ec: ExecutionContext
-  ) {
+)(implicit val ec: ExecutionContext) {
 
   def processConfirmation(confRqst: NodeSeq, msgId: String, delStatus: DeliveryStatus)(implicit hc: HeaderCarrier): Future[UpdateResult] = {
 
     def doUpdate(id: String, status: DeliveryStatus, body: String): Future[UpdateSuccessResult.type] = {
       outboundMessageRepository.updateConfirmationStatus(id, status, body) map { maybeOutboundSoapMessage =>
         maybeOutboundSoapMessage.map(outboundSoapMessage => notificationCallbackConnector.sendNotification(outboundSoapMessage))
-      } map {
-        case _ => UpdateSuccessResult
+      } map { case _ =>
+        UpdateSuccessResult
       }
     }
 
