@@ -24,7 +24,7 @@ import scala.concurrent.duration.Duration
 
 import play.api.http.Status.OK
 
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.*
 
 trait TestDataFactory {
   private val ccn2HttpStatus = OK
@@ -88,7 +88,19 @@ trait TestDataFactory {
   }
 
   val sentOutboundSoapMessageWithAllFields = {
-    SentOutboundSoapMessage(globalId, messageId, "envelope", "some url", now, Some(ccn2HttpStatus), None, None, None, Some(knownInstant), Some(List(PrivateHeader("test", "value"))))
+    SentOutboundSoapMessage(
+      globalId,
+      messageId,
+      "envelope",
+      "some url",
+      now,
+      Some(ccn2HttpStatus),
+      None,
+      None,
+      None,
+      Some(knownInstant),
+      Some(List(PrivateHeader("test", "value")))
+    )
   }
 
   def listRetryingOutboundSoapMessage(numberToReturn: Int): List[RetryingOutboundSoapMessage] = {

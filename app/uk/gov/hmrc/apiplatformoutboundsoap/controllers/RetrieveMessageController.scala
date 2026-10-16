@@ -21,28 +21,32 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.Logging
 import play.api.libs.json.Json
-import play.api.mvc._
+import play.api.mvc.*
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.*
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.apiplatformoutboundsoap.{ErrorCode, JsErrorResponse}
 
 @Singleton
 class RetrieveMessageController @Inject() (cc: ControllerComponents, messageRepository: OutboundMessageRepository)(implicit ec: ExecutionContext)
-    extends BackendController(cc) with Logging {
+    extends BackendController(cc)
+    with Logging {
 
   def message(id: String): Action[AnyContent] = Action.async {
     id.trim match {
       case "" => Future.successful(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "id should not be empty")))
-      case _  => messageRepository.findById(id).flatMap(maybeOutboundSoapMessage =>
-          if (maybeOutboundSoapMessage.nonEmpty) {
-            Future.successful(Ok(Json.toJson(maybeOutboundSoapMessage)))
-          } else {
-            Future.successful(NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"id [${id}] could not be found")))
-          }
-        ) recover {
-          case e: Exception => InternalServerError(JsErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR, "error querying database"))
+      case _  =>
+        messageRepository
+          .findById(id)
+          .flatMap(maybeOutboundSoapMessage =>
+            if (maybeOutboundSoapMessage.nonEmpty) {
+              Future.successful(Ok(Json.toJson(maybeOutboundSoapMessage)))
+            } else {
+              Future.successful(NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"id [${id}] could not be found")))
+            }
+          ) recover { case e: Exception =>
+          InternalServerError(JsErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR, s"Error ${e.getMessage} when querying database"))
         }
     }
   }

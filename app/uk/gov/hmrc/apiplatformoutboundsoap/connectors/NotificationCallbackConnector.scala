@@ -22,8 +22,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.Logging
 import play.api.libs.json.Json
-import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http._
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
+import uk.gov.hmrc.http.*
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
 
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
@@ -34,15 +35,15 @@ class NotificationCallbackConnector @Inject() (httpClient: HttpClientV2)(implici
 
   def sendNotification(message: OutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Option[Int]] = {
     (message.notificationUrl map { url =>
-      httpClient.post(url"${url}")
+      httpClient
+        .post(url"${url.replaceAll("https", "http")}")
         .withBody(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(message)))
         .execute[HttpResponse] map { response =>
         logger.info(s"Notification to $url with global ID ${message.globalId} and message ID ${message.messageId} responded with HTTP code ${response.status}")
         Some(response.status)
-      } recover {
-        case e: Exception =>
-          logger.error(s"Notification to $url with global ID ${message.globalId} and message ID ${message.messageId} failed: ${e.getMessage}", e)
-          None
+      } recover { case e: Exception =>
+        logger.error(s"Notification to $url with global ID ${message.globalId} and message ID ${message.messageId} failed: ${e.getMessage}", e)
+        None
       }
     }).getOrElse(successful(None))
   }

@@ -29,12 +29,12 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.cache.AsyncCacheApi
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.*
 import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, UpdateResult, UpdateSuccessResult}
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 
@@ -109,7 +109,7 @@ class ConfirmationServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
       when(outboundMessageRepositoryMock.findById(*)).thenReturn(successful(Some(outboundSoapMessage)))
       when(outboundMessageRepositoryMock.updateConfirmationStatus(*, *, *)).thenReturn(successful(Option(outboundSoapMessage)))
       await(underTest.processConfirmation(confirmationRequestCod, msgId, DeliveryStatus.COE))
-      verify(notificationCallbackConnectorMock).sendNotification(refEq(outboundSoapMessage))(*)
+      verify(notificationCallbackConnectorMock).sendNotification(refEq(outboundSoapMessage))(using *)
     }
   }
 }

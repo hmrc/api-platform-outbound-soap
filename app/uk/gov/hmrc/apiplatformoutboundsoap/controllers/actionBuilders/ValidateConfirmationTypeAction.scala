@@ -22,12 +22,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import _root_.uk.gov.hmrc.http.HttpErrorFunctions
 
 import play.api.Logging
-import play.api.mvc.Results._
+import play.api.mvc.Results.*
 import play.api.mvc.{ActionFilter, Request, Result}
 
 @Singleton
-class ValidateConfirmationTypeAction @Inject() ()(implicit ec: ExecutionContext)
-    extends ActionFilter[Request] with HttpErrorFunctions with Logging {
+class ValidateConfirmationTypeAction @Inject() ()(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions with Logging {
   override def executionContext: ExecutionContext = ec
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {

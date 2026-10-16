@@ -29,10 +29,10 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.mvc.Result
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import play.api.test.{FakeRequest, Helpers}
 
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.*
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
@@ -153,7 +153,7 @@ class RetrieveMessageControllerSpec extends AnyWordSpec with Matchers with Guice
       val result = underTest.message("1234")(fakeRequest)
       status(result) shouldBe INTERNAL_SERVER_ERROR
       (contentAsJson(result) \ "code").as[String] shouldBe "INTERNAL_SERVER_ERROR"
-      (contentAsJson(result) \ "message").as[String] shouldBe "error querying database"
+      (contentAsJson(result) \ "message").as[String] shouldBe "Error expected when querying database"
     }
 
     "return a 400 response when supplied with an ID that is whitespace" in new Setup {

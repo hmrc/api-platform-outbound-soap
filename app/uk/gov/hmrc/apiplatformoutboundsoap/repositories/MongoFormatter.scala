@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.repositories
 
+import play.api.libs.json.*
 import play.api.libs.json.JsonConfiguration.Aux
-import play.api.libs.json._
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.*
 
 private[repositories] object MongoFormatter extends MongoJavatimeFormats.Implicits {
 

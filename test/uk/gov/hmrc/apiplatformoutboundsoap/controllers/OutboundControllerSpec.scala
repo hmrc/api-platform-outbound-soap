@@ -33,7 +33,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status.{BAD_REQUEST, OK}
 import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.Result
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
@@ -43,8 +43,14 @@ import uk.gov.hmrc.apiplatformoutboundsoap.models.{Addressing, MessageRequest, P
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
-class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite
-    with ArgumentMatchersSugar with ResetMocksAfterEachTest with TestDataFactory {
+class OutboundControllerSpec
+    extends AnyWordSpec
+    with Matchers
+    with MockitoSugar
+    with GuiceOneAppPerSuite
+    with ArgumentMatchersSugar
+    with ResetMocksAfterEachTest
+    with TestDataFactory {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -94,7 +100,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
 
     "return the response returned by the outbound service when successful" in new Setup {
       val sentMessage = sentOutboundSoapMessage
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(successful(Right(sentMessage)))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(successful(Right(sentMessage)))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
@@ -106,7 +112,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
 
     "return the response returned by the outbound service when problematic" in new Setup {
       val expectedResponseMessage = "something weird happened"
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(successful(Left(expectedResponseMessage)))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(successful(Left(expectedResponseMessage)))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
@@ -116,21 +122,21 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
 
     "send the message request to the outbound service" in new Setup {
       val messageCaptor: Captor[MessageRequest] = ArgCaptor[MessageRequest]
-      when(outboundServiceMock.sendMessage(messageCaptor)(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(messageCaptor)(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
       underTest.message()(fakeRequest.withBody(message))
 
-      verify(outboundServiceMock).sendMessage(any)(*)
+      verify(outboundServiceMock).sendMessage(any)(using *)
       messageCaptor hasCaptured MessageRequest("http://example.com/wsdl", "theOp", "<IE4N03>example</IE4N03>", addressing, Some(true))
     }
 
     "send the message request with private headers to the outbound service" in new Setup {
       val messageCaptor: Captor[MessageRequest] = ArgCaptor[MessageRequest]
-      when(outboundServiceMock.sendMessage(messageCaptor)(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(messageCaptor)(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(messageWithPrivateHeaders))
       status(result) shouldBe OK
-      verify(outboundServiceMock).sendMessage(any)(*)
+      verify(outboundServiceMock).sendMessage(any)(using *)
       messageCaptor hasCaptured MessageRequest("http://example.com/wsdl", "theOp", "<IE4N03>example</IE4N03>", addressing, Some(true), None, Some(privateHeaders))
     }
 
@@ -143,7 +149,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "return OK response when the a private header has an empty value" in new Setup {
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(messageWithEmptyValuePrivateHeader))
 
@@ -151,33 +157,40 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "return bad response when the request json private header has an invalid name key" in new Setup {
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(
-        Json.obj(
-          "wsdlUrl"        -> "http://example.com/wsdl",
-          "wsdlOperation"  -> "theOp",
-          "messageBody"    -> "<IE4N03>example</IE4N03>",
-          "addressing"     ->
-            Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from"),
-          "privateHeaders" -> Json.arr(Json.obj("name123" -> "value"))
+      val result: Future[Result] = underTest.message()(
+        fakeRequest.withBody(
+          Json.obj(
+            "wsdlUrl"        -> "http://example.com/wsdl",
+            "wsdlOperation"  -> "theOp",
+            "messageBody"    -> "<IE4N03>example</IE4N03>",
+            "addressing"     ->
+              Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from"),
+            "privateHeaders" -> Json.arr(Json.obj("name123" -> "value"))
+          )
         )
-      ))
+      )
 
       status(result) shouldBe BAD_REQUEST
-      (contentAsJson(result) \ "message").as[String] shouldBe "Invalid MessageRequest payload: List((/privateHeaders(0)/name,List(JsonValidationError(List(error.path.missing),List()))), (/privateHeaders(0)/value,List(JsonValidationError(List(error.path.missing),List()))))"
+      (contentAsJson(result) \ "message")
+        .as[String] shouldBe "Invalid MessageRequest payload: List((/privateHeaders(0)/value,List(JsonValidationError(List(error.path.missing),ArraySeq()))), (/privateHeaders(0)/name,List(JsonValidationError(List(error.path.missing),ArraySeq()))))"
       verifyZeroInteractions(outboundServiceMock)
     }
 
     "return OK response with defaults when the request json body addressing section has missing replyTo, faultTo addressing fields" in new Setup {
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-      when(outboundServiceMock.sendMessage(messageCaptor.capture())(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(messageCaptor.capture())(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj(
-        "wsdlUrl"       -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp",
-        "messageBody"   -> "<IE4N03>example</IE4N03>",
-        "addressing"    ->
-          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from")
-      )))
+      val result: Future[Result] = underTest.message()(
+        fakeRequest.withBody(
+          Json.obj(
+            "wsdlUrl"       -> "http://example.com/wsdl",
+            "wsdlOperation" -> "theOp",
+            "messageBody"   -> "<IE4N03>example</IE4N03>",
+            "addressing"    ->
+              Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> "from")
+          )
+        )
+      )
 
       status(result) shouldBe OK
       messageCaptor.getValue.addressing.from shouldBe "from"
@@ -186,15 +199,19 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "return bad request when the request json body addressing section has empty from field" in new Setup {
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj(
-        "wsdlUrl"       -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp",
-        "messageBody"   -> "<IE4N03>example</IE4N03>",
-        "addressing"    ->
-          Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> " ")
-      )))
+      val result: Future[Result] = underTest.message()(
+        fakeRequest.withBody(
+          Json.obj(
+            "wsdlUrl"       -> "http://example.com/wsdl",
+            "wsdlOperation" -> "theOp",
+            "messageBody"   -> "<IE4N03>example</IE4N03>",
+            "addressing"    ->
+              Json.obj("messageId" -> "some msg id", "to" -> "who it is to", "from" -> " ")
+          )
+        )
+      )
 
       status(result) shouldBe BAD_REQUEST
       (contentAsJson(result) \ "message").as[String] shouldBe
@@ -202,63 +219,75 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "return bad request when the request json body is missing wsdlUrl field" in new Setup {
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(
-        Json.obj("wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> Json.toJson(addressing))
-      ))
+      val result: Future[Result] = underTest.message()(
+        fakeRequest.withBody(
+          Json.obj("wsdlOperation" -> "theOp", "messageBody" -> "<IE4N03>example</IE4N03>", "addressing" -> Json.toJson(addressing))
+        )
+      )
 
       status(result) shouldBe BAD_REQUEST
-      (contentAsJson(result) \ "message").as[String] shouldBe "Invalid MessageRequest payload: List((/wsdlUrl,List(JsonValidationError(List(error.path.missing),List()))))"
+      (contentAsJson(result) \ "message").as[String] shouldBe "Invalid MessageRequest payload: List((/wsdlUrl,List(JsonValidationError(List(error.path.missing),ArraySeq()))))"
     }
 
     "return bad request when the request json body is missing messageBody field" in new Setup {
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(
-        Json.obj("wsdlUrl" -> "http://example.com/wsdl", "wsdlOperation" -> "theOp", "addressing" -> Json.toJson(addressing))
-      ))
+      val result: Future[Result] = underTest.message()(
+        fakeRequest.withBody(
+          Json.obj("wsdlUrl" -> "http://example.com/wsdl", "wsdlOperation" -> "theOp", "addressing" -> Json.toJson(addressing))
+        )
+      )
 
       status(result) shouldBe BAD_REQUEST
-      (contentAsJson(result) \ "message").as[String] shouldBe "Invalid MessageRequest payload: List((/messageBody,List(JsonValidationError(List(error.path.missing),List()))))"
+      (contentAsJson(result) \ "message").as[String] shouldBe "Invalid MessageRequest payload: List((/messageBody,List(JsonValidationError(List(error.path.missing),ArraySeq()))))"
     }
 
     "return bad request when the request json body addressing section is missing to field" in new Setup {
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj(
-        "wsdlUrl"       -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp",
-        "messageBody"   -> "<IE4N03>example</IE4N03>",
-        "addressing"    ->
-          Json.obj("messageId" -> "some msg id")
-      )))
+      val result: Future[Result] = underTest.message()(
+        fakeRequest.withBody(
+          Json.obj(
+            "wsdlUrl"       -> "http://example.com/wsdl",
+            "wsdlOperation" -> "theOp",
+            "messageBody"   -> "<IE4N03>example</IE4N03>",
+            "addressing"    ->
+              Json.obj("messageId" -> "some msg id")
+          )
+        )
+      )
 
       status(result) shouldBe BAD_REQUEST
       (contentAsJson(result) \ "message").as[String] shouldBe
-        "Invalid MessageRequest payload: List((/addressing/to,List(JsonValidationError(List(error.path.missing),List()))))"
+        "Invalid MessageRequest payload: List((/addressing/to,List(JsonValidationError(List(error.path.missing),ArraySeq()))))"
     }
 
     "return bad request when the request json body addressing section is missing message ID field" in new Setup {
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
-      val result: Future[Result] = underTest.message()(fakeRequest.withBody(Json.obj(
-        "wsdlUrl"       -> "http://example.com/wsdl",
-        "wsdlOperation" -> "theOp",
-        "messageBody"   -> "<IE4N03>example</IE4N03>",
-        "addressing"    ->
-          Json.obj("to" -> "who it is to")
-      )))
+      val result: Future[Result] = underTest.message()(
+        fakeRequest.withBody(
+          Json.obj(
+            "wsdlUrl"       -> "http://example.com/wsdl",
+            "wsdlOperation" -> "theOp",
+            "messageBody"   -> "<IE4N03>example</IE4N03>",
+            "addressing"    ->
+              Json.obj("to" -> "who it is to")
+          )
+        )
+      )
 
       status(result) shouldBe BAD_REQUEST
       (contentAsJson(result) \ "message").as[String] shouldBe
-        "Invalid MessageRequest payload: List((/addressing/messageId,List(JsonValidationError(List(error.path.missing),List()))))"
+        "Invalid MessageRequest payload: List((/addressing/messageId,List(JsonValidationError(List(error.path.missing),ArraySeq()))))"
     }
 
     "default confirmation of delivery to true if not present in request but its overridden in config" in new Setup {
       val expectedStatus: Int                           = OK
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-      when(outboundServiceMock.sendMessage(messageCaptor.capture())(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(messageCaptor.capture())(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
@@ -269,7 +298,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     "confirmation of delivery field is true when true in the request" in new Setup {
       val expectedStatus: Int                           = OK
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-      when(outboundServiceMock.sendMessage(messageCaptor.capture())(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(messageCaptor.capture())(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message + ("confirmationOfDelivery" -> JsBoolean(true))))
 
@@ -280,7 +309,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     "confirmation of delivery field is false when false in the request" in new Setup {
       val expectedStatus: Int                           = OK
       val messageCaptor: ArgumentCaptor[MessageRequest] = ArgumentCaptor.forClass(classOf[MessageRequest])
-      when(outboundServiceMock.sendMessage(messageCaptor.capture())(*)).thenReturn(successful(Right(sentOutboundSoapMessage)))
+      when(outboundServiceMock.sendMessage(messageCaptor.capture())(using *)).thenReturn(successful(Right(sentOutboundSoapMessage)))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message + ("confirmationOfDelivery" -> JsBoolean(false))))
 
@@ -289,7 +318,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "return bad request when there is a problem parsing the WSDL" in new Setup {
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(failed(new WSDLException("the fault code", "the error")))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(failed(new WSDLException("the fault code", "the error")))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 
@@ -299,7 +328,7 @@ class OutboundControllerSpec extends AnyWordSpec with Matchers with MockitoSugar
     }
 
     "return not found when the operation is missing in the WSDL definition" in new Setup {
-      when(outboundServiceMock.sendMessage(*)(*)).thenReturn(failed(new NotFoundException(s"Operation foobar not found")))
+      when(outboundServiceMock.sendMessage(*)(using *)).thenReturn(failed(new NotFoundException(s"Operation foobar not found")))
 
       val result: Future[Result] = underTest.message()(fakeRequest.withBody(message))
 

@@ -17,6 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap
 
 import javax.inject.{Inject, Singleton}
+import scala.compiletime.uninitialized
 
 import play.api.inject.Injector
 
@@ -26,7 +27,7 @@ class GlobalContext @Inject() (playBuiltinInjector: Injector) {
 }
 
 object GlobalContext {
-  private var injectorRef: Injector = _
+  private var injectorRef: Injector = uninitialized
 
   def injector: Injector = injectorRef
 }
