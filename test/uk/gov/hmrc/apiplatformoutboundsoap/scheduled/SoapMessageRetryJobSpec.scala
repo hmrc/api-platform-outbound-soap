@@ -16,21 +16,19 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
-import java.time.Instant
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future.{failed, successful}
-import scala.concurrent.duration.{Duration, FiniteDuration, HOURS, MINUTES}
-
 import org.apache.pekko.Done
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
 import play.api.test.Helpers.*
-import uk.gov.hmrc.mongo.lock.{Lock, MongoLockRepository}
-
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
+import uk.gov.hmrc.mongo.lock.{Lock, MongoLockRepository}
+
+import java.time.Instant
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future.{failed, successful}
+import scala.concurrent.duration.{FiniteDuration, HOURS, MINUTES}
 
 class SoapMessageRetryJobSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
