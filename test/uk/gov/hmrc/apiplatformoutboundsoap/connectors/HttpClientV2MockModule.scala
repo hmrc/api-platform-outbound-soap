@@ -16,13 +16,11 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
-import java.net.URL
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
+
+import java.net.URL
+import scala.concurrent.Future
 
 trait HttpClientV2MockModule extends MockitoSugar with ArgumentMatchersSugar {
 

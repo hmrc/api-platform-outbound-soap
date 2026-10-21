@@ -16,33 +16,39 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.support
 
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.http.Fault
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
 trait Ccn2Service {
 
   def primeCcn2Endpoint(body: String, status: Int): StubMapping = {
-    stubFor(post(urlPathEqualTo("/"))
-      .willReturn(
-        aResponse()
-          .withBody(body)
-          .withStatus(status)
-      ))
+    stubFor(
+      post(urlPathEqualTo("/"))
+        .willReturn(
+          aResponse()
+            .withBody(body)
+            .withStatus(status)
+        )
+    )
   }
 
   def stubCcn2Endpoint(body: String, fault: Fault): StubMapping = {
-    stubFor(post(urlPathEqualTo("/"))
-      .willReturn(
-        aResponse()
-          .withBody(body)
-          .withFault(fault)
-      ))
+    stubFor(
+      post(urlPathEqualTo("/"))
+        .willReturn(
+          aResponse()
+            .withBody(body)
+            .withFault(fault)
+        )
+    )
   }
 
   def verifyRequestBody(expectedRequestBody: String): Unit = {
-    verify(postRequestedFor(urlPathEqualTo("/"))
-      .withRequestBody(equalTo(expectedRequestBody)))
+    verify(
+      postRequestedFor(urlPathEqualTo("/"))
+        .withRequestBody(equalTo(expectedRequestBody))
+    )
   }
 
   def verifyHeader(headerName: String, headerValue: String): Unit = {

@@ -28,7 +28,7 @@ import play.api.Application
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
@@ -70,9 +70,10 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
       val expectedStatus: Int          = OK
       primeNotificationsEndpoint(expectedStatus)
 
-      val Some(result) = await(underTest.sendNotification(message))
-
-      result shouldBe expectedStatus
+      await(underTest.sendNotification(message)) match {
+        case Some(result) => result shouldBe expectedStatus
+        case _            => fail(s"Status was not $expectedStatus")
+      }
     }
     "successfully send a status update to the caller's notification URL when message is PENDING" in new Setup {
       val message: OutboundSoapMessage = PendingOutboundSoapMessage(
@@ -87,9 +88,10 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
       val expectedStatus: Int          = OK
       primeNotificationsEndpoint(expectedStatus)
 
-      val Some(result) = await(underTest.sendNotification(message))
-
-      result shouldBe expectedStatus
+      await(underTest.sendNotification(message)) match {
+        case Some(result) => result shouldBe expectedStatus
+        case _            => fail(s"Status was not $expectedStatus")
+      }
     }
 
     "not send a status update when notification URL is absent" in new Setup {
@@ -160,9 +162,10 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
       val expectedStatus: Int          = INTERNAL_SERVER_ERROR
       primeNotificationsEndpoint(expectedStatus)
 
-      val Some(result) = await(underTest.sendNotification(message))
-
-      result shouldBe expectedStatus
+      await(underTest.sendNotification(message)) match {
+        case Some(result) => result shouldBe expectedStatus
+        case _            => fail(s"Status was not $expectedStatus")
+      }
     }
 
     "recover from exceptions" in new Setup {

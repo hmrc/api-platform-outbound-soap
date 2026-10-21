@@ -16,14 +16,15 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
-import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.mongo.lock.MongoLockRepository
-
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
+
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
+
+import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
+import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 
 @Singleton
 class SoapMessageRetryJob @Inject() (appConfig: AppConfig, override val mongoLockRepository: MongoLockRepository, outboundService: OutboundService) extends LockedScheduledJob {
