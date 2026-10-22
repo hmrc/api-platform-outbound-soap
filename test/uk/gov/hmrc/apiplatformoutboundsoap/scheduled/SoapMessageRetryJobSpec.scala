@@ -38,7 +38,7 @@ class SoapMessageRetryJobSpec extends AnyWordSpec with Matchers with MockitoSuga
     val appConfigMock: AppConfig             = mock[AppConfig]
     when(appConfigMock.retryJobLockDuration).thenReturn(FiniteDuration(1, HOURS))
     when(appConfigMock.retryInterval).thenReturn(FiniteDuration(1, MINUTES))
-    when(appConfigMock.scheduledJobsEnabled).thenReturn(true)
+    when(appConfigMock.retryEnabled).thenReturn(true)
     val outboundServiceMock: OutboundService = mock[OutboundService]
     val repositoryMock: MongoLockRepository  = mock[MongoLockRepository]
     val underTest: SoapMessageRetryJob       = new SoapMessageRetryJob(appConfigMock, repositoryMock, outboundServiceMock)

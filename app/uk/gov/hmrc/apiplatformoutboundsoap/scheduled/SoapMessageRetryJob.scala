@@ -31,10 +31,10 @@ class SoapMessageRetryJob @Inject() (appConfig: AppConfig, override val mongoLoc
 
   override def name: String = "SoapMessageRetryJob"
 
-  override def initialDelay: FiniteDuration = appConfig.retryInitialDelay.asInstanceOf[FiniteDuration]
+  override def initialDelay: FiniteDuration = appConfig.retryInitialDelay
 
-  override def interval: FiniteDuration = appConfig.retryInterval.asInstanceOf[FiniteDuration]
-  override def enabled: Boolean         = appConfig.scheduledJobsEnabled
+  override def interval: FiniteDuration = appConfig.retryInterval
+  override def enabled: Boolean         = appConfig.retryEnabled
 
   override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
     outboundService.retryMessages(using HeaderCarrier()).map(done => Result(done.toString))

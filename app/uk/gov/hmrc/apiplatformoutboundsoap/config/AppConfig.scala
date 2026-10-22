@@ -45,7 +45,6 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val retryEnabled: Boolean                = config.getOptional[Boolean]("retry.enabled").getOrElse(false)
   val retryJobLockDuration: FiniteDuration = Duration(config.getOptional[String]("retry.lock.duration").getOrElse("1 hr")).asInstanceOf[FiniteDuration]
   val retryMessagesTtl: FiniteDuration     = Duration(config.getOptional[String]("retry.messages.ttl").getOrElse("30 day")).asInstanceOf[FiniteDuration]
-  val scheduledJobsEnabled: Boolean        = config.getOptional[Boolean]("scheduledJobsEnabled").getOrElse(false)
 
   val parallelism: Int                         = config.getOptional[Int]("retry.parallelism").getOrElse(5)
   val cacheDuration: FiniteDuration            = Duration(config.getOptional[String]("cache.duration").getOrElse("1 day")).asInstanceOf[FiniteDuration]
