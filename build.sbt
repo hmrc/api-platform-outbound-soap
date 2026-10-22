@@ -25,10 +25,6 @@ lazy val microservice = Project(appName, file("."))
     scalacOptions += "-Wconf:src=routes/.*:s"
   )
   .settings(ScoverageSettings())
-  //.settings(
-   // Compile / unmanagedResourceDirectories += baseDirectory.value / "app" / "resources",
-   // Test / unmanagedResourceDirectories += baseDirectory.value / "test" / "resources"
- // )
 
 lazy val it = (project in file("it"))
   .enablePlugins(PlayScala)

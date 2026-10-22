@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.services
 
-import java.time.{Clock, Instant, ZoneId}
+import java.time.{Clock, Duration as jDuration, Instant, ZoneId}
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.wsdl.xml.WSDLReader
@@ -32,11 +32,10 @@ import org.apache.axiom.soap.SOAPEnvelope
 import org.apache.axis2.wsdl.WSDLUtil
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source.{fromIterator, single}
+import org.mockito.ArgumentMatchersSugar
 import org.mockito.Mockito.*
 import org.mockito.captor.{ArgCaptor, Captor}
-import org.mockito.quality.Strictness
 import org.mockito.scalatest.IdiomaticMockito
-import org.mockito.{ArgumentMatchersSugar, MockSettings, Mockito}
 import org.mongodb.scala.bson.BsonNumber
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -46,7 +45,6 @@ import org.xmlunit.builder.DiffBuilder.compare
 import org.xmlunit.diff.DefaultNodeMatcher
 import org.xmlunit.diff.ElementSelectors.byName
 
-import play.api.cache.AsyncCacheApi
 import play.api.cache.caffeine.CaffeineCacheApi
 import play.api.http.Status.OK
 import play.api.test.Helpers.*
@@ -62,37 +60,21 @@ import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers with GuiceOneAppPerSuite with IdiomaticMockito with ArgumentMatchersSugar {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
-  val cache: AsyncCacheApi       = app.injector.instanceOf[AsyncCacheApi]
-
-  trait Setup {
-    val outboundMessageRepositoryMock: OutboundMessageRepository         = mock[OutboundMessageRepository](Mockito.withSettings().strictness(Strictness.LENIENT))
-    val wsSecurityServiceMock: WsSecurityService                         = mock[WsSecurityService](Mockito.withSettings().strictness(Strictness.LENIENT))
-    val notificationCallbackConnectorMock: NotificationCallbackConnector = mock[NotificationCallbackConnector](Mockito.withSettings().strictness(Strictness.LENIENT))
-    val wsdlParser: WsdlParser                                           = mock[WsdlParser](Mockito.withSettings().strictness(Strictness.LENIENT))
-    val appConfigMock: AppConfig                                         = mock[AppConfig](Mockito.withSettings().strictness(Strictness.LENIENT))
-    val cacheSpy: AsyncCacheApi                                          = spy(cache)
-    val caffeineCacheMock: CaffeineCacheApi                              = mock[CaffeineCacheApi](Mockito.withSettings().strictness(Strictness.LENIENT))
-    val outboundConnectorMock: OutboundConnector                         = mock[OutboundConnector](Mockito.withSettings().strictness(Strictness.LENIENT))
+  trait BaseSetup {
+    val outboundMessageRepositoryMock: OutboundMessageRepository         = mock[OutboundMessageRepository]
+    val wsSecurityServiceMock: WsSecurityService                         = mock[WsSecurityService]
+    val notificationCallbackConnectorMock: NotificationCallbackConnector = mock[NotificationCallbackConnector]
+    val wsdlParser: WsdlParser                                           = mock[WsdlParser]
+    val appConfigMock: AppConfig                                         = mock[AppConfig]
+    val caffeineCacheMock: CaffeineCacheApi                              = mock[CaffeineCacheApi]
+    val outboundConnectorMock: OutboundConnector                         = mock[OutboundConnector]
     val instant: Instant                                                 = Instant.parse("2020-01-02T03:04:05.006Z")
     val clock: Clock                                                     = Clock.fixed(instant, ZoneId.of("UTC"))
     val httpStatus: Int                                                  = 200
-
-    when(appConfigMock.retryDuration).thenReturn(retryDuration)
-    when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
-    when(appConfigMock.ccn2Host).thenReturn("example.com")
-    when(appConfigMock.ccn2Port).thenReturn(1234)
-    when(appConfigMock.addressingFrom).thenReturn("HMRC")
-    when(appConfigMock.addressingReplyTo).thenReturn("ReplyTo")
-    when(appConfigMock.addressingFaultTo).thenReturn("FaultTo")
-
-    when(appConfigMock.proxyRequiredForThisEnvironment).thenReturn(false)
-
-    val reader: WSDLReader    = WSDLUtil.newWSDLReaderWithPopulatedExtensionRegistry
+    val reader: WSDLReader                                               = WSDLUtil.newWSDLReaderWithPopulatedExtensionRegistry
     reader.setFeature("javax.wsdl.importDocuments", true)
-    val definition            = reader.readWSDL("test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl")
-    val definitionUrlResolver = reader.readWSDL("test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_URLResolver.wsdl")
-    when(caffeineCacheMock.getOrElseUpdate(any[String], any[Duration])(*)(using *)).thenReturn(Future(definition))
-//    when(wsdlParser.parseWsdl(*)).thenReturn(successful(definition))
+    val definition                                                       = reader.readWSDL("test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_1.0.0.wsdl")
+    val definitionUrlResolver                                            = reader.readWSDL("test/resources/definitions/CCN2.Service.Customs.Default.ICS.RiskAnalysisOrchestrationBAS_1.0.0_CCN2_URLResolver.wsdl")
 
     val underTest: OutboundService =
       new OutboundService(
@@ -105,6 +87,18 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
         caffeineCacheMock,
         clock
       ) {}
+  }
+
+  trait CreateMessageFailSetup extends BaseSetup {
+    when(wsdlParser.parseWsdl(*)).thenReturn(successful(definition))
+    when(caffeineCacheMock.getOrElseUpdate(any[String], any[Duration])(*)(using *)).thenReturn(Future(definition))
+  }
+
+  trait CreateMessageSuccessSetup extends CreateMessageFailSetup {
+    when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
+    when(appConfigMock.enableMessageSigning).thenReturn(false)
+    when(appConfigMock.ccn2Host).thenReturn("example.com")
+    when(appConfigMock.ccn2Port).thenReturn(1234)
   }
 
   "sendMessage" should {
@@ -223,7 +217,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
          |</soapenv:Body>
          |</soapenv:Envelope>""".stripMargin.replaceAll("\n", "")
 
-    "return the outbound soap message for success" in new Setup {
+    "return the outbound soap message for success" in new CreateMessageSuccessSetup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
@@ -242,7 +236,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verifyNoInteractions(notificationCallbackConnectorMock)
     }
 
-    "get the WSDL definition from cache" in new Setup {
+    "get the WSDL definition from cache" in new CreateMessageSuccessSetup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
@@ -252,7 +246,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verify(caffeineCacheMock).getOrElseUpdate(*, *)(*)(using *)
     }
 
-    "return the outbound soap message for failure" in new Setup {
+    "return the outbound soap message for failure" in new CreateMessageSuccessSetup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(BAD_REQUEST))
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
@@ -269,7 +263,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       }
     }
 
-    "save the message as SENT when the connector returns 2xx" in new Setup {
+    "save the message as SENT when the connector returns 2xx" in new CreateMessageSuccessSetup {
       (200 to 299).foreach { httpCode =>
         when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
         when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(httpCode))
@@ -297,7 +291,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       }
     }
 
-    "save the message as FAILED when the connector returns a 3xx, 4xx" in new Setup {
+    "save the message as FAILED when the connector returns a 3xx, 4xx" in new CreateMessageSuccessSetup {
       (300 to 499).foreach { httpCode =>
         when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
         when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(httpCode))
@@ -324,7 +318,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       }
     }
 
-    "save the message as FAILED when the connector returns a 1xx" in new Setup {
+    "save the message as FAILED when the connector returns a 1xx" in new CreateMessageSuccessSetup {
       (100 to 199).foreach { httpCode =>
         when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
         when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(httpCode))
@@ -351,7 +345,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       }
     }
 
-    "save the message as RETRYING when the connector returns a 5xx" in new Setup {
+    "save the message as RETRYING when the connector returns a 5xx" in new CreateMessageSuccessSetup {
       (500 to 599).foreach { httpCode =>
         when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
         when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(httpCode))
@@ -380,7 +374,9 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       }
     }
 
-    "send the SOAP envelope returned from the security service to the connector" in new Setup {
+    "send the SOAP envelope returned from the security service to the connector" in new CreateMessageSuccessSetup {
+      when(appConfigMock.ccn2Host).thenReturn("example.com")
+      when(appConfigMock.ccn2Port).thenReturn(1234)
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
       when(outboundMessageRepositoryMock.updateToSentWhereNotConfirmed(*, *, *)).thenReturn(Future(Some(sentOutboundSoapMessage)))
@@ -394,7 +390,8 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       messageCaptor.value.destinationUrl shouldBe "http://example.com:1234/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
     }
 
-    "resolve destination url not having port when sending the SOAP envelope returned from the security service to the connector" in new Setup {
+    "resolve destination url not having port when sending the SOAP envelope returned from the security service to the connector" in new CreateMessageSuccessSetup {
+      when(appConfigMock.ccn2Host).thenReturn("example.com")
       when(wsdlParser.parseWsdl(*)).thenReturn(successful(definitionUrlResolver))
       when(caffeineCacheMock.getOrElseUpdate(any[String], any[Duration])(*)(using *)).thenReturn(Future(definitionUrlResolver))
 
@@ -408,7 +405,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       messageCaptor.value.destinationUrl shouldBe "http://example.com/CCN2.Service.Customs.EU.ICS.RiskAnalysisOrchestrationBAS"
     }
 
-    "send the SOAP envelope with empty body returned from the security service to the connector" in new Setup {
+    "send the SOAP envelope with empty body returned from the security service to the connector" in new CreateMessageSuccessSetup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelopeWithEmptyBodyRequest())
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(200))
       val messageCaptor: Captor[OutboundSoapMessage] = ArgCaptor[OutboundSoapMessage]
@@ -422,7 +419,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verify(outboundMessageRepositoryMock).updateToSentWhereNotConfirmed(messageCaptor.value.globalId, clock.instant, 200)
     }
 
-    "send the expected SOAP envelope to the security service which adds username token" in new Setup {
+    "send the expected SOAP envelope to the security service which adds username token" in new CreateMessageSuccessSetup {
       val messageCaptor: Captor[SOAPEnvelope] = ArgCaptor[SOAPEnvelope]
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor)).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
@@ -434,7 +431,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       getXmlDiff(messageCaptor.value.toString, expectedSoapEnvelope(mixinAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
-    "send the expected SOAP envelope to the security service which adds signature" in new Setup {
+    "send the expected SOAP envelope to the security service which adds signature" in new CreateMessageSuccessSetup {
       val messageCaptor: Captor[SOAPEnvelope] = ArgCaptor[SOAPEnvelope]
       when(appConfigMock.enableMessageSigning).thenReturn(true)
       when(wsSecurityServiceMock.addSignature(messageCaptor)).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
@@ -447,7 +444,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       getXmlDiff(messageCaptor.value.toString, expectedSoapEnvelope(mixinAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
-    "send the optional addressing headers if present in the request" in new Setup {
+    "send the optional addressing headers if present in the request" in new CreateMessageSuccessSetup {
       val messageCaptor: Captor[SOAPEnvelope]        = ArgCaptor[SOAPEnvelope]
       val persistCaptor: Captor[OutboundSoapMessage] = ArgCaptor[OutboundSoapMessage]
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor)).thenReturn(expectedSoapEnvelope(mixinAddressingHeaders))
@@ -460,7 +457,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       getXmlDiff(messageCaptor.value.toString, expectedSoapEnvelope(mixinAddressingHeaders)).build().hasDifferences shouldBe false
     }
 
-    "not send the optional addressing headers if they are empty in the request" in new Setup {
+    "not send the optional addressing headers if they are empty in the request" in new CreateMessageSuccessSetup {
       val messageCaptor: Captor[SOAPEnvelope]        = ArgCaptor[SOAPEnvelope]
       val persistCaptor: Captor[OutboundSoapMessage] = ArgCaptor[OutboundSoapMessage]
       when(wsSecurityServiceMock.addUsernameToken(messageCaptor)).thenReturn(expectedSoapEnvelope(addressingHeadersWithoutOptionals))
@@ -473,7 +470,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       getXmlDiff(messageCaptor.value.toString, expectedSoapEnvelope(addressingHeadersWithoutOptionals)).build().hasDifferences shouldBe false
     }
 
-    "persist message ID if present in the request for success" in new Setup {
+    "persist message ID if present in the request for success" in new CreateMessageSuccessSetup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
       val messageCaptor: Captor[OutboundSoapMessage] = ArgCaptor[OutboundSoapMessage]
@@ -485,7 +482,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       messageCaptor.value.messageId shouldBe messageId
     }
 
-    "handle failure to retrieve message from database after status update" in new Setup {
+    "handle failure to retrieve message from database after status update" in new CreateMessageSuccessSetup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
       val messageCaptor: Captor[OutboundSoapMessage] = ArgCaptor[OutboundSoapMessage]
@@ -497,7 +494,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verify(notificationCallbackConnectorMock, times(0)).sendNotification(*)(using *)
     }
 
-    "persist message ID if present in the request for failure" in new Setup {
+    "persist message ID if present in the request for failure" in new CreateMessageSuccessSetup {
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
@@ -510,10 +507,9 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       messageCaptor.value.messageId shouldBe messageId
     }
 
-    "fail when the given operation does not exist in the WSDL definition" in new Setup {
-      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
-
+    "fail when the given operation does not exist in the WSDL definition" in new CreateMessageFailSetup {
+      when(wsdlParser.parseWsdl(*)).thenReturn(successful(definition))
+      when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
       val exception: NotFoundException = intercept[NotFoundException] {
         await(underTest.sendMessage(messageRequestFullAddressing.copy(wsdlOperation = "missingOperation")))
       }
@@ -521,13 +517,11 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       exception.message shouldBe "Operation missingOperation not found"
     }
 
-    "fail when the given WSDL does not exist" in new Setup {
+    "fail when the given WSDL does not exist" in new CreateMessageFailSetup {
+      when(wsdlParser.parseWsdl(*)).thenReturn(successful(definition))
+      when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
       when(caffeineCacheMock.getOrElseUpdate[Definition](*, *)(*)(using *))
         .thenReturn(failed(new WSDLException(WSDLException.INVALID_WSDL, "This file was not found: http://localhost:3001/")))
-      when(outboundMessageRepositoryMock.persist(*)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
-      when(outboundMessageRepositoryMock.updateToSent(*, *, *)).thenReturn(successful(None))
-      when(outboundMessageRepositoryMock.updateToSentWhereNotConfirmed(*, *, *)).thenReturn(Future(Some(sentOutboundSoapMessage)))
-      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
       when(wsdlParser.parseWsdl(*)).thenReturn(failed(new WSDLException(WSDLException.INVALID_WSDL, "This file was not found: http://localhost:3001/")))
 
       val exception: WSDLException = intercept[WSDLException] {
@@ -535,12 +529,10 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       }
       exception.getMessage should include("This file was not found: http://localhost:3001/")
       verifyNoInteractions(outboundConnectorMock)
+      verifyNoInteractions(outboundMessageRepositoryMock)
     }
 
-    "fail when the addressing.to field is empty" in new Setup {
-      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
-
+    "fail when the addressing.to field is empty" in new BaseSetup {
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing = addressing.copy(to = ""))))
       }
@@ -548,10 +540,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       exception.getMessage should include("addressing.to being empty")
     }
 
-    "fail when the addressing.messageId field is empty" in new Setup {
-      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
-
+    "fail when the addressing.messageId field is empty" in new BaseSetup {
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing = addressing.copy(messageId = ""))))
       }
@@ -559,10 +548,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       exception.getMessage should include("addressing.messageId being empty")
     }
 
-    "fail when the addressing.from field is empty" in new Setup {
-      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
-
+    "fail when the addressing.from field is empty" in new BaseSetup {
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(underTest.sendMessage(messageRequestFullAddressing.copy(addressing = addressing.copy(from = ""))))
       }
@@ -570,10 +556,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       exception.getMessage should include("addressing.from being empty")
     }
 
-    "fail when the private headers field value is greater than 1024 chars" in new Setup {
-      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
-
+    "fail when the private headers field value is greater than 1024 chars" in new BaseSetup {
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(
           underTest.sendMessage(
@@ -586,10 +569,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       exception.getMessage should include("privateHeaders value is longer than 1024 characters")
     }
 
-    "fail when the private headers field name is greater than 1024 chars" in new Setup {
-      when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope())
-      when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
-
+    "fail when the private headers field name is greater than 1024 chars" in new BaseSetup {
       val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
         await(
           underTest.sendMessage(
@@ -602,10 +582,11 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       exception.getMessage should include("privateHeaders name is longer than 1024 characters")
     }
 
-    "persist message when the private headers field value is exactly 1024 chars" in new Setup {
+    "persist message when the private headers field value is exactly 1024 chars" in new CreateMessageSuccessSetup {
+      when(wsdlParser.parseWsdl(*)).thenReturn(successful(definition))
+      when(appConfigMock.cacheDuration).thenReturn(Duration("10 min"))
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
-      when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       val messageCaptor: Captor[OutboundSoapMessage] = ArgCaptor[OutboundSoapMessage]
       when(outboundMessageRepositoryMock.persist(messageCaptor)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
       when(outboundMessageRepositoryMock.updateToSentWhereNotConfirmed(*, *, *)).thenReturn(Future(Some(sentOutboundSoapMessage)))
@@ -619,10 +600,10 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       messageCaptor.value.messageId shouldBe messageId
     }
 
-    "persist message when the private headers field parameters size is less than 1024" in new Setup {
+    "persist message when the private headers field parameters size is less than 1024" in new CreateMessageSuccessSetup {
+      when(wsdlParser.parseWsdl(*)).thenReturn(successful(definition))
       when(wsSecurityServiceMock.addUsernameToken(*)).thenReturn(expectedSoapEnvelope(allAddressingHeaders))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(expectedStatus))
-      when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       val messageCaptor: Captor[OutboundSoapMessage] = ArgCaptor[OutboundSoapMessage]
       when(outboundMessageRepositoryMock.persist(messageCaptor)).thenReturn(Future(InsertOneResult.acknowledged(BsonNumber(1))))
       when(outboundMessageRepositoryMock.updateToSentWhereNotConfirmed(*, *, *)).thenReturn(Future(Some(sentOutboundSoapMessage)))
@@ -638,7 +619,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
   }
 
   "retryMessages" should {
-    "retry a message successfully" in new Setup {
+    "retry a message successfully" in new BaseSetup {
       val testScopedGlobalId = globalId
       val retryingMessage    = RetryingOutboundSoapMessage(testScopedGlobalId, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", now, now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
@@ -654,27 +635,12 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verifyNoInteractions(notificationCallbackConnectorMock)
     }
 
-    "abort retrying messages if unexpected exception thrown" in new Setup {
-      val retryingMessage        = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", null, "some url", Instant.now, Instant.now, Some(httpStatus))
-      val anotherRetryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload 2</IE4N03>", "another url", Instant.now, Instant.now, Some(httpStatus))
-      when(appConfigMock.parallelism).thenReturn(2)
-      when(outboundConnectorMock.postMessage(anotherRetryingMessage.messageId, SoapRequest(anotherRetryingMessage.soapMessage, anotherRetryingMessage.destinationUrl))).thenReturn(
-        successful(OK)
-      )
-      when(outboundMessageRepositoryMock.updateSendingStatus(*, *, *)).thenReturn(successful(None))
-      when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage, anotherRetryingMessage).iterator))
-
-      intercept[Exception](await(underTest.retryMessages))
-
-      verify(outboundMessageRepositoryMock, never).updateSendingStatus(anotherRetryingMessage.globalId, SendingStatus.SENT)
-      verifyNoInteractions(notificationCallbackConnectorMock)
-    }
-
-    "retry a message and persist with retrying when SOAP request returned error status and retry duration not yet passed" in new Setup {
-      val testScopedGlobalId = globalId
-      val retryingMessage    = RetryingOutboundSoapMessage(testScopedGlobalId, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", now, now, Some(httpStatus))
+    "retry a message and persist with retrying when SOAP request returned error status and retry duration not yet passed" in new BaseSetup {
+      private val testScopedGlobalId = globalId
+      val retryingMessage            = RetryingOutboundSoapMessage(testScopedGlobalId, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", now, now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
+      when(appConfigMock.retryDuration).thenReturn(Duration("30s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
       when(outboundMessageRepositoryMock.updateNextRetryTime(refEq(testScopedGlobalId), *)).thenReturn(successful(None))
@@ -686,7 +652,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verifyNoInteractions(notificationCallbackConnectorMock)
     }
 
-    "retry a message and mark failed when SOAP request received 1xx status" in new Setup {
+    "retry a message and mark failed when SOAP request received 1xx status" in new BaseSetup {
       val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
@@ -702,7 +668,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verifyNoInteractions(notificationCallbackConnectorMock)
     }
 
-    "retry a message and mark failed when SOAP request received 3xx status" in new Setup {
+    "retry a message and mark failed when SOAP request received 3xx status" in new BaseSetup {
       val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
@@ -718,7 +684,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verifyNoInteractions(notificationCallbackConnectorMock)
     }
 
-    "retry a message and mark failed when SOAP request received 4xx status" in new Setup {
+    "retry a message and mark failed when SOAP request received 4xx status" in new BaseSetup {
       val retryingMessage = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, Some(httpStatus))
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
@@ -734,22 +700,21 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verifyNoInteractions(notificationCallbackConnectorMock)
     }
 
-    "set a message's status to FAILED when its retryDuration has expired" in new Setup {
-      val retryDuration: Duration = Duration("30s")
-      val retryingMessage         = RetryingOutboundSoapMessage(
+    "set a message's status to FAILED when its retryDuration has expired" in new BaseSetup {
+      val retryingMessage = RetryingOutboundSoapMessage(
         randomUUID,
         "MessageId-A1",
         "<IE4N03>payload</IE4N03>",
         "some url",
-        clock.instant.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
+        clock.instant.minus(jDuration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
         clock.instant,
         Some(httpStatus)
       )
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
+      when(appConfigMock.retryDuration).thenReturn(Duration("30s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *, *)).thenReturn(successful(None))
-      when(outboundMessageRepositoryMock.updateToSentWhereNotConfirmed(*, *, *)).thenReturn(successful(None))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
 
       await(underTest.retryMessages)
@@ -759,10 +724,9 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verifyNoInteractions(notificationCallbackConnectorMock)
     }
 
-    "notify the caller on the notification URL supplied that the retrying message is now SENT with expected successful response code" in new Setup {
+    "notify the caller on the notification URL supplied that the retrying message is now SENT with expected successful response code" in new BaseSetup {
       val retryingMessage                                     = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, Some(INTERNAL_SERVER_ERROR))
       val sentMessageForNotification: SentOutboundSoapMessage = retryingMessage.toSent
-      when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(ACCEPTED))
@@ -774,10 +738,9 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verify(notificationCallbackConnectorMock).sendNotification(refEq(sentMessageForNotification))(using *)
     }
 
-    "notify the caller on the notification URL supplied that the retrying message is now SENT with unexpected successful response code" in new Setup {
+    "notify the caller on the notification URL supplied that the retrying message is now SENT with unexpected successful response code" in new BaseSetup {
       val retryingMessage                                     = RetryingOutboundSoapMessage(randomUUID, "MessageId-A1", "<IE4N03>payload</IE4N03>", "some url", Instant.now, Instant.now, Some(INTERNAL_SERVER_ERROR))
       val sentMessageForNotification: SentOutboundSoapMessage = retryingMessage.toSent
-      when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("1s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(OK))
@@ -789,20 +752,20 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verify(notificationCallbackConnectorMock).sendNotification(refEq(sentMessageForNotification))(using *)
     }
 
-    "notify the caller on the notification URL supplied that the retrying message is now FAILED" in new Setup {
-      val retryDuration: Duration                                 = Duration("30s")
+    "notify the caller on the notification URL supplied that the retrying message is now FAILED" in new BaseSetup {
       val retryingMessage                                         = RetryingOutboundSoapMessage(
         randomUUID,
         "MessageId-A1",
         "<IE4N03>payload</IE4N03>",
         "some url",
-        clock.instant.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
+        clock.instant.minus(jDuration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
         clock.instant,
         Some(httpStatus)
       )
       val failedMessageForNotification: FailedOutboundSoapMessage = retryingMessage.toFailed
       when(appConfigMock.parallelism).thenReturn(2)
       when(appConfigMock.retryInterval).thenReturn(Duration("5s"))
+      when(appConfigMock.retryDuration).thenReturn(Duration("30s"))
       when(outboundConnectorMock.postMessage(*, *)).thenReturn(successful(INTERNAL_SERVER_ERROR))
       when(outboundMessageRepositoryMock.updateSendingStatus(*, *, *)).thenReturn(successful(Some(failedMessageForNotification)))
       when(outboundMessageRepositoryMock.retrieveMessagesForRetry).thenReturn(fromIterator(() => Seq(retryingMessage).iterator))
@@ -812,7 +775,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
       verify(notificationCallbackConnectorMock).sendNotification(refEq(failedMessageForNotification))(using *)
     }
 
-    "update the status of a successfully sent message to SENT even if calling the notification URL fails" in new Setup {
+    "update the status of a successfully sent message to SENT even if calling the notification URL fails" in new BaseSetup {
       val testScopedGlobalId                                      = globalId
       val retryDuration: Duration                                 = Duration("30s")
       val retryingMessage                                         = RetryingOutboundSoapMessage(
@@ -820,7 +783,7 @@ class OutboundServiceSpec extends AnyWordSpec with TestDataFactory with Matchers
         "MessageId-A1",
         "<IE4N03>payload</IE4N03>",
         "some url",
-        Instant.now.minus(java.time.Duration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
+        Instant.now.minus(jDuration.ofMillis(retryDuration.plus(Duration("1s")).toMillis)),
         Instant.now,
         Some(httpStatus)
       )

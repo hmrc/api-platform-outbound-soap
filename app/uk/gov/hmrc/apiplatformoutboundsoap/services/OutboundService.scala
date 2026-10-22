@@ -93,7 +93,7 @@ class OutboundService @Inject() (
     outboundMessageRepository.retrieveMessagesForRetry.runWith(Sink.foreachAsync[RetryingOutboundSoapMessage](appConfig.parallelism)(retryMessage))
   }
 
-  private def processSendResult(message: OutboundSoapMessage, newStatus: SendingStatus, responseCode: Int)(implicit hc: HeaderCarrier) = {
+  private def processSendResult(message: OutboundSoapMessage, newStatus: SendingStatus, responseCode: Int)(implicit hc: HeaderCarrier): Future[Option[OutboundSoapMessage]] = {
     (message, newStatus) match {
       case (_: PendingOutboundSoapMessage, SENT)     => outboundMessageRepository.updateToSentWhereNotConfirmed(message.globalId, now, responseCode)
       case (_: PendingOutboundSoapMessage, FAILED)   => outboundMessageRepository.updateSendingStatus(message.globalId, newStatus, responseCode)
@@ -172,7 +172,6 @@ class OutboundService @Inject() (
     cache.getOrElseUpdate[Definition](message.wsdlUrl, appConfig.cacheDuration) {
       wsdlParser.parseWsdl(message.wsdlUrl)
     } map { (wsdlDefinition: Definition) =>
-      println(s"\n*****$wsdlDefinition")
       val portType             = wsdlDefinition.getAllPortTypes.asScala.values.head.asInstanceOf[PortType]
       val operation: Operation = portType.getOperations.asScala
         .map(_.asInstanceOf[Operation])
