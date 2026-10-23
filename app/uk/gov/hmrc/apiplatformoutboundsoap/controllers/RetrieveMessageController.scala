@@ -39,13 +39,11 @@ class RetrieveMessageController @Inject() (cc: ControllerComponents, messageRepo
       case _  =>
         messageRepository
           .findById(id)
-          .flatMap(maybeOutboundSoapMessage =>
-            if (maybeOutboundSoapMessage.nonEmpty) {
-              Future.successful(Ok(Json.toJson(maybeOutboundSoapMessage)))
-            } else {
-              Future.successful(NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"id [${id}] could not be found")))
-            }
-          ) recover { case e: Exception =>
+          .flatMap {
+            case Some(outboundSoapMessage) => Future.successful(Ok(Json.toJson(outboundSoapMessage)))
+            case _ => Future.successful(NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"id [$id] could not be found")))
+          }
+          .recover { case e: Exception =>
           InternalServerError(JsErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR, s"Error ${e.getMessage} when querying database"))
         }
     }
