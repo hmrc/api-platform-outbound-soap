@@ -32,20 +32,20 @@ trait HttpClientV2MockModule extends MockitoSugar with ArgumentMatchersSugar {
     object Post {
 
       def thenReturn[T](response: T) = {
-        when(aMock.post(*)(*)).thenReturn(requestBuilderMock)
-        when(requestBuilderMock.withBody(*)(*, *, *)).thenReturn(requestBuilderMock)
+        when(aMock.post(*)(using *)).thenReturn(requestBuilderMock)
+        when(requestBuilderMock.withBody(*)(using *, *, *)).thenReturn(requestBuilderMock)
         when(requestBuilderMock.withProxy).thenReturn(requestBuilderMock)
-        when(requestBuilderMock.execute[T](*, *)).thenReturn(Future.successful(response))
+        when(requestBuilderMock.execute[T](using *, *)).thenReturn(Future.successful(response))
       }
 
       def thenFail[T]() = {
-        when(aMock.post(*)(*)).thenReturn(requestBuilderMock)
-        when(requestBuilderMock.withBody(*)(*, *, *)).thenReturn(requestBuilderMock)
-        when(requestBuilderMock.execute[T](*, *)).thenReturn(Future.failed(play.shaded.ahc.org.asynchttpclient.exception.RemotelyClosedException.INSTANCE))
+        when(aMock.post(*)(using *)).thenReturn(requestBuilderMock)
+        when(requestBuilderMock.withBody(*)(using *, *, *)).thenReturn(requestBuilderMock)
+        when(requestBuilderMock.execute[T](using *, *)).thenReturn(Future.failed(play.shaded.ahc.org.asynchttpclient.exception.RemotelyClosedException.INSTANCE))
       }
 
       def verifyUrl(url: URL) = {
-        verify(aMock).post(eqTo(url))(*)
+        verify(aMock).post(eqTo(url))(using *)
       }
 
       def verifyProxy() = {

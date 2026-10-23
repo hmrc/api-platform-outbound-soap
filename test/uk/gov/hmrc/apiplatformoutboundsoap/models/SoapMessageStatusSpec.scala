@@ -17,7 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.models
 
 import java.time.Instant
-import java.time.temporal.ChronoUnit._
+import java.time.temporal.ChronoUnit.*
 
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
@@ -27,7 +27,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json.Json
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.*
 import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
 class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with ArgumentMatchersSugar with TestDataFactory {
@@ -63,16 +63,20 @@ class SoapMessageStatusSpec extends AnyWordSpec with Matchers with MockitoSugar 
     }
 
     "include sentDateTime if present and truncate fractions of a second to millis" in {
-      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(
-        sentOutboundSoapMessageWithAllFields
-      ))
+      val json = Json.toJson(
+        SoapMessageStatus.fromOutboundSoapMessage(
+          sentOutboundSoapMessageWithAllFields
+        )
+      )
       (json \ "sentDateTime").asOpt[String] shouldBe Some("2023-08-10T10:11:12.123Z")
     }
 
     "include sentDateTime if present and always include milliseconds" in {
-      val json = Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(
-        sentOutboundSoapMessageWithAllFields.copy(sentDateTime = Some(knownInstant.truncatedTo(SECONDS)))
-      ))
+      val json = Json.toJson(
+        SoapMessageStatus.fromOutboundSoapMessage(
+          sentOutboundSoapMessageWithAllFields.copy(sentDateTime = Some(knownInstant.truncatedTo(SECONDS)))
+        )
+      )
       (json \ "sentDateTime").asOpt[String] shouldBe Some("2023-08-10T10:11:12.000Z")
     }
 

@@ -19,33 +19,33 @@ package uk.gov.hmrc.apiplatformoutboundsoap.services
 import java.time.{Clock, Duration, Instant}
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
-import javax.wsdl._
+import javax.wsdl.*
 import javax.wsdl.extensions.soap12.SOAP12Address
 import javax.xml.namespace.QName
 import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
+import org.apache.axiom.om.*
 import org.apache.axiom.om.OMAbstractFactory.{getOMFactory, getSOAP12Factory}
-import org.apache.axiom.om._
 import org.apache.axiom.om.util.AXIOMUtil.stringToOM
 import org.apache.axiom.soap.SOAPEnvelope
+import org.apache.axis2.addressing.AddressingConstants.*
 import org.apache.axis2.addressing.AddressingConstants.Final.{WSAW_NAMESPACE, WSA_NAMESPACE}
-import org.apache.axis2.addressing.AddressingConstants._
 import org.apache.pekko.Done
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
 
 import play.api.Logging
 import play.api.cache.AsyncCacheApi
-import play.api.http.Status._
+import play.api.http.Status.*
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, NotFoundException}
 
 import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult
-import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult._
+import uk.gov.hmrc.apiplatformoutboundsoap.CcnRequestResult.*
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.connectors.{NotificationCallbackConnector, OutboundConnector}
+import uk.gov.hmrc.apiplatformoutboundsoap.models.*
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.{FAILED, RETRYING, SENT}
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.OutboundMessageRepository
 
 @Singleton
@@ -58,9 +58,9 @@ class OutboundService @Inject() (
     appConfig: AppConfig,
     cache: AsyncCacheApi,
     clock: Clock
-  )(implicit val ec: ExecutionContext,
-    mat: Materializer
-  ) extends HttpErrorFunctions with Logging {
+)(implicit val ec: ExecutionContext, mat: Materializer)
+    extends HttpErrorFunctions
+    with Logging {
 
   def now: Instant = clock.instant
 
@@ -93,16 +93,18 @@ class OutboundService @Inject() (
     outboundMessageRepository.retrieveMessagesForRetry.runWith(Sink.foreachAsync[RetryingOutboundSoapMessage](appConfig.parallelism)(retryMessage))
   }
 
-  private def processSendResult(message: OutboundSoapMessage, newStatus: SendingStatus, responseCode: Int)(implicit hc: HeaderCarrier) = {
+  private def processSendResult(message: OutboundSoapMessage, newStatus: SendingStatus, responseCode: Int)(implicit hc: HeaderCarrier): Future[Option[OutboundSoapMessage]] = {
     (message, newStatus) match {
       case (_: PendingOutboundSoapMessage, SENT)     => outboundMessageRepository.updateToSentWhereNotConfirmed(message.globalId, now, responseCode)
       case (_: PendingOutboundSoapMessage, FAILED)   => outboundMessageRepository.updateSendingStatus(message.globalId, newStatus, responseCode)
       case (_: PendingOutboundSoapMessage, RETRYING) => outboundMessageRepository.updateSendingStatusWithRetryDateTime(message.globalId, newStatus, responseCode, getNextRetryAt)
-      case (_: RetryingOutboundSoapMessage, SENT)    => outboundMessageRepository.updateToSent(message.globalId, now, responseCode).map { updatedMessage =>
+      case (_: RetryingOutboundSoapMessage, SENT)    =>
+        outboundMessageRepository.updateToSent(message.globalId, now, responseCode).map { updatedMessage =>
           updatedMessage.map(notificationCallbackConnector.sendNotification)
           updatedMessage
         }
-      case (_: RetryingOutboundSoapMessage, FAILED)  => outboundMessageRepository.updateSendingStatus(message.globalId, newStatus, responseCode).map { updatedMessage =>
+      case (_: RetryingOutboundSoapMessage, FAILED)  =>
+        outboundMessageRepository.updateSendingStatus(message.globalId, newStatus, responseCode).map { updatedMessage =>
           updatedMessage.map(notificationCallbackConnector.sendNotification)
           updatedMessage
         }
@@ -169,19 +171,31 @@ class OutboundService @Inject() (
   private def buildSoapRequest(message: MessageRequest): Future[SoapRequest] = {
     cache.getOrElseUpdate[Definition](message.wsdlUrl, appConfig.cacheDuration) {
       wsdlParser.parseWsdl(message.wsdlUrl)
-    } map { wsdlDefinition: Definition =>
+    } map { (wsdlDefinition: Definition) =>
       val portType             = wsdlDefinition.getAllPortTypes.asScala.values.head.asInstanceOf[PortType]
-      val operation: Operation = portType.getOperations.asScala.map(_.asInstanceOf[Operation])
-        .find(_.getName == message.wsdlOperation).getOrElse(throw new NotFoundException(s"Operation ${message.wsdlOperation} not found"))
+      val operation: Operation = portType.getOperations.asScala
+        .map(_.asInstanceOf[Operation])
+        .find(_.getName == message.wsdlOperation)
+        .getOrElse(throw new NotFoundException(s"Operation ${message.wsdlOperation} not found"))
 
       val envelope: SOAPEnvelope   = getSOAP12Factory.getDefaultEnvelope
       addHeaders(message, operation, envelope)
       addBody(message, operation, envelope)
-      val enrichedEnvelope: String = if (appConfig.enableMessageSigning) wsSecurityService.addSignature(envelope)
-      else wsSecurityService.addUsernameToken(envelope)
-      val url: String              = wsdlDefinition.getAllServices.asScala.values.head.asInstanceOf[Service]
-        .getPorts.asScala.values.head.asInstanceOf[Port]
-        .getExtensibilityElements.asScala.filter(_.isInstanceOf[SOAP12Address]).head.asInstanceOf[SOAP12Address]
+      val enrichedEnvelope: String =
+        if (appConfig.enableMessageSigning) wsSecurityService.addSignature(envelope)
+        else wsSecurityService.addUsernameToken(envelope)
+      val url: String              = wsdlDefinition.getAllServices.asScala.values.head
+        .asInstanceOf[Service]
+        .getPorts
+        .asScala
+        .values
+        .head
+        .asInstanceOf[Port]
+        .getExtensibilityElements
+        .asScala
+        .filter(_.isInstanceOf[SOAP12Address])
+        .head
+        .asInstanceOf[SOAP12Address]
         .getLocationURI
       val soapWsdlUrl: String      = url.replace("{ccn2Host}", appConfig.ccn2Host).replace("{ccn2Port}", appConfig.ccn2Port.toString)
       SoapRequest(enrichedEnvelope, soapWsdlUrl)

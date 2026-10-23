@@ -38,7 +38,7 @@ class WsSecurityServiceSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val mockAppConfig: AppConfig = mock[AppConfig]
     when(mockAppConfig.ccn2Username).thenReturn(ccn2Username)
     when(mockAppConfig.ccn2Password).thenReturn(ccn2Password)
-    when(mockAppConfig.cryptoKeystoreLocation).thenReturn("KeyStore.jks")
+    when(mockAppConfig.cryptoKeystoreLocation).thenReturn("app/resources/KeyStore.jks")
     when(mockAppConfig.keystoreAlias).thenReturn("Joe.Bloggs")
     when(mockAppConfig.keystorePassword).thenReturn("password")
     val underTest                = new WsSecurityService(mockAppConfig)
@@ -113,6 +113,7 @@ class WsSecurityServiceSpec extends AnyWordSpec with Matchers with MockitoSugar 
 
   "addSignature" should {
     "add a signature header to the SOAP envelope" in new Setup {
+      org.apache.xml.security.Init.init()
       val envelope: SOAPEnvelope = getSOAP12Factory.getDefaultEnvelope
 
       val result: String = underTest.addSignature(envelope)
