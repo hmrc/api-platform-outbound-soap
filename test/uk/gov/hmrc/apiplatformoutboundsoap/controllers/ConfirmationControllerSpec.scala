@@ -16,24 +16,23 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.controllers
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.xml.{Elem, NodeSeq, XML}
-
 import org.apache.pekko.stream.Materializer
-import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
+import org.mockito.captor.ArgCaptor
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-
 import play.api.mvc.Result
 import play.api.test.Helpers.*
 import play.api.test.{FakeRequest, Helpers}
-
 import uk.gov.hmrc.apiplatformoutboundsoap.controllers.actionBuilders.ValidateConfirmationTypeAction
 import uk.gov.hmrc.apiplatformoutboundsoap.models.DeliveryStatus
 import uk.gov.hmrc.apiplatformoutboundsoap.models.common.{MessageIdNotFoundResult, UpdateSuccessResult}
 import uk.gov.hmrc.apiplatformoutboundsoap.services.ConfirmationService
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.xml.{Elem, NodeSeq, XML}
 
 class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
   implicit val mat: Materializer = app.injector.instanceOf[Materializer]
@@ -125,11 +124,11 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
     val msgIdCoe: String = "zyxw9876"
 
     "call the confirmation service with a CoD request" in new Setup {
-      val confirmationXmlRequestCaptor = ArgumentCaptor.forClass(classOf[NodeSeq])
-      val msgIdCaptor                  = ArgumentCaptor.forClass(classOf[String])
-      val confirmationTypeCaptor       = ArgumentCaptor.forClass(classOf[DeliveryStatus])
+      val confirmationXmlRequestCaptor = ArgCaptor[NodeSeq]
+      val msgIdCaptor                  = ArgCaptor[String]
+      val confirmationTypeCaptor       = ArgCaptor[DeliveryStatus]
       val requestBodyXml: Elem         = XML.loadString(createCodMessage("1234abcd"))
-      when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(using *))
+      when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture, confirmationTypeCaptor.capture)(using *))
         .thenReturn(Future.successful(UpdateSuccessResult))
       val result: Future[Result]       = underTest.message()(
         fakeRequest
@@ -137,9 +136,9 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
           .withHeaders("ContentType" -> "text/xml", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoD")
       )
       status(result) shouldBe ACCEPTED
-      confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
-      msgIdCaptor.getValue shouldBe msgIdCod
-      confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COD
+      confirmationXmlRequestCaptor.value shouldBe requestBodyXml
+      msgIdCaptor.value shouldBe msgIdCod
+      confirmationTypeCaptor.value shouldBe DeliveryStatus.COD
       verify(confirmationServiceMock).processConfirmation(eqTo(requestBodyXml), eqTo(msgIdCod), eqTo(DeliveryStatus.COD))(using *)
     }
 
@@ -168,11 +167,11 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
     }
 
     "call the confirmation service with a CoE request" in new Setup {
-      val confirmationXmlRequestCaptor = ArgumentCaptor.forClass(classOf[NodeSeq])
-      val msgIdCaptor                  = ArgumentCaptor.forClass(classOf[String])
-      val confirmationTypeCaptor       = ArgumentCaptor.forClass(classOf[DeliveryStatus])
+      val confirmationXmlRequestCaptor = ArgCaptor[NodeSeq]
+      val msgIdCaptor                  = ArgCaptor[String]
+      val confirmationTypeCaptor       = ArgCaptor[DeliveryStatus]
       val requestBodyXml: Elem         = XML.loadString(coeMessage)
-      when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture(), confirmationTypeCaptor.capture)(using *))
+      when(confirmationServiceMock.processConfirmation(confirmationXmlRequestCaptor.capture, msgIdCaptor.capture, confirmationTypeCaptor.capture)(using *))
         .thenReturn(Future.successful(UpdateSuccessResult))
       val result: Future[Result]       = underTest.message()(
         fakeRequest
@@ -180,9 +179,9 @@ class ConfirmationControllerSpec extends AnyWordSpec with Matchers with GuiceOne
           .withHeaders("ContentType" -> "text/xml", "x-soap-action" -> "CCN2.Service.Platform.AcknowledgementService/CoE")
       )
       status(result) shouldBe ACCEPTED
-      confirmationXmlRequestCaptor.getValue shouldBe requestBodyXml
-      msgIdCaptor.getValue shouldBe msgIdCoe
-      confirmationTypeCaptor.getValue shouldBe DeliveryStatus.COE
+      confirmationXmlRequestCaptor.value shouldBe requestBodyXml
+      msgIdCaptor.value shouldBe msgIdCoe
+      confirmationTypeCaptor.value shouldBe DeliveryStatus.COE
       verify(confirmationServiceMock).processConfirmation(eqTo(requestBodyXml), eqTo(msgIdCoe), eqTo(DeliveryStatus.COE))(using *)
     }
 
