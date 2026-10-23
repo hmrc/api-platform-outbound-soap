@@ -10,7 +10,7 @@ object AppDependencies {
     "uk.gov.hmrc.mongo"         %% "hmrc-mongo-play-30"        % mongoVersion,
     "org.apache.axis2"           % "axis2-kernel"              % "2.0.1",
     "org.apache.james"           % "apache-mime4j-core"        % "0.8.11",
-    "org.apache.wss4j"           % "wss4j-ws-security-dom"     % "3.0.5",
+    "org.apache.wss4j"           % "wss4j-ws-security-dom"     % "3.0.6",
     "org.apache.velocity"        % "velocity-engine-core"      % "2.4.1",
     // "commons-lang3" explicitly included as velocity-engine-core uses a vulnerable version
     "org.apache.commons"         % "commons-lang3"             % "3.20.0",

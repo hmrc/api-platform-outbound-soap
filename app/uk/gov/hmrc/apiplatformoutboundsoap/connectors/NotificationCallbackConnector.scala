@@ -36,7 +36,7 @@ class NotificationCallbackConnector @Inject() (httpClient: HttpClientV2)(implici
   def sendNotification(message: OutboundSoapMessage)(implicit hc: HeaderCarrier): Future[Option[Int]] = {
     (message.notificationUrl map { url =>
       httpClient
-        .post(url"${url.replaceAll("https", "http")}")
+        .post(url"$url")
         .withBody(Json.toJson(SoapMessageStatus.fromOutboundSoapMessage(message)))
         .execute[HttpResponse] map { response =>
         logger.info(s"Notification to $url with global ID ${message.globalId} and message ID ${message.messageId} responded with HTTP code ${response.status}")
