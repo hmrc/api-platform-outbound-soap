@@ -16,27 +16,26 @@
 
 package uk.gov.hmrc.apiplatformoutboundsoap.connectors
 
+import org.scalatest.OptionValues
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-
 import play.api.Application
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers.*
 import uk.gov.hmrc.http.HeaderCarrier
-
 import uk.gov.hmrc.apiplatformoutboundsoap.models.JsonFormats.soapMessageStatusFormatter
 import uk.gov.hmrc.apiplatformoutboundsoap.models.{OutboundSoapMessage, PendingOutboundSoapMessage, RetryingOutboundSoapMessage, SoapMessageStatus}
 import uk.gov.hmrc.apiplatformoutboundsoap.support.{NotificationsService, WireMockSupport}
 import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
-class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with WireMockSupport with NotificationsService with TestDataFactory {
+class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with OptionValues with GuiceOneAppPerSuite with WireMockSupport with NotificationsService with TestDataFactory {
   override implicit lazy val app: Application = appBuilder.build()
 
   protected def appBuilder: GuiceApplicationBuilder =
@@ -70,11 +69,9 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
       val expectedStatus: Int          = OK
       primeNotificationsEndpoint(expectedStatus)
 
-      await(underTest.sendNotification(message)) match {
-        case Some(result) => result shouldBe expectedStatus
-        case _            => fail(s"Status was not $expectedStatus")
-      }
+      await(underTest.sendNotification(message)).value shouldBe expectedStatus
     }
+
     "successfully send a status update to the caller's notification URL when message is PENDING" in new Setup {
       val message: OutboundSoapMessage = PendingOutboundSoapMessage(
         globalId,
@@ -88,10 +85,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
       val expectedStatus: Int          = OK
       primeNotificationsEndpoint(expectedStatus)
 
-      await(underTest.sendNotification(message)) match {
-        case Some(result) => result shouldBe expectedStatus
-        case _            => fail(s"Status was not $expectedStatus")
-      }
+      await(underTest.sendNotification(message)).value shouldBe expectedStatus
     }
 
     "not send a status update when notification URL is absent" in new Setup {
@@ -162,10 +156,7 @@ class NotificationCallbackConnectorISpec extends AnyWordSpec with Matchers with 
       val expectedStatus: Int          = INTERNAL_SERVER_ERROR
       primeNotificationsEndpoint(expectedStatus)
 
-      await(underTest.sendNotification(message)) match {
-        case Some(result) => result shouldBe expectedStatus
-        case _            => fail(s"Status was not $expectedStatus")
-      }
+      await(underTest.sendNotification(message)).value shouldBe expectedStatus
     }
 
     "recover from exceptions" in new Setup {
