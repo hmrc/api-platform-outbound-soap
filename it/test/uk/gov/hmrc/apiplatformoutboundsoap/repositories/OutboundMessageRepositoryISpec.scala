@@ -58,7 +58,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
   "persist" should {
 
     "insert a pending message when it does not exist" in {
-      await(repository.persist(entity = pendingOutboundSoapMessage))
+      await(repository.persist(pendingOutboundSoapMessage))
       val truncCreateDateTime = pendingOutboundSoapMessage.createDateTime.truncatedTo(ChronoUnit.MILLIS)
 
       val fetchedRecords = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
