@@ -20,27 +20,31 @@ import java.time.temporal.ChronoUnit
 import java.time.{Duration, Instant}
 import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
 import org.mongodb.scala.MongoWriteException
 import org.mongodb.scala.ReadPreference.primaryPreferred
 import org.mongodb.scala.bson.BsonBoolean
+import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
 import play.mvc.Http.Status
 import uk.gov.hmrc.mongo.logging.ObservableFutureImplicits.ObservableFuture
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
-
 import uk.gov.hmrc.apiplatformoutboundsoap.models.*
 import uk.gov.hmrc.apiplatformoutboundsoap.models.SendingStatus.RETRYING
 import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
-class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRepositorySupport[OutboundSoapMessage] with Matchers with GuiceOneAppPerSuite with TestDataFactory {
+class OutboundMessageRepositoryISpec
+    extends AnyWordSpec
+    with DefaultPlayMongoRepositorySupport[OutboundSoapMessage]
+    with Matchers
+    with GuiceOneAppPerSuite
+    with TestDataFactory
+    with OptionValues {
   override val repository: OutboundMessageRepository = app.injector.instanceOf[OutboundMessageRepository]
 
   override implicit lazy val app: Application = appBuilder.build()
@@ -122,34 +126,29 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
     "message is persisted with TTL" in {
       await(repository.persist(sentOutboundSoapMessage))
 
-      await(repository.collection.listIndexes().toFuture()).find(i => i.get("name").get.asString().getValue == "ttlIndex") match {
-        case Some(ttlIndex) =>
-          ttlIndex.get("unique") shouldBe None
-          ttlIndex.get("background").get shouldBe BsonBoolean(true)
-          ttlIndex.get("expireAfterSeconds").get.asNumber().intValue shouldBe 60 * 60 * 24 * 30
-        case _              => fail("ttlIndex was not found")
-      }
+      val ttlIndex = await(repository.collection.listIndexes().toFuture()).find(i => i.get("name").get.asString().getValue == "ttlIndex").value
+
+      ttlIndex.get("unique") shouldBe None
+      ttlIndex.get("background").get shouldBe BsonBoolean(true)
+      ttlIndex.get("expireAfterSeconds").get.asNumber().intValue shouldBe 60 * 60 * 24 * 30
     }
 
     "message is persisted with unique ID" in {
       await(repository.persist(sentOutboundSoapMessage))
 
-      await(repository.collection.listIndexes().toFuture()).find(i => i.get("name").get.asString().getValue == "globalIdIndex") match {
-        case Some(globalIdIndex) =>
-          globalIdIndex.get("unique") shouldBe Some(BsonBoolean(true))
-          globalIdIndex.get("background").get shouldBe BsonBoolean(true)
-        case _                   => fail("globalIdIndex was not found")
-      }
+      val globalIdIndex = await(repository.collection.listIndexes().toFuture()).find(i => i.get("name").get.asString().getValue == "globalIdIndex").value
+
+      globalIdIndex.get("unique") shouldBe Some(BsonBoolean(true))
+      globalIdIndex.get("background").get shouldBe BsonBoolean(true)
     }
+
     "create index on message ID" in {
       await(repository.persist(sentOutboundSoapMessage))
 
-      await(repository.collection.listIndexes().toFuture()).find(i => i.get("name").get.asString().getValue == "messageIdIndex") match {
-        case Some(messageIdIndex) =>
-          messageIdIndex.get("unique") shouldBe None
-          messageIdIndex.get("background").get shouldBe BsonBoolean(true)
-        case _                    => fail("messageIdIndex was not found")
-      }
+      val messageIdIndex = await(repository.collection.listIndexes().toFuture()).find(i => i.get("name").get.asString().getValue == "messageIdIndex").value
+
+      messageIdIndex.get("unique") shouldBe None
+      messageIdIndex.get("background").get shouldBe BsonBoolean(true)
     }
 
     "fail when a message with the same ID already exists" in {
@@ -215,11 +214,8 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
       await(repository.persist(retryingOutboundSoapMessage))
       val newRetryDateTime         = retryingOutboundSoapMessage.retryDateTime.minus(Duration.ofHours(2))
       val expectedNewRetryDateTime = newRetryDateTime.truncatedTo(ChronoUnit.MILLIS)
-      await(repository.updateNextRetryTime(retryingOutboundSoapMessage.globalId, newRetryDateTime)) match {
-        case Some(updatedMessage) =>
-          updatedMessage.retryDateTime shouldBe expectedNewRetryDateTime
-        case _                    => fail(s"Updated message's retry datetime was not $expectedNewRetryDateTime as expected")
-      }
+      val updatedMessage           = await(repository.updateNextRetryTime(retryingOutboundSoapMessage.globalId, newRetryDateTime)).value
+      updatedMessage.retryDateTime shouldBe expectedNewRetryDateTime
     }
   }
 
@@ -228,12 +224,9 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
       val retryAt            = now
       await(repository.persist(pendingOutboundSoapMessage))
       val expectedNewRetryAt = retryAt.truncatedTo(ChronoUnit.MILLIS)
-      await(repository.updateSendingStatusWithRetryDateTime(pendingOutboundSoapMessage.globalId, RETRYING, 503, retryAt)) match {
-        case Some(updated) =>
-          updated.status shouldBe RETRYING
-          updated.asInstanceOf[RetryingOutboundSoapMessage].retryDateTime shouldBe expectedNewRetryAt
-        case _             => fail(s"Updated message's retry datetime was not $expectedNewRetryAt as expected")
-      }
+      val updated            = await(repository.updateSendingStatusWithRetryDateTime(pendingOutboundSoapMessage.globalId, RETRYING, 503, retryAt)).value
+      updated.status shouldBe RETRYING
+      updated.asInstanceOf[RetryingOutboundSoapMessage].retryDateTime shouldBe expectedNewRetryAt
     }
   }
 
@@ -241,34 +234,28 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
     "update the message to have a status of FAILED" in {
       val expectedHttpResponseCode = Status.BAD_GATEWAY
       await(repository.persist(retryingOutboundSoapMessage))
-      await(repository.updateSendingStatus(retryingOutboundSoapMessage.globalId, SendingStatus.FAILED, expectedHttpResponseCode)) match {
-        case Some(returnedSoapMessage) =>
-          val fetchedRecords = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
-          fetchedRecords.size shouldBe 1
-          fetchedRecords.head.status shouldBe SendingStatus.FAILED
-          fetchedRecords.head.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
-          fetchedRecords.head.ccnHttpStatus shouldBe Some(expectedHttpResponseCode)
-          returnedSoapMessage.status shouldBe SendingStatus.FAILED
-          returnedSoapMessage.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
-          returnedSoapMessage.ccnHttpStatus shouldBe Some(expectedHttpResponseCode)
-        case _                         => fail("Expected SOAP message was not found")
-      }
+      val returnedSoapMessage      = await(repository.updateSendingStatus(retryingOutboundSoapMessage.globalId, SendingStatus.FAILED, expectedHttpResponseCode)).value
+      val fetchedRecords           = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe SendingStatus.FAILED
+      fetchedRecords.head.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
+      fetchedRecords.head.ccnHttpStatus shouldBe Some(expectedHttpResponseCode)
+      returnedSoapMessage.status shouldBe SendingStatus.FAILED
+      returnedSoapMessage.isInstanceOf[FailedOutboundSoapMessage] shouldBe true
+      returnedSoapMessage.ccnHttpStatus shouldBe Some(expectedHttpResponseCode)
     }
 
     "update the message to have a status of SENT" in {
       await(repository.persist(retryingOutboundSoapMessage))
-      await(repository.updateToSentWhereNotConfirmed(retryingOutboundSoapMessage.globalId, instantNow)) match {
-        case Some(returnedSoapMessage) =>
-          val fetchedRecords = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
-          fetchedRecords.size shouldBe 1
-          fetchedRecords.head.status shouldBe SendingStatus.SENT
-          fetchedRecords.head.isInstanceOf[SentOutboundSoapMessage] shouldBe true
-          fetchedRecords.head.sentDateTime shouldBe Some(instantNow)
-          returnedSoapMessage.status shouldBe SendingStatus.SENT
-          returnedSoapMessage.isInstanceOf[SentOutboundSoapMessage] shouldBe true
-          returnedSoapMessage.sentDateTime shouldBe Some(instantNow)
-        case _                         => fail("Expected SOAP message was not found")
-      }
+      val returnedSoapMessage = await(repository.updateToSentWhereNotConfirmed(retryingOutboundSoapMessage.globalId, instantNow)).value
+      val fetchedRecords      = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head.status shouldBe SendingStatus.SENT
+      fetchedRecords.head.isInstanceOf[SentOutboundSoapMessage] shouldBe true
+      fetchedRecords.head.sentDateTime shouldBe Some(instantNow)
+      returnedSoapMessage.status shouldBe SendingStatus.SENT
+      returnedSoapMessage.isInstanceOf[SentOutboundSoapMessage] shouldBe true
+      returnedSoapMessage.sentDateTime shouldBe Some(instantNow)
     }
   }
 
@@ -301,10 +288,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
       val fetchedRecords = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
       fetchedRecords.size shouldBe 1
       fetchedRecords.head.status shouldBe DeliveryStatus.COD
-      fetchedRecords.head.sentDateTime match {
-        case Some(instant: Instant) => instant.compareTo(knownInstantAfterMongo) shouldBe 0
-        case other                  => fail(s"sentDateTime should not be $other")
-      }
+      fetchedRecords.head.sentDateTime.value.compareTo(knownInstantAfterMongo) shouldBe 0
       fetchedRecords.head.asInstanceOf[CodSoapMessage].codMessage shouldBe Some(expectedConfirmationMessageBody)
     }
 
@@ -315,10 +299,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
       val fetchedRecords = await(repository.collection.withReadPreference(primaryPreferred()).find().toFuture())
       fetchedRecords.size shouldBe 1
       fetchedRecords.head.status shouldBe DeliveryStatus.COE
-      fetchedRecords.head.sentDateTime match {
-        case Some(instant: Instant) => instant.compareTo(knownInstantAfterMongo) shouldBe 0
-        case other                  => fail(s"sentDateTime should not be $other")
-      }
+      fetchedRecords.head.sentDateTime.value.compareTo(knownInstantAfterMongo) shouldBe 0
       fetchedRecords.head.asInstanceOf[CoeSoapMessage].coeMessage shouldBe Some(expectedConfirmationMessageBody)
     }
 
@@ -398,18 +379,12 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
     "return message when messageId matches" in {
       val messageToPersist = sentOutboundSoapMessage
       await(repository.persist(messageToPersist))
-      await(repository.findById(messageToPersist.messageId)) match {
-        case Some(found) => found shouldBe truncateSentMessageInstants(messageToPersist)
-        case _           => fail(s"Expected message with ID ${messageToPersist.messageId} to be retrieved")
-      }
+      await(repository.findById(messageToPersist.messageId)).value shouldBe truncateSentMessageInstants(messageToPersist)
     }
 
     "return message when globalId matches" in {
       await(repository.persist(sentOutboundSoapMessage))
-      await(repository.findById(sentOutboundSoapMessage.globalId.toString)) match {
-        case Some(found) => found shouldBe truncateSentMessageInstants(sentOutboundSoapMessage)
-        case _           => fail("Expected SOAP message was not found")
-      }
+      await(repository.findById(sentOutboundSoapMessage.globalId.toString)).value shouldBe truncateSentMessageInstants(sentOutboundSoapMessage)
     }
 
     "return nothing when ID does not exist" in {
@@ -421,10 +396,7 @@ class OutboundMessageRepositoryISpec extends AnyWordSpec with DefaultPlayMongoRe
       await(repository.persist(sentOutboundSoapMessage))
       await(repository.persist(sentOutboundSoapMessage.copy(createDateTime = instantNow.minus(Duration.ofHours(1)), globalId = randomUUID())))
 
-      await(repository.findById(sentOutboundSoapMessage.messageId)) match {
-        case Some(found) => found shouldBe truncateSentMessageInstants(sentOutboundSoapMessage)
-        case _           => fail("Expected SOAP message was not found")
-      }
+      await(repository.findById(sentOutboundSoapMessage.messageId)).value shouldBe truncateSentMessageInstants(sentOutboundSoapMessage)
     }
   }
 
