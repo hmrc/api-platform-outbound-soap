@@ -24,14 +24,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.scaladsl.Source
-import org.bson.codecs.configuration.CodecRegistries._
+import org.bson.codecs.configuration.CodecRegistries.*
 import org.mongodb.scala.ReadPreference.primaryPreferred
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.model.Filters._
+import org.mongodb.scala.model.*
+import org.mongodb.scala.model.Filters.*
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Sorts.descending
 import org.mongodb.scala.model.Updates.{combine, set}
-import org.mongodb.scala.model._
 import org.mongodb.scala.result.InsertOneResult
 import org.mongodb.scala.{MongoClient, MongoCollection}
 
@@ -41,7 +41,7 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.*
 import uk.gov.hmrc.apiplatformoutboundsoap.repositories.MongoFormatter.outboundSoapMessageFormatter
 
 @Singleton
@@ -56,12 +56,15 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
         IndexModel(ascending("retryDateTime"), IndexOptions().name("retryDateTimeIndex").background(true).unique(false)),
         IndexModel(
           ascending("createDateTime"),
-          IndexOptions().name("ttlIndex").background(true)
+          IndexOptions()
+            .name("ttlIndex")
+            .background(true)
             .expireAfter(appConfig.retryMessagesTtl.toSeconds, TimeUnit.SECONDS)
         )
       )
     )
-    with Logging with MongoJavatimeFormats.Implicits {
+    with Logging
+    with MongoJavatimeFormats.Implicits {
 
   override lazy val collection: MongoCollection[OutboundSoapMessage] =
     CollectionFactory
@@ -89,41 +92,52 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
   }
 
   def retrieveMessagesForRetry: Source[RetryingOutboundSoapMessage, NotUsed] = {
-    Source.fromPublisher(collection.withReadPreference(primaryPreferred())
-      .find(filter = and(equal("status", SendingStatus.RETRYING.toString), and(lte("retryDateTime", Codecs.toBson(Instant.now)))))
-      .sort(ascending("retryDateTime"))
-      .map(_.asInstanceOf[RetryingOutboundSoapMessage]))
+    Source.fromPublisher(
+      collection
+        .withReadPreference(primaryPreferred())
+        .find(filter = and(equal("status", SendingStatus.RETRYING.toString), and(lte("retryDateTime", Codecs.toBson(Instant.now)))))
+        .sort(ascending("retryDateTime"))
+        .map(_.asInstanceOf[RetryingOutboundSoapMessage])
+    )
   }
 
   def updateNextRetryTime(globalId: UUID, newRetryDateTime: Instant): Future[Option[RetryingOutboundSoapMessage]] = {
-    collection.withReadPreference(primaryPreferred())
+    collection
+      .withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),
         update = set("retryDateTime", Codecs.toBson(newRetryDateTime)),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
-      ).map(_.asInstanceOf[RetryingOutboundSoapMessage]).headOption()
+      )
+      .map(_.asInstanceOf[RetryingOutboundSoapMessage])
+      .headOption()
   }
 
   def updateSendingStatus(globalId: UUID, newStatus: SendingStatus, responseCode: Int = 0): Future[Option[OutboundSoapMessage]] = {
-    collection.withReadPreference(primaryPreferred())
+    collection
+      .withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),
         update = combine(set("status", Codecs.toBson(newStatus.toString)), set("ccnHttpStatus", Codecs.toBson(responseCode))),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
-      ).toFutureOption()
+      )
+      .toFutureOption()
   }
 
   def updateSendingStatusWithRetryDateTime(globalId: UUID, newStatus: SendingStatus, responseCode: Int = 0, retryDateTime: Instant): Future[Option[OutboundSoapMessage]] = {
-    collection.withReadPreference(primaryPreferred())
+    collection
+      .withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),
         update = combine(set("status", Codecs.toBson(newStatus.toString)), set("ccnHttpStatus", Codecs.toBson(responseCode)), set("retryDateTime", Codecs.toBson(retryDateTime))),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
-      ).toFutureOption()
+      )
+      .toFutureOption()
   }
 
   def updateToSent(globalId: UUID, sentInstant: Instant, responseCode: Int): Future[Option[OutboundSoapMessage]] = {
-    collection.withReadPreference(primaryPreferred())
+    collection
+      .withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),
         update = combine(
@@ -132,32 +146,37 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
           set("status", Codecs.toBson(SendingStatus.SENT.toString))
         ),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
-      ).toFutureOption()
+      )
+      .toFutureOption()
   }
 
   private def updateSentDateTime(globalId: UUID, sentInstant: Instant): Future[Option[OutboundSoapMessage]] = {
-    collection.withReadPreference(primaryPreferred())
+    collection
+      .withReadPreference(primaryPreferred())
       .findOneAndUpdate(
         filter = equal("globalId", Codecs.toBson(globalId)),
         update = set("sentDateTime", Codecs.toBson(sentInstant)),
         options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
-      ).toFutureOption()
+      )
+      .toFutureOption()
   }
 
   def updateToSentWhereNotConfirmed(globalId: UUID, sentInstant: Instant, responseCode: Int = 0): Future[Option[OutboundSoapMessage]] = {
     val maybeUpdateCandidate = findById(globalId.toString)
     maybeUpdateCandidate.flatMap(updateCandidate =>
-      updateCandidate.map(m =>
-        m.status match {
-          case DeliveryStatus.COE =>
-            logger.warn(s"CoE already received for message with globalId ${m.globalId} so not updating status to SENT. Time of receiving SENT status will be recorded")
-            updateSentDateTime(globalId, sentInstant)
-          case DeliveryStatus.COD =>
-            logger.warn(s"CoD already received for message with globalId ${m.globalId} so not updating status to SENT. Time of receiving SENT status will be recorded")
-            updateSentDateTime(globalId, sentInstant)
-          case _                  => updateToSent(globalId, sentInstant, responseCode)
-        }
-      ).head
+      updateCandidate
+        .map(m =>
+          m.status match {
+            case DeliveryStatus.COE =>
+              logger.warn(s"CoE already received for message with globalId ${m.globalId} so not updating status to SENT. Time of receiving SENT status will be recorded")
+              updateSentDateTime(globalId, sentInstant)
+            case DeliveryStatus.COD =>
+              logger.warn(s"CoD already received for message with globalId ${m.globalId} so not updating status to SENT. Time of receiving SENT status will be recorded")
+              updateSentDateTime(globalId, sentInstant)
+            case _                  => updateToSent(globalId, sentInstant, responseCode)
+          }
+        )
+        .head
     )
   }
 
@@ -167,19 +186,24 @@ class OutboundMessageRepository @Inject() (mongoComponent: MongoComponent, appCo
       case DeliveryStatus.COE => "coeMessage"
     }
 
-    collection.bulkWrite(
-      List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.toString)), set(field, confirmationMsg)))),
-      BulkWriteOptions().ordered(false)
-    ).toFuture().flatMap(_ => findById(messageId))
+    collection
+      .bulkWrite(
+        List(UpdateManyModel(Document("messageId" -> messageId), combine(set("status", Codecs.toBson(newStatus.toString)), set(field, confirmationMsg)))),
+        BulkWriteOptions().ordered(false)
+      )
+      .toFuture()
+      .flatMap(_ => findById(messageId))
   }
 
   def findById(searchForId: String): Future[Option[OutboundSoapMessage]] = {
     val findQuery = or(Document("messageId" -> searchForId), Document("globalId" -> searchForId))
-    collection.find(findQuery).sort(descending("createDateTime")).headOption()
-      .recover {
-        case e: Exception =>
-          logger.warn(s"error finding message - ${e.getMessage}")
-          None
+    collection
+      .find(findQuery)
+      .sort(descending("createDateTime"))
+      .headOption()
+      .recover { case e: Exception =>
+        logger.warn(s"error finding message - ${e.getMessage}")
+        None
       }
   }
 }

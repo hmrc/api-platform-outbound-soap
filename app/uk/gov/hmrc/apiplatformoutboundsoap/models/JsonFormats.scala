@@ -20,8 +20,8 @@ import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.{Instant, ZoneId}
 import java.util.UUID
 
-import play.api.libs.functional.syntax._
-import play.api.libs.json._
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 
 import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 
@@ -41,7 +41,7 @@ object JsonFormats {
       (JsPath \ "faultTo").read[String].orElse(Reads.pure(appConfig.addressingFaultTo)) and
       (JsPath \ "messageId").read[String] and
       (JsPath \ "relatesTo").readNullable[String]
-  )(Addressing.apply _)
+  )(Addressing.apply)
   implicit val addressingFormatter: OFormat[Addressing] = OFormat(addressingReads, Json.writes[Addressing])
 
   private val fixedToMillisFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
@@ -55,9 +55,18 @@ object JsonFormats {
       (JsPath \ "messageId").write[String] and
       (JsPath \ "status").write[StatusType] and
       (JsPath \ "ccnHttpStatus").write[Int] and
-      (JsPath \ "sentDateTime").writeOptionWithNull[Instant](fixedToMillisIsoWrites) and
+      (JsPath \ "sentDateTime").writeOptionWithNull[Instant](using fixedToMillisIsoWrites) and
       (JsPath \ "privateHeaders").writeOptionWithNull[List[PrivateHeader]]
-  )(unlift(SoapMessageStatus.unapply))
+  )(sms =>
+    (
+      sms.globalId,
+      sms.messageId,
+      sms.status,
+      sms.ccnHttpStatus,
+      sms.sentDateTime,
+      sms.privateHeaders
+    )
+  )
   implicit val soapMessageStatusFormatter: Format[SoapMessageStatus]              = Format(Json.reads[SoapMessageStatus], statusWrites)
   implicit val pendingSoapMessageFormatter: OFormat[PendingOutboundSoapMessage]   = Json.format[PendingOutboundSoapMessage]
   implicit val retryingSoapMessageFormatter: OFormat[RetryingOutboundSoapMessage] = Json.format[RetryingOutboundSoapMessage]

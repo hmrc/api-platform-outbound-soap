@@ -17,7 +17,7 @@
 package uk.gov.hmrc.apiplatformoutboundsoap.scheduled
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
 import uk.gov.hmrc.http.HeaderCarrier
@@ -27,17 +27,16 @@ import uk.gov.hmrc.apiplatformoutboundsoap.config.AppConfig
 import uk.gov.hmrc.apiplatformoutboundsoap.services.OutboundService
 
 @Singleton
-class SoapMessageRetryJob @Inject() (appConfig: AppConfig, override val lockRepository: MongoLockRepository, outboundService: OutboundService)
-    extends LockedScheduledJob {
-  override val releaseLockAfter: Duration = appConfig.retryJobLockDuration
+class SoapMessageRetryJob @Inject() (appConfig: AppConfig, override val mongoLockRepository: MongoLockRepository, outboundService: OutboundService) extends LockedScheduledJob {
 
   override def name: String = "SoapMessageRetryJob"
 
-  override def initialDelay: FiniteDuration = appConfig.retryInitialDelay.asInstanceOf[FiniteDuration]
+  override def initialDelay: FiniteDuration = appConfig.retryInitialDelay
 
-  override def interval: FiniteDuration = appConfig.retryInterval.asInstanceOf[FiniteDuration]
+  override def interval: FiniteDuration = appConfig.retryInterval
+  override def enabled: Boolean         = appConfig.retryEnabled
 
   override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
-    outboundService.retryMessages(HeaderCarrier()).map(done => Result(done.toString))
+    outboundService.retryMessages(using HeaderCarrier()).map(done => Result(done.toString))
   }
 }

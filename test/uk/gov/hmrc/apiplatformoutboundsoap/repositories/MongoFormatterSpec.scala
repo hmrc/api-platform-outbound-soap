@@ -27,7 +27,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsObject, JsString, Json}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-import uk.gov.hmrc.apiplatformoutboundsoap.models._
+import uk.gov.hmrc.apiplatformoutboundsoap.models.*
 import uk.gov.hmrc.apiplatformoutboundsoap.util.TestDataFactory
 
 class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar with ArgumentMatchersSugar with TestDataFactory {
@@ -57,18 +57,20 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
 
     "correctly write a SENT message" in {
       val now               = Instant.now
-      val msgJson: JsObject = formatter.writes(SentOutboundSoapMessage(
-        UUID.randomUUID(),
-        "12334",
-        "sent message",
-        "some destination url",
-        Instant.now,
-        Some(200),
-        Some("notify url"),
-        Some("msg"),
-        None,
-        Some(now)
-      ))
+      val msgJson: JsObject = formatter.writes(
+        SentOutboundSoapMessage(
+          UUID.randomUUID(),
+          "12334",
+          "sent message",
+          "some destination url",
+          Instant.now,
+          Some(200),
+          Some("notify url"),
+          Some("msg"),
+          None,
+          Some(now)
+        )
+      )
       msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("SENT"))
       msgJson.value.get("sentDateTime") shouldBe Some(MongoJavatimeFormats.instantFormat.writes(now))
@@ -81,17 +83,19 @@ class MongoFormatterSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       msgJson.value.get("status") shouldBe Some(JsString("FAILED"))
     }
     "correctly write a RETRYING message" in {
-      val msgJson: JsObject = formatter.writes(RetryingOutboundSoapMessage(
-        UUID.randomUUID(),
-        "12334",
-        "retrying message",
-        "some destination url",
-        Instant.now,
-        Instant.now,
-        Some(200),
-        Some("notify url"),
-        Some("msg")
-      ))
+      val msgJson: JsObject = formatter.writes(
+        RetryingOutboundSoapMessage(
+          UUID.randomUUID(),
+          "12334",
+          "retrying message",
+          "some destination url",
+          Instant.now,
+          Instant.now,
+          Some(200),
+          Some("notify url"),
+          Some("msg")
+        )
+      )
       msgJson.values.size shouldBe 10
       msgJson.value.get("status") shouldBe Some(JsString("RETRYING"))
     }

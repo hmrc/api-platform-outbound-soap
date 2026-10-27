@@ -70,7 +70,7 @@ case class PendingOutboundSoapMessage(
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
     privateHeaders: Option[List[PrivateHeader]] = None
-  ) extends OutboundSoapMessage {
+) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.PENDING
 }
 
@@ -86,7 +86,7 @@ case class SentOutboundSoapMessage(
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
     privateHeaders: Option[List[PrivateHeader]] = None
-  ) extends OutboundSoapMessage {
+) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.SENT
 }
 
@@ -102,7 +102,7 @@ case class FailedOutboundSoapMessage(
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
     privateHeaders: Option[List[PrivateHeader]] = None
-  ) extends OutboundSoapMessage {
+) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.FAILED
 }
 
@@ -118,7 +118,7 @@ case class CoeSoapMessage(
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
     privateHeaders: Option[List[PrivateHeader]] = None
-  ) extends OutboundSoapMessage {
+) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COE
 }
 
@@ -134,7 +134,7 @@ case class CodSoapMessage(
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
     privateHeaders: Option[List[PrivateHeader]] = None
-  ) extends OutboundSoapMessage {
+) extends OutboundSoapMessage {
   override val status: DeliveryStatus = DeliveryStatus.COD
 }
 
@@ -151,7 +151,7 @@ case class RetryingOutboundSoapMessage(
     coeMessage: Option[String] = None,
     sentDateTime: Option[Instant] = None,
     privateHeaders: Option[List[PrivateHeader]] = None
-  ) extends OutboundSoapMessage {
+) extends OutboundSoapMessage {
   override val status: SendingStatus = SendingStatus.RETRYING
 
   def toFailed = FailedOutboundSoapMessage(globalId, messageId, soapMessage, destinationUrl, createDateTime, ccnHttpStatus, notificationUrl, codMessage, coeMessage)
