@@ -5,5 +5,6 @@ leakDetectionExemptions:
       - '/app/resources/KeyStore.jks'
 test-repositories:
   - api-platform-acceptance-tests
+  - ccn2-gateway-acceptance-tests
 serviceNowMapping: SNSVC0005002 
 
